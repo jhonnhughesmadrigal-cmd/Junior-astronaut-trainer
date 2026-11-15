@@ -639,6 +639,14 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 	_add(body, _cyl(0.025, 0.025, 0.3, 6), dark, Vector3(-0.2, 1.5, -0.1), Vector3(0.6, 0, 0.0), false)
 	_add(body, _cyl(0.025, 0.025, 0.3, 6), dark, Vector3(0.2, 1.5, -0.1), Vector3(0.6, 0, 0.0), false)
 	_add(body, _box(Vector3(0.18, 0.04, 0.02)), accm, Vector3(0, 1.45, 0.43), Vector3.ZERO, false)
+	# detalles extra del traje: correas, lampara del casco, antena y bandera
+	_add(body, _box(Vector3(0.05, 0.55, 0.03)), accm, Vector3(-0.14, 1.28, -0.26), Vector3.ZERO, false)
+	_add(body, _box(Vector3(0.05, 0.55, 0.03)), accm, Vector3(0.14, 1.28, -0.26), Vector3.ZERO, false)
+	_add(body, _cyl(0.012, 0.012, 0.3), metal, Vector3(0.18, 1.78, 0.32), Vector3.ZERO, false)
+	_add(body, _sph(0.025, 6), _sm(Color(1.0, 0.3, 0.3), 0.0, 0.3, 1.8), Vector3(0.18, 1.94, 0.32), Vector3.ZERO, false)
+	_add(body, _box(Vector3(0.13, 0.07, 0.025)), _sm(Color(0.2, 0.3, 0.75), 0.0, 0.7), Vector3(0.17, 1.5, -0.25), Vector3.ZERO, false)
+	_add(body, _box(Vector3(0.13, 0.025, 0.027)), _sm(Color(0.9, 0.2, 0.2), 0.0, 0.7), Vector3(0.17, 1.488, -0.25), Vector3.ZERO, false)
+	_add(body, _cyl(0.14, 0.14, 0.05, 12), _sm(Color(0.3, 0.32, 0.4), 0.5, 0.5), Vector3(0, 1.14, 0.0), Vector3.ZERO, false)
 	# cabeza: casco con visor reflectante
 	var head := Node3D.new()
 	head.position = Vector3(0, 1.66, 0)
@@ -651,6 +659,8 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 	_add(head, _box(Vector3(0.08, 0.04, 0.2)), accm, Vector3(0, 0.3, 0.0))
 	_add(head, _sph(0.04, 6), _sm(Color(0.9, 1.0, 1.0), 0.0, 0.3, 2.2), Vector3(0.26, 0.05, -0.1), Vector3.ZERO, false)
 	_add(head, _tor(0.24, 0.31), metal, Vector3(0, -0.27, 0))
+	_add(head, _box(Vector3(0.1, 0.06, 0.08)), _sm(Color(1.0, 0.97, 0.8), 0.0, 0.3, 1.8), Vector3(-0.22, 0.14, -0.2), Vector3.ZERO, false)
+	_add(head, _tor(0.17, 0.2), _sm(Color(0.6, 0.62, 0.7), 0.8, 0.3), Vector3(0, -0.01, -0.09), Vector3(PI / 2.0, 0, 0), false)
 	# brazos: hombro -> codo -> mano
 	var arms: Array = []
 	for sd in [-1.0, 1.0]:
@@ -1382,36 +1392,122 @@ func _build_prop(ch: String, c: Vector3) -> void:
 			_add(n, _sph(0.2, 14), _m(Color(1.0, 0.4, 0.5), 0.0, 0.7), Vector3(0.45, 0.78, 0.15))
 			_add(n, _sph(0.17, 14), _m(Color(0.4, 0.75, 1.0), 0.0, 0.7), Vector3(-0.4, 0.74, 0.18))
 		"B":
-			_add(n, _box(Vector3(1.8, 0.35, 2.5)), _m(Color(0.55, 0.58, 0.68), 0.5, 0.5), Vector3(0, 0.2, 0))
-			_add(n, _box(Vector3(1.6, 0.25, 2.3)), _m(Color(0.3, 0.45, 0.8), 0.0, 0.9), Vector3(0, 0.5, 0))
-			_add(n, _box(Vector3(1.2, 0.18, 0.6)), _m(Color(0.95, 0.95, 1.0), 0.0, 0.9), Vector3(0, 0.68, 0.8))
-			_add(n, _box(Vector3(1.62, 0.1, 1.1)), _m(Color(0.22, 0.32, 0.62), 0.0, 0.9), Vector3(0, 0.66, -0.35))
+			var frame: StandardMaterial3D = _m(Color(0.55, 0.58, 0.68), 0.6, 0.4)
+			var sheet: StandardMaterial3D = _m(Color(0.3, 0.45, 0.8), 0.0, 0.85)
+			var pillow: StandardMaterial3D = _m(Color(0.95, 0.95, 1.0), 0.0, 0.9)
+			for sx in [-0.82, 0.82]:
+				for sz in [-1.15, 1.15]:
+					_add(n, _cyl(0.07, 0.08, 0.22, 10), frame, Vector3(sx, 0.11, sz))
+			_add(n, _box(Vector3(1.78, 0.14, 2.46)), frame, Vector3(0, 0.29, 0))
+			# colchon redondeado
+			var mat_m: MeshInstance3D = _add(n, _box(Vector3(1.64, 0.26, 2.3)), _m(Color(0.86, 0.88, 0.95), 0.0, 0.9), Vector3(0, 0.46, 0))
+			for sz in [-1.15, 1.15]:
+				_add(n, _cyl(0.13, 0.13, 1.64, 12), _m(Color(0.86, 0.88, 0.95), 0.0, 0.9), Vector3(0, 0.46, sz), Vector3(0, 0, PI / 2.0))
+			# manta con dobles
+			_add(n, _box(Vector3(1.68, 0.12, 1.3)), sheet, Vector3(0, 0.64, -0.4))
+			_add(n, _cyl(0.07, 0.07, 1.68, 10), sheet, Vector3(0, 0.66, 0.26), Vector3(0, 0, PI / 2.0))
+			_add(n, _box(Vector3(1.7, 0.03, 0.12)), _m(Color(0.95, 0.8, 0.2), 0.0, 0.7), Vector3(0, 0.71, -0.2), Vector3.ZERO, false)
+			# almohada
+			var pil: MeshInstance3D = _add(n, _sph(0.38, 14), pillow, Vector3(0, 0.74, 0.78))
+			pil.scale = Vector3(1.5, 0.42, 0.9)
+			# cabecera con panel y luz de lectura
+			_add(n, _box(Vector3(1.9, 0.9, 0.12)), frame, Vector3(0, 0.62, 1.28))
+			_add(n, _box(Vector3(0.6, 0.2, 0.04)), _m(Color(0.1, 0.12, 0.2), 0.0, 0.5), Vector3(0, 0.95, 1.2), Vector3.ZERO, false)
+			_add(n, _box(Vector3(0.5, 0.06, 0.03)), _m(Color(0.5, 0.8, 1.0), 0.0, 0.4, 1.6), Vector3(0, 0.95, 1.18), Vector3.ZERO, false)
+			_add(n, _cyl(0.025, 0.025, 0.5), metal, Vector3(0.7, 1.3, 1.22))
+			_add(n, _sph(0.09, 8), _m(Color(1.0, 0.95, 0.7), 0.0, 0.4, 2.0), Vector3(0.7, 1.55, 1.1), Vector3.ZERO, false)
+			# pie de cama con barra
+			_add(n, _box(Vector3(1.78, 0.3, 0.08)), frame, Vector3(0, 0.42, -1.25))
+			_led(n, Vector3(0.7, 0.6, -1.27), Color(0.3, 0.6, 1.0), Color(0.05, 0.12, 0.25))
 		"T":
-			_add(n, _box(Vector3(1.9, 0.14, 1.0)), _m(Color(0.55, 0.45, 0.35), 0.1, 0.7), Vector3(0, 1.0, 0))
+			var wood: StandardMaterial3D = _m(Color(0.6, 0.46, 0.3), 0.1, 0.65)
+			var bin_cols: Array = [Color(0.9, 0.3, 0.25), Color(0.25, 0.7, 0.9), Color(0.95, 0.8, 0.2)]
+			_add(n, _box(Vector3(1.9, 0.12, 1.0)), wood, Vector3(0, 1.0, 0))
+			_add(n, _box(Vector3(1.94, 0.05, 1.04)), metal, Vector3(0, 0.95, 0), Vector3.ZERO, false)
 			for sx in [-0.85, 0.85]:
 				for sz in [-0.4, 0.4]:
-					_add(n, _cyl(0.06, 0.06, 1.0), metal, Vector3(sx, 0.5, sz))
-			var gear: MeshInstance3D = _add(n, _cyl(0.32, 0.32, 0.08, 10), _m(Color(0.85, 0.7, 0.2), 0.8, 0.35), Vector3(-0.45, 1.12, 0.0))
-			gear.rotation = Vector3(0, 0.3, 0)
-			_add(n, _cyl(0.1, 0.1, 0.1, 8), dark, Vector3(-0.45, 1.14, 0.0))
-			_add(n, _cyl(0.04, 0.04, 0.6), _m(Color(0.6, 0.4, 0.2), 0.0, 0.8), Vector3(0.35, 1.1, 0.1), Vector3(0, 0, PI / 2.0))
-			_add(n, _box(Vector3(0.22, 0.2, 0.2)), metal, Vector3(0.68, 1.12, 0.1))
-			_add(n, _box(Vector3(0.5, 0.25, 0.3)), dark, Vector3(0.45, 1.2, -0.3))
+					_add(n, _box(Vector3(0.08, 0.95, 0.08)), metal, Vector3(sx, 0.47, sz))
+			_add(n, _box(Vector3(1.7, 0.06, 0.06)), metal, Vector3(0, 0.3, 0.4), Vector3.ZERO, false)
+			_add(n, _box(Vector3(1.7, 0.06, 0.06)), metal, Vector3(0, 0.3, -0.4), Vector3.ZERO, false)
+			# cajones
+			_add(n, _box(Vector3(0.7, 0.42, 0.8)), dark, Vector3(-0.5, 0.6, 0))
+			for i in 2:
+				_add(n, _box(Vector3(0.6, 0.15, 0.03)), _m(Color(0.35, 0.38, 0.48), 0.5, 0.5), Vector3(-0.5, 0.5 + float(i) * 0.2, -0.42), Vector3.ZERO, false)
+				_add(n, _box(Vector3(0.18, 0.03, 0.03)), metal, Vector3(-0.5, 0.5 + float(i) * 0.2, -0.45), Vector3.ZERO, false)
+			# panel de herramientas en la pared trasera
+			_add(n, _box(Vector3(1.8, 0.9, 0.06)), _m(Color(0.3, 0.33, 0.42), 0.3, 0.6), Vector3(0, 1.62, 0.46))
+			for i in 5:
+				var tx: float = -0.7 + float(i) * 0.35
+				_add(n, _box(Vector3(0.05, 0.4, 0.04)), _m(bin_cols[i % 3], 0.4, 0.5), Vector3(tx, 1.62, 0.42), Vector3(0, 0, 0.1 * float(i - 2)), false)
+				_add(n, _box(Vector3(0.12, 0.1, 0.04)), metal, Vector3(tx, 1.84, 0.42), Vector3.ZERO, false)
+			# tornillo de banco, engranaje y cajitas de piezas
+			_add(n, _box(Vector3(0.26, 0.2, 0.22)), metal, Vector3(0.7, 1.16, -0.2))
+			_add(n, _cyl(0.03, 0.03, 0.3), dark, Vector3(0.7, 1.2, -0.38), Vector3(PI / 2.0, 0, 0), false)
+			var gear: MeshInstance3D = _add(n, _cyl(0.28, 0.28, 0.07, 12), _m(Color(0.85, 0.7, 0.2), 0.8, 0.35), Vector3(0.05, 1.1, -0.1))
+			_add(n, _cyl(0.09, 0.09, 0.09, 8), dark, Vector3(0.05, 1.12, -0.1))
+			for i in 3:
+				_add(n, _box(Vector3(0.22, 0.12, 0.22)), _m(bin_cols[i], 0.0, 0.7), Vector3(-0.2 + float(i) * 0.26, 1.12, 0.28))
+			# lampara articulada
+			_add(n, _cyl(0.04, 0.04, 0.55), metal, Vector3(-0.8, 1.3, 0.3))
+			_add(n, _cyl(0.03, 0.03, 0.5), metal, Vector3(-0.62, 1.55, 0.3), Vector3(0, 0, 1.0), false)
+			_add(n, _sph(0.1, 8), _m(Color(1.0, 0.95, 0.7), 0.0, 0.4, 2.2), Vector3(-0.42, 1.7, 0.3), Vector3.ZERO, false)
 		"A":
-			_add(n, _box(Vector3(1.3, 0.9, 0.7)), dark, Vector3(0, 0.45, 0))
-			_add(n, _box(Vector3(0.9, 0.4, 0.05)), _m(Color(0.2, 0.9, 0.5), 0.0, 0.4, 1.4), Vector3(0, 0.62, -0.37), Vector3(0.0, 0, 0), false)
-			_add(n, _cyl(0.05, 0.05, 1.3), metal, Vector3(0.45, 1.5, 0.1))
-			var dish: MeshInstance3D = _add(n, _sph(0.55, 16, true), _m(Color(0.88, 0.88, 0.93), 0.6, 0.3), Vector3(0.45, 2.1, 0.1), Vector3(-0.9, 0, 0))
-			dish.scale = Vector3(1.0, 0.6, 1.0)
-			_led(n, Vector3(-0.45, 0.95, -0.2), Color(0.2, 1.0, 0.3), Color(0.05, 0.25, 0.08))
+			var shell: StandardMaterial3D = _m(Color(0.3, 0.33, 0.42), 0.5, 0.5)
+			_add(n, _box(Vector3(1.4, 0.85, 0.75)), dark, Vector3(0, 0.43, 0.05))
+			_add(n, _box(Vector3(1.46, 0.08, 0.8)), shell, Vector3(0, 0.88, 0.05), Vector3.ZERO, false)
+			# pantalla con ondas
+			_add(n, _box(Vector3(0.84, 0.46, 0.05)), _m(Color(0.02, 0.1, 0.06), 0.0, 0.3), Vector3(0, 0.6, -0.34), Vector3.ZERO, false)
+			var eq: StandardMaterial3D = _m(Color(0.2, 0.95, 0.5), 0.0, 0.4, 1.6)
+			for i in 11:
+				var hh: float = 0.08 + 0.18 * absf(sin(float(i) * 1.3))
+				_add(n, _box(Vector3(0.045, hh, 0.02)), eq, Vector3(-0.36 + float(i) * 0.072, 0.44 + hh / 2.0, -0.37), Vector3.ZERO, false)
+			# perillas, botones y altavoz
+			for i in 3:
+				_add(n, _cyl(0.07, 0.07, 0.06, 12), metal, Vector3(-0.55 + float(i) * 0.2, 0.24, -0.34), Vector3(PI / 2.0, 0, 0), false)
+			for i in 3:
+				_add(n, _box(Vector3(0.1, 0.06, 0.04)), _m(bin_col_a(i), 0.0, 0.5, 0.6), Vector3(0.1 + float(i) * 0.16, 0.24, -0.35), Vector3.ZERO, false)
+			for i in 5:
+				_add(n, _box(Vector3(0.28, 0.015, 0.02)), _m(Color(0.05, 0.05, 0.08), 0.0, 0.5), Vector3(0.52, 0.42 + float(i) * 0.05, -0.36), Vector3.ZERO, false)
+			# mastil y antena parabolica
+			_add(n, _cyl(0.05, 0.06, 1.2), metal, Vector3(0.5, 1.5, 0.15))
+			_add(n, _cyl(0.025, 0.025, 0.7), metal, Vector3(0.5, 1.3, 0.35), Vector3(0.6, 0, 0), false)
+			var dish: MeshInstance3D = _add(n, _sph(0.58, 18, true), _m(Color(0.9, 0.9, 0.95), 0.6, 0.3), Vector3(0.5, 2.15, 0.15), Vector3(-0.9, 0, 0))
+			dish.scale = Vector3(1.0, 0.55, 1.0)
+			_add(n, _cyl(0.015, 0.015, 0.4), metal, Vector3(0.5, 2.35, -0.1), Vector3(-0.9, 0, 0), false)
+			_add(n, _sph(0.045, 8), _m(Color(1.0, 0.3, 0.3), 0.0, 0.4, 1.8), Vector3(0.5, 2.5, -0.2), Vector3.ZERO, false)
+			# antena de latigo y auriculares
+			_add(n, _cyl(0.012, 0.012, 1.0), metal, Vector3(-0.6, 1.4, 0.2), Vector3.ZERO, false)
+			_add(n, _tor(0.07, 0.1), dark, Vector3(-0.62, 0.95, -0.1), Vector3(PI / 2.0, 0, 0), false)
+			_led(n, Vector3(-0.45, 0.9, -0.3), Color(0.2, 1.0, 0.3), Color(0.05, 0.25, 0.08))
+			_led(n, Vector3(-0.3, 0.9, -0.3), Color(1.0, 0.75, 0.2), Color(0.25, 0.18, 0.05))
 		"D":
-			_add(n, _box(Vector3(0.35, 3.2, 0.7)), metal, Vector3(-0.85, 1.6, 0))
-			_add(n, _box(Vector3(0.35, 3.2, 0.7)), metal, Vector3(0.85, 1.6, 0))
-			_add(n, _box(Vector3(2.0, 0.4, 0.7)), metal, Vector3(0, 3.0, 0))
-			_add(n, _box(Vector3(1.4, 2.6, 0.2)), _m(Color(0.16, 0.18, 0.24), 0.6, 0.4), Vector3(0, 1.3, 0))
+			var hazard: StandardMaterial3D = _m(Color(0.95, 0.8, 0.1), 0.0, 0.5, 0.4)
+			_add(n, _box(Vector3(0.4, 3.2, 0.8)), metal, Vector3(-0.9, 1.6, 0))
+			_add(n, _box(Vector3(0.4, 3.2, 0.8)), metal, Vector3(0.9, 1.6, 0))
+			_add(n, _box(Vector3(2.2, 0.45, 0.8)), metal, Vector3(0, 3.0, 0))
+			# hoja de la puerta con ventanilla y rueda de cierre
+			_add(n, _box(Vector3(1.4, 2.6, 0.2)), _m(Color(0.2, 0.22, 0.3), 0.7, 0.35), Vector3(0, 1.3, 0))
+			_add(n, _cyl(0.3, 0.3, 0.06, 20), _m(Color(0.05, 0.1, 0.2), 0.0, 0.2, 0.3), Vector3(0, 1.9, -0.11), Vector3(PI / 2.0, 0, 0), false)
+			_add(n, _tor(0.3, 0.38), metal, Vector3(0, 1.9, -0.12), Vector3(PI / 2.0, 0, 0), false)
+			_add(n, _tor(0.12, 0.2), metal, Vector3(0, 1.05, -0.14), Vector3(PI / 2.0, 0, 0), false)
+			for k in 3:
+				_add(n, _box(Vector3(0.04, 0.34, 0.04)), metal, Vector3(0, 1.05, -0.15), Vector3(0, 0, float(k) * PI / 3.0), false)
 			for i in 4:
-				_add(n, _box(Vector3(1.4, 0.2, 0.22)), _m(Color(0.95, 0.8, 0.1), 0.0, 0.5, 0.4), Vector3(0, 0.4 + float(i) * 0.6, 0.02), Vector3.ZERO, false)
+				_add(n, _box(Vector3(1.4, 0.16, 0.22)), hazard, Vector3(0, 0.3 + float(i) * 0.16, 0.0), Vector3.ZERO, false)
+			# bisagras, remaches y panel de estado
+			for i in 3:
+				_add(n, _cyl(0.07, 0.07, 0.24, 8), dark, Vector3(-0.72, 0.5 + float(i) * 1.0, -0.05), Vector3.ZERO, false)
+			_add(n, _box(Vector3(0.3, 0.5, 0.06)), dark, Vector3(1.0, 1.5, -0.42), Vector3.ZERO, false)
+			_led(n, Vector3(1.0, 1.65, -0.46), Color(0.2, 1.0, 0.4), Color(0.05, 0.3, 0.1))
+			_led(n, Vector3(1.0, 1.5, -0.46), Color(1.0, 0.75, 0.2), Color(0.3, 0.2, 0.05))
+			_led(n, Vector3(1.0, 1.35, -0.46), Color(1.0, 0.25, 0.2), Color(0.3, 0.06, 0.05))
+			_add(n, _box(Vector3(1.4, 0.05, 0.9)), _m(Color(0.3, 0.32, 0.4), 0.5, 0.5), Vector3(0, 0.03, 0), Vector3.ZERO, false)
 			_led(n, Vector3(0, 3.35, 0), Color(0.2, 1.0, 0.4), Color(0.05, 0.3, 0.1))
+			_add(n, _cyl(0.14, 0.14, 0.12, 12), metal, Vector3(0, 3.26, 0), Vector3.ZERO, false)
+
+
+func bin_col_a(i: int) -> Color:
+	return [Color(1.0, 0.4, 0.3), Color(0.3, 0.8, 1.0), Color(1.0, 0.85, 0.3)][i % 3]
 
 
 # ---------- mejoras por nivel (interior) ----------

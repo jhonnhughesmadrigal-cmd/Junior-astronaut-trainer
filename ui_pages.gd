@@ -22,7 +22,6 @@ var dest_text: RichTextLabel
 var diff_text: Label
 var endings_text: RichTextLabel
 var howto_text: RichTextLabel
-var tutorial_overlay: Control
 var learn_overlay: Control
 var learn_title: Label
 var learn_meta: Label
@@ -36,14 +35,6 @@ var quiz_fb: RichTextLabel
 var quiz_next: Button
 var quiz_i: int = 0
 var quiz_done: bool = false
-var tut_title: Label
-var tut_text: RichTextLabel
-var tut_count: Label
-var tut_prev: Button
-var tut_next: Button
-var tut_check: CheckBox
-var tut_page: int = 0
-var tut_first: bool = false
 var options_overlay: Control
 var controls_overlay: Control
 var stats_overlay: Control
@@ -112,7 +103,6 @@ func build_all() -> void:
 	_build_options()
 	_build_controls()
 	_build_stats()
-	_build_tutorial()
 	_build_learn()
 
 
@@ -322,7 +312,6 @@ func _build_page_new() -> void:
 
 func _build_page_howto() -> void:
 	var v: VBoxContainer = _page("howto", Lang.t("Cómo jugar"))
-	v.add_child(_btn(Lang.t("Ver el tutorial del Día 0"), open_tutorial.bind(false), 40.0))
 	howto_text = _rich(380)
 	v.add_child(howto_text)
 
@@ -522,6 +511,16 @@ func _build_options() -> void:
 	c2.toggled.connect(_on_fps)
 	opt["fps"] = c2
 	t1.add_child(c2)
+	var ce := CheckButton.new()
+	ce.text = Lang.t("Modo de lectura fácil (letra grande y frases cortas)")
+	ce.toggled.connect(_on_easy)
+	opt["easy"] = ce
+	t1.add_child(ce)
+	var ct := CheckButton.new()
+	ct.text = Lang.t("Tutorial guiado al empezar cada misión")
+	ct.toggled.connect(_on_tut_opt)
+	opt["tut"] = ct
+	t1.add_child(ct)
 	screen_info = _lbl("", 13, Color(0.6, 0.8, 1.0))
 	t1.add_child(screen_info)
 	# --- gráficos ---
@@ -674,6 +673,8 @@ func sync_options() -> void:
 	(opt["uiscale"] as OptionButton).select(game.ui_scale_idx)
 	(opt["vsync"] as CheckButton).set_pressed_no_signal(game.vsync_on)
 	(opt["fps"] as CheckButton).set_pressed_no_signal(game.show_fps)
+	(opt["easy"] as CheckButton).set_pressed_no_signal(game.easy_read)
+	(opt["tut"] as CheckButton).set_pressed_no_signal(game.show_tutorial)
 	(opt["quality"] as OptionButton).select(game.quality)
 	for k in ["shadow_q", "aa_mode", "fps_idx", "fx_idx", "tex_quality", "sky_idx"]:
 		(opt[k] as OptionButton).select(int(game.get(k)))
@@ -721,6 +722,18 @@ func _on_ui_scale(i: int) -> void:
 func _on_vsync(on: bool) -> void:
 	if not syncing:
 		game._set_vsync(on)
+
+
+func _on_easy(on: bool) -> void:
+	if not syncing:
+		game.easy_read = on
+		game._save_settings()
+
+
+func _on_tut_opt(on: bool) -> void:
+	if not syncing:
+		game.show_tutorial = on
+		game._save_settings()
 
 
 func _on_fps(on: bool) -> void:
@@ -1149,154 +1162,3 @@ func _quiz_pick(i: int) -> void:
 func _quiz_next() -> void:
 	quiz_i = (quiz_i + 1) % QUIZ.size()
 	_quiz_show()
-
-
-# ---------- tutorial (Día 0) ----------
-
-func tutorial_pages() -> Array:
-	var in_menu: bool = game.in_menu
-	var luna: bool = game.location == "Luna"
-	var place: String = Lang.t("la Luna o Marte") if in_menu else (Lang.t("la Luna") if luna else Lang.t("Marte"))
-	var pages: Array = []
-
-	pages.append({"t": Lang.t("Día 0 · La situación"), "b":
-		Lang.t("Eres [b]Wilson[/b], ingeniero y botánico de la base [b]Perseo[/b]. Con otros tres tripulantes (la Dra. YARISBEL, ENOC y PAM) vives en una base en %s.\n\n") % place +
-		Lang.t("La nave de reabastecimiento sufrió una falla y [b]no llegará[/b]. La nave de rescate ya salió, pero tardará [color=#ffe29a]%d días[/color].\n\n") % game.MAX_DAYS +
-		Lang.t("[b]Tu misión:[/b] mantener vivos a los cuatro durante esos %d días, con lo que hay en la base y lo que puedas conseguir afuera.\n\n") % game.MAX_DAYS +
-		Lang.t("[color=#7fd0ff]Este es el Día 0: un repaso rápido antes de empezar. Puedes volver a verlo desde la pausa o desde el menú.[/color]")})
-
-	var env: String = ""
-	if in_menu or luna:
-		env += Lang.t("[b]Luna:[/b] no hay atmósfera que proteja de la radiación ni de los micrometeoritos. Además, la noche lunar dura cerca de 14 días terrestres (dato de NASA), así que la energía solar escasea y la base gasta algo más de energía de noche.\n\n")
-	if in_menu or not luna:
-		env += Lang.t("[b]Marte:[/b] la atmósfera es muy delgada y casi no protege de la radiación. Las tormentas de polvo pueden oscurecer el cielo y reducir la energía de los paneles solares; en el juego aparecen de forma aleatoria.\n\n")
-	pages.append({"t": Lang.t("El problema: sobrevivir aquí"), "b":
-		env +
-		Lang.t("En cualquier mundo, el hábitat tiene que reponer constantemente lo que la tripulación consume: [b]aire, agua, comida y energía[/b], además de protegerla de la radiación y mantener su ánimo.\n\n") +
-		Lang.t("[color=#ffe29a]Nada de esto es gratis: todo se gasta con el tiempo y tú decides en qué invertir cada hora.[/color]")})
-
-	pages.append({"t": Lang.t("Tus 6 recursos"), "b":
-		Lang.t("Mira las barras arriba a la izquierda. Bajan solas con el tiempo:\n\n") +
-		Lang.t("[color=#6ab4ff]■[/color] [b]Oxígeno[/b]: para respirar.\n") +
-		Lang.t("[color=#ffd84a]■[/color] [b]Energía[/b]: mueve todos los sistemas.\n") +
-		Lang.t("[color=#6ad66a]■[/color] [b]Comida[/b] y [color=#4ad8f0]■[/color] [b]Agua[/b]: para la tripulación.\n") +
-		Lang.t("[color=#b070f0]■[/color] [b]Escudo anti-radiación[/b]: si está bajo, también baja la moral.\n") +
-		Lang.t("[color=#ff9a60]■[/color] [b]Moral[/b]: el estado de ánimo del equipo.\n\n") +
-		Lang.t("[color=#ff8a80]Si cualquiera de las seis llega a cero, la misión fracasa[/color] (hay un final distinto para cada una).")})
-
-	var st: String = ""
-	var names: Array = [Lang.t("Soporte vital"), Lang.t("Paneles solares"), Lang.t("Invernadero"), Lang.t("Reciclador de agua"), Lang.t("Generador del escudo"), Lang.t("Zona de descanso")]
-	for i in game.ACTIONS.size():
-		var a: Dictionary = game.ACTIONS[i]
-		var fx: String = ""
-		for k in a["fx"]:
-			var val: int = int(a["fx"][k])
-			fx += "%s%d %s  " % ["+" if val > 0 else "", val, str(game.NAMES[k]).split(" ")[0]]
-		st += "[b]%s[/b] (%s): %s · %s\n" % [names[i], str(a["name"]).to_lower(), game._fmt_dur(int(a["mins"])), fx]
-	pages.append({"t": Lang.t("Cómo mantenerlos: las estaciones"), "b":
-		Lang.t("Dentro de la base hay una estación para cada necesidad. Mira una y presiona [color=#ffe29a]E[/color]:\n\n") + st +
-		Lang.t("\nMientras trabajas, el reloj se acelera (x10) y la tarea se completa sola. Los números son del diseño del juego, no datos científicos.")})
-
-	var tl: String = ""
-	for r in game.RECIPES:
-		var cost: String = ""
-		for k in r["cost"]:
-			cost += "%d %s, " % [int(r["cost"][k]), str(game.MAT_NAMES[k]).to_lower()]
-		tl += "[b]%s[/b] (%s): %s\n" % [r["name"], cost.trim_suffix(", "), r["desc"]]
-	pages.append({"t": Lang.t("Herramientas y exterior"), "b":
-		Lang.t("Los problemas graves se resuelven con herramientas. Se fabrican en el [b]banco de trabajo[/b] (la fabricación va x30 más rápida) con materiales que recoges [b]afuera[/b]: chatarra, polímero y circuitos.\n\n") + tl +
-		Lang.t("\nSal por la [b]esclusa[/b] (puerta del sur) y explora sin límite de pasos, pero el reloj sigue corriendo. Las zonas reales tienen placas con datos curiosos (+3 de moral).")})
-
-	pages.append({"t": Lang.t("Tripulación, reloj y noche"), "b":
-		Lang.t("[b]Habla[/b] con la tripulación (10 min): te avisan cuando un recurso está bajo. [b]PAM[/b] cuida la moral y es quien aplica el botiquín.\n\n") +
-		Lang.t("[b]El reloj corre solo[/b]: 1 hora de juego cada 30 segundos reales. Se pausa en diálogos y menús.\n\n") +
-		Lang.t("[b]Día:[/b] 06:00 a 20:00. [b]Noche:[/b] desde las 20:00; si sigues despierto bajan la energía y la moral. Duerme en la cama (desde las 18:00). A veces hay pesadillas; en difícil, más.\n\n") +
-		Lang.t("Si no duermes te desplomas a las 06:00, y tras 16 h despierto tus acciones rinden menos.")})
-
-	pages.append({"t": Lang.t("Imprevistos"), "b":
-		Lang.t("Cada día puede pasar algo: llamaradas solares, micrometeoritos, fallas de equipo, enfermedades... y también buenas noticias, como una cosecha excelente o un mensaje de la Tierra.\n\n") +
-		Lang.t("[color=#ff8a80][b]Alerta roja:[/b][/color] una [b]brecha[/b] en el casco drena oxígeno hasta que la selles con un [b]kit de parche[/b] en el generador del escudo.\n\n") +
-		Lang.t("Si fabricas [b]reparador[/b] y [b]filtro[/b] antes de tiempo, las fallas eléctricas y las tormentas de polvo harán menos daño.\n\n") +
-		Lang.t("[color=#7fd0ff]Consejo de Wilson: no esperes a la emergencia. Reparte las horas entre todos los recursos y fabrica herramientas desde el día 3.[/color]")})
-
-	pages.append({"t": Lang.t("Controles y objetivo"), "b":
-		Lang.t("[b]Moverte:[/b] W A S D (Shift para correr, [b]Espacio[/b] para saltar afuera). El ratón mira en primera persona.\n") +
-		Lang.t("[b]Usar:[/b] E frente a una estación, persona o puerta.\n") +
-		Lang.t("[b]Cámara:[/b] C cambia de vista. [b]Mapa:[/b] Tab (cuando fabriques el mapa). [b]Mochila:[/b] I. [b]Mano:[/b] Q. [b]Diario:[/b] J.\n") +
-		Lang.t("[b]Menús:[/b] F1 controles, F2 estadísticas, Esc pausa.\n\n") +
-		Lang.t("[b]Objetivo:[/b] llega con vida al día %d. Hay [b]11 finales[/b]: 5 de victoria y 6 de derrota. ¿Los descubrirás todos?\n\n") % game.MAX_DAYS +
-		Lang.t("[color=#ffe29a]¡Buena suerte, Wilson!  Pulsa «Empezar» para comenzar el Día 1.[/color]")})
-	return pages
-
-
-func _build_tutorial() -> void:
-	var made: Array = _overlay(Lang.t("Día 0 · Briefing de misión"), 760.0)
-	tutorial_overlay = made[0]
-	var v: VBoxContainer = made[1]
-	tut_title = _lbl("", 21, Color(1.0, 0.9, 0.6))
-	v.add_child(tut_title)
-	tut_text = _rich(330)
-	v.add_child(tut_text)
-	tut_check = CheckBox.new()
-	tut_check.text = Lang.t("Mostrar este tutorial al empezar cada misión")
-	tut_check.focus_mode = Control.FOCUS_NONE
-	tut_check.toggled.connect(_on_tut_check)
-	v.add_child(tut_check)
-	var hb := HBoxContainer.new()
-	hb.add_theme_constant_override("separation", 10)
-	v.add_child(hb)
-	tut_prev = _btn(Lang.t("Anterior"), _tut_go.bind(-1), 42.0)
-	hb.add_child(tut_prev)
-	tut_count = _lbl("", 15, Color(0.7, 0.8, 0.95))
-	tut_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hb.add_child(tut_count)
-	tut_next = _btn(Lang.t("Siguiente"), _tut_go.bind(1), 42.0)
-	tut_next.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hb.add_child(tut_next)
-	hb.add_child(_btn(Lang.t("Saltar"), close_tutorial, 42.0))
-
-
-func open_tutorial(first: bool) -> void:
-	tut_first = first
-	tut_page = 0
-	tut_check.set_pressed_no_signal(game.show_tutorial)
-	_tut_show()
-	tutorial_overlay.visible = true
-	game._overlay_opened()
-
-
-func _tut_show() -> void:
-	var pages: Array = tutorial_pages()
-	tut_page = clampi(tut_page, 0, pages.size() - 1)
-	tut_title.text = str(pages[tut_page]["t"])
-	tut_text.text = str(pages[tut_page]["b"])
-	tut_count.text = "%d / %d" % [tut_page + 1, pages.size()]
-	tut_prev.disabled = tut_page == 0
-	var last: bool = tut_page == pages.size() - 1
-	tut_next.text = (Lang.t("Empezar el Día 1") if tut_first else Lang.t("Cerrar")) if last else Lang.t("Siguiente")
-	tut_check.visible = last
-
-
-func _tut_go(d: int) -> void:
-	var n: int = tutorial_pages().size()
-	if d > 0 and tut_page >= n - 1:
-		close_tutorial()
-		return
-	tut_page = clampi(tut_page + d, 0, n - 1)
-	_tut_show()
-	game._sfx("next")
-
-
-func _on_tut_check(on: bool) -> void:
-	game.show_tutorial = on
-	game._save_settings()
-
-
-func close_tutorial() -> void:
-	if not tutorial_overlay.visible:
-		return
-	tutorial_overlay.visible = false
-	game._overlay_closed()
-	if tut_first:
-		tut_first = false
-		game._after_tutorial()

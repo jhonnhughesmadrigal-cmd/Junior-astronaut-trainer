@@ -240,3 +240,10 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Cámara dentro de la base limitada al volumen interior (ya no atraviesa techo ni paredes).
 - Diario de exploración (tecla J): lugares visitados/estudiados con día y hora, datos de las placas leídas y estadísticas. Se guarda en la partida.
 - Pruebas: solo con render por software (sin GPU real ni navegadores); textos en inglés sin revisar.
+
+## Alfa 0.9.9 — Tutorial guiado, lectura fácil y logros
+- El texto largo del "Día 0" se reemplazó por un tutorial guiado de 7 pasos que se completa jugando (moverse, cámara, hablar, estación, mochila, diario, esclusa). Se puede saltar con [N] o con el botón; se repite desde la pausa y se activa/desactiva en Opciones.
+- Modo de lectura fácil (Opciones): letra más grande y diálogos partidos en frases cortas (los que llevan formato especial no se parten).
+- 13 logros con insignias dibujadas por código, aviso al desbloquear y panel con [K]. Se guardan en los ajustes (valen para todas las partidas).
+- Rediseño visual de cama, banco de trabajo, radio, puerta de la esclusa y trajes (solo aspecto).
+- Pendiente de verificar: la radio no se vio de frente en las pruebas; sin GPU real ni navegadores; textos en inglés sin revisar.

@@ -471,6 +471,9 @@ var root_margin: MarginContainer
 var ending_art: Control
 var ending_active: bool = false
 var show_tutorial: bool = true
+var easy_read: bool = false
+var ach_done: Dictionary = {}
+var tut: Control = null
 var bars: Dictionary = {}
 var header: Label
 var inv_label: Label
@@ -508,6 +511,7 @@ func _ready() -> void:
 	nasa.connect("updated", _on_nasa_updated)
 	_build_world_map_ui()
 	_build_diary_ui()
+	_build_tutor()
 	vp3d = SubViewport.new()
 	vp3d.size = Vector2i(960, 600)
 	vp3d.own_world_3d = true
@@ -573,6 +577,11 @@ func _load_settings() -> void:
 	cam_mode = clampi(int(cfg.get_value("video", "cam_mode", 0)), 0, 3)
 	mouse_sens = clampf(float(cfg.get_value("game", "mouse_sens", 1.0)), 0.3, 2.0)
 	show_tutorial = bool(cfg.get_value("game", "tutorial", true))
+	easy_read = bool(cfg.get_value("game", "easy_read", false))
+	var ach: Variant = cfg.get_value("game", "achievements", [])
+	if ach is Array:
+		for a in ach:
+			ach_done[str(a)] = true
 	auto_quality = bool(cfg.get_value("video", "auto_quality", true))
 	if str(cfg.get_value("game", "lang", "")) in ["es", "en"]:
 		Lang.code = str(cfg.get_value("game", "lang"))
@@ -608,6 +617,8 @@ func _save_settings() -> void:
 	cfg.set_value("video", "cam_mode", cam_mode)
 	cfg.set_value("game", "mouse_sens", mouse_sens)
 	cfg.set_value("game", "tutorial", show_tutorial)
+	cfg.set_value("game", "easy_read", easy_read)
+	cfg.set_value("game", "achievements", ach_done.keys())
 	cfg.set_value("game", "lang", Lang.code)
 	cfg.set_value("nasa", "key", nasa_key)
 	cfg.set_value("game", "endings", endings_seen)
@@ -1188,7 +1199,7 @@ func _build_pause() -> void:
 	v.add_child(_button(Lang.t("Estadísticas  (F2)"), _on_pause_stats))
 	v.add_child(_button(Lang.t("Opciones"), _on_pause_options))
 	v.add_child(_button(Lang.t("Aprende · datos NASA"), _on_pause_learn))
-	v.add_child(_button(Lang.t("Tutorial (Día 0)"), _on_pause_tutorial))
+	v.add_child(_button(Lang.t("Repetir tutorial guiado"), _on_pause_tutorial))
 	v.add_child(_button(Lang.t("Reglas del juego"), _on_help_pressed))
 	help_box = RichTextLabel.new()
 	help_box.bbcode_enabled = true
@@ -1559,7 +1570,7 @@ func _any_overlay() -> bool:
 		return true
 	if ui == null:
 		return false
-	return ui.options_overlay.visible or ui.controls_overlay.visible or ui.stats_overlay.visible or ui.tutorial_overlay.visible or ui.learn_overlay.visible
+	return ui.options_overlay.visible or ui.controls_overlay.visible or ui.stats_overlay.visible or ui.learn_overlay.visible
 
 
 func _overlay_opened() -> void:
@@ -1581,8 +1592,6 @@ func _close_top_overlay() -> void:
 		ui.close_stats()
 	elif ui.learn_overlay.visible:
 		ui.close_learn()
-	elif ui.tutorial_overlay.visible:
-		ui.close_tutorial()
 	elif pause_overlay.visible:
 		_close_pause()
 
@@ -1784,15 +1793,11 @@ func _new_game(loc: String) -> void:
 		nasa.call("fetch", false)
 	_refresh()
 	_save_game()
+	_story_for_day(1)
 	if show_tutorial:
-		ui.open_tutorial(true)
+		tut.call("start")
 	else:
-		_story_for_day(1)
-
-
-func _after_tutorial() -> void:
-	if playing and not story_seen.has(1):
-		_story_for_day(1)
+		tut.call("skip_silent")
 
 
 func _on_nasa_updated() -> void:
@@ -1800,12 +1805,20 @@ func _on_nasa_updated() -> void:
 		_log("[color=cyan]%s[/color]" % str(nasa.call("daily_line")))
 
 
+func _build_tutor() -> void:
+	tut = Control.new()
+	tut.set_script(load("res://tutor.gd"))
+	tut.set("game", self)
+	add_child(tut)
+
+
 func _on_pause_learn() -> void:
 	ui.open_learn()
 
 
 func _on_pause_tutorial() -> void:
-	ui.open_tutorial(false)
+	_close_pause()
+	tut.call("start")
 
 
 func _hud_style(a: float = 0.62) -> StyleBoxFlat:
@@ -1955,6 +1968,8 @@ func _process(delta: float) -> void:
 			vp3d.render_target_update_mode = want as SubViewport.UpdateMode
 	if playing:
 		_update_enoc(delta)
+	if tut != null:
+		tut.call("tick", delta)
 	flash_t = maxf(flash_t - delta * 1.5, 0.0)
 	shake_t = maxf(shake_t - delta * 1.2, 0.0)
 	zone_banner_t = maxf(zone_banner_t - delta, 0.0)
@@ -3703,8 +3718,38 @@ func _l(who: String, text: String) -> Dictionary:
 	return {"who": who, "text": text}
 
 
+func _easy_split(lines: Array) -> Array:
+	# lectura facil: frases cortas, una idea por pantalla
+	var out: Array = []
+	var re := RegEx.new()
+	re.compile("(?<=[.!?])\\s+")
+	for ln in lines:
+		if ln.has("choice") or not ln.has("text") or str(ln["text"]).contains("["):
+			out.append(ln)
+			continue
+		var txt: String = str(ln["text"]).replace("Dra. ", "Dra.\u00a0").replace("Dr. ", "Dr.\u00a0")
+		var parts: PackedStringArray = re.sub(txt, "\u0001", true).split("\u0001")
+		var cur: String = ""
+		for p in parts:
+			if cur != "" and cur.length() + p.length() > 85:
+				var d: Dictionary = ln.duplicate()
+				d["text"] = cur.strip_edges().replace("\u00a0", " ")
+				out.append(d)
+				cur = ""
+			cur += p + " "
+		if cur.strip_edges() != "":
+			var d2: Dictionary = ln.duplicate()
+			d2["text"] = cur.strip_edges().replace("\u00a0", " ")
+			out.append(d2)
+	return out
+
+
 func _start_dialog(lines: Array, after: Callable = Callable()) -> void:
-	dlg.offset_top = -190.0
+	dlg.offset_top = -190.0 if not easy_read else -230.0
+	dlg_text.add_theme_font_size_override("normal_font_size", 26 if easy_read else 18)
+	dlg_name.add_theme_font_size_override("font_size", 26 if easy_read else 20)
+	if easy_read:
+		lines = _easy_split(lines)
 	dlg_queue = lines.duplicate()
 	dlg_after = after
 	mode = 1
@@ -4641,6 +4686,9 @@ func _input(event: InputEvent) -> void:
 		_log(Lang.t("Vista %s.") % ("3D" if view3d_on else "2D"))
 		get_viewport().set_input_as_handled()
 		return
+	if playing and tut != null and bool(tut.call("handle_skip_key", k)):
+		get_viewport().set_input_as_handled()
+		return
 	if not playing:
 		if in_menu and ui != null and k.keycode == KEY_ESCAPE and not k.echo and ui.cur_page != "main":
 			ui.show_page("main")
@@ -4672,6 +4720,9 @@ func _input(event: InputEvent) -> void:
 		11:
 			if not k.echo:
 				_input_diary(k)
+		12:
+			if not k.echo:
+				tut.call("handle_key", k)
 		8:
 			if not k.echo:
 				_input_topinfo(k)
@@ -4703,6 +4754,9 @@ func _input_play(k: InputEventKey) -> void:
 		KEY_J:
 			if not k.echo:
 				_open_diary()
+		KEY_K:
+			if not k.echo:
+				tut.call("open_panel")
 		KEY_ESCAPE:
 			if not k.echo:
 				_open_pause(true)
@@ -4757,6 +4811,7 @@ func _interact() -> void:
 
 func _use_station(ch: String) -> void:
 	var st: Dictionary = stations[ch]
+	tut.call("event", "station")
 	if not build.is_empty() and str(build["ch"]) == ch:
 		_sfx("error")
 		_log(Lang.t("[color=orange]%s está en obra: ENOC está trabajando. Espera a que termine.[/color]") % _station_name(ch))
