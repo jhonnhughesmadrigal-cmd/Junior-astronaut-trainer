@@ -44,9 +44,11 @@ var py_ok: bool = false
 var yaw_cam: float = 0.0
 var menu_mode: bool = false
 var ceiling: Node3D
+var int_mats: Array = []   # [material, tipo] del interior (suelo/pared/techo) para cambiar la calidad de textura
 var act_u: float = 0.0
 var ext_mats: Array = []   # [material, tipo de textura]
 const ExtTex = preload("res://ext_tex.gd")
+const IntTex = preload("res://int_tex.gd")
 var craters: Array = []                 # Vector4(x, y, radio en casillas, profundidad en m)
 var crater_hf: PackedFloat32Array = PackedFloat32Array()
 var terrain_mat: StandardMaterial3D = null
@@ -243,6 +245,7 @@ func apply_textures() -> void:
 	# nivel 0: colores lisos | 1: textura 128 px | 2: textura 256 px + relieve (normal map)
 	var lv: int = clampi(int(game.tex_quality), 0, 2)
 	_apply_terrain_tex()
+	_apply_interior_tex()
 	var scales: Dictionary = {"rock": 0.55, "ore": 1.3, "ice": 1.1, "crate": 0.83}
 	for e in ext_mats:
 		var m: StandardMaterial3D = e[0]
@@ -265,6 +268,42 @@ func apply_textures() -> void:
 		else:
 			m.normal_enabled = false
 			m.normal_texture = null
+
+
+func _apply_interior_tex() -> void:
+	var lv: int = clampi(int(game.tex_quality), 0, 2)
+	var moon: bool = game.location == "Luna"
+	for e in int_mats:
+		var m: StandardMaterial3D = e[0]
+		var kind: String = str(e[1])
+		if lv == 0:
+			m.albedo_texture = null
+			m.normal_enabled = false
+			m.normal_texture = null
+			continue
+		var tx: Array = IntTex.make(kind, moon, 128 if lv == 1 else 512, lv == 2)
+		m.albedo_texture = tx[0]
+		m.albedo_color = Color(1, 1, 1)
+		m.uv1_triplanar = true
+		m.uv1_world_triplanar = true
+		m.uv1_scale = Vector3(0.25, 0.25, 0.25)
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		if lv == 2 and tx[1] != null:
+			m.normal_enabled = true
+			m.normal_texture = tx[1]
+			m.normal_scale = 1.0
+		else:
+			m.normal_enabled = false
+			m.normal_texture = null
+
+
+func _int_mat(kind: String, flat: Color, rough: float, metal: float) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = flat
+	m.roughness = rough
+	m.metallic = metal
+	int_mats.append([m, kind])
+	return m
 
 
 func _make_mm(parent: Node3D, mesh: Mesh, mat: Material, count: int, shadow: bool = true) -> MultiMeshInstance3D:
@@ -1097,12 +1136,10 @@ func _build_interior() -> void:
 	interior = Node3D.new()
 	add_child(interior)
 	var moon: bool = game.location == "Luna"
-	var floor_mat := StandardMaterial3D.new()
-	floor_mat.albedo_texture = _floor_tex(moon)
-	floor_mat.roughness = 0.5
-	floor_mat.metallic = 0.3
+	int_mats.clear()
+	var floor_mat: StandardMaterial3D = _int_mat("floor", Color(0.46, 0.48, 0.56) if moon else Color(0.56, 0.37, 0.31), 0.42, 0.25)
 	_add(interior, _box(Vector3(16.0 * T3, 0.2, 10.0 * T3)), floor_mat, Vector3(8.0 * T3, -0.1, 5.0 * T3))
-	var wall: StandardMaterial3D = _m(Color(0.26, 0.29, 0.38), 0.5, 0.5)
+	var wall: StandardMaterial3D = _int_mat("wall", Color(0.26, 0.29, 0.38), 0.55, 0.35)
 	var trim: StandardMaterial3D = _m(Color(0.5, 0.56, 0.68), 0.6, 0.35)
 	var map: Array = game.MAP
 	for y in map.size():
@@ -1137,7 +1174,7 @@ func _build_ceiling() -> void:
 	ceiling = Node3D.new()
 	ceiling.visible = false
 	interior.add_child(ceiling)
-	_add(ceiling, _box(Vector3(16.0 * T3 + 0.2, 0.2, 10.0 * T3 + 0.2)), _m(Color(0.2, 0.22, 0.3), 0.5, 0.6), Vector3(16.0, 3.4, 10.0), Vector3.ZERO, false)
+	_add(ceiling, _box(Vector3(16.0 * T3 + 0.2, 0.2, 10.0 * T3 + 0.2)), _int_mat("ceiling", Color(0.2, 0.22, 0.3), 0.6, 0.4), Vector3(16.0, 3.4, 10.0), Vector3.ZERO, false)
 	var lm: StandardMaterial3D = _m(Color(1.0, 0.97, 0.88), 0.0, 0.5, 1.8)
 	for lx in [5.0, 13.0, 21.0, 29.0]:
 		for lz in [6.0, 14.0]:
@@ -2470,8 +2507,13 @@ func _update_camera(delta: float) -> void:
 			cp = focus + off
 			look = focus + Vector3(0.0, 1.0, 0.0)
 	if not game.outside and (mode == 1 or mode == 2):
-		cp.x = clampf(cp.x, 1.0, 31.0)
-		cp.z = clampf(cp.z, 1.0, 19.0)
+		# dentro de la nave la camara nunca sale del volumen interior (paredes en x/z y techo en y)
+		cp.x = clampf(cp.x, 2.3, 29.7)
+		cp.z = clampf(cp.z, 2.3, 17.7)
+		cp.y = clampf(cp.y, 0.4, 3.05)
+		if mode == 2:
+			# si el recorte la acerca al jugador, subimos el punto de mira para no mirar al suelo
+			look.y = maxf(look.y, 0.9)
 	if game.outside and mode != 1:
 		cp.y = maxf(cp.y, ground_y(cp.x / T3, cp.z / T3) + (1.4 if mode == 2 else 3.0))
 	if game.shake_t > 0.0:

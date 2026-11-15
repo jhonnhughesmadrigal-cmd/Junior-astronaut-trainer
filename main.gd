@@ -363,6 +363,9 @@ var zone_ground: Array = []
 var zone_rock: Array = []
 var zones_seen: Dictionary = {}
 var studied: Dictionary = {}
+var diary: Dictionary = {}   # zona -> {"seen": [dia, minuto], "study": [dia, minuto]}
+var diary_ui: Control = null
+var diary_text: RichTextLabel = null
 var learned: Dictionary = {} # materiales ya explicados (primera vez)
 var cur_zone: int = -1
 var zone_banner_t: float = 0.0
@@ -504,6 +507,7 @@ func _ready() -> void:
 	add_child(nasa)
 	nasa.connect("updated", _on_nasa_updated)
 	_build_world_map_ui()
+	_build_diary_ui()
 	vp3d = SubViewport.new()
 	vp3d.size = Vector2i(960, 600)
 	vp3d.own_world_3d = true
@@ -1739,6 +1743,7 @@ func _new_game(loc: String) -> void:
 	shake_t = 0.0
 	zones_seen.clear()
 	studied.clear()
+	diary.clear()
 	learned.clear()
 	cur_zone = -1
 	zone_banner_t = 0.0
@@ -2243,6 +2248,7 @@ func _check_zone() -> void:
 	zone_banner_t = 4.0
 	if not zones_seen.has(zid):
 		zones_seen[zid] = true
+		_diary_note(zid, "seen")
 		_log(Lang.t("[color=cyan]Nueva zona: %s.[/color]") % z["name"])
 		_sfx("next", -6.0)
 
@@ -2265,6 +2271,7 @@ func _read_landmark(np: Vector2i) -> void:
 func _landmark_after(zid: int, first: bool) -> void:
 	if first:
 		studied[zid] = true
+		_diary_note(zid, "study")
 		stats["landmarks"] += 1
 		_add("morale", 3)
 		var zs: Array = _zones()
@@ -2273,6 +2280,133 @@ func _landmark_after(zid: int, first: bool) -> void:
 		_sfx("good", -8.0)
 	_refresh()
 	_start_task(15.0, TASK_SPEED)
+
+
+# ---------- diario de exploracion (J) ----------
+
+func _diary_note(zid: int, what: String) -> void:
+	var e: Dictionary = diary.get(zid, {})
+	if not e.has(what):
+		e[what] = [day, clock]
+	diary[zid] = e
+
+
+func _diary_when(e: Dictionary, what: String) -> String:
+	if not e.has(what):
+		return ""
+	var a: Array = e[what]
+	var ck: int = int(a[1])
+	return Lang.t("día %d, %02d:%02d") % [int(a[0]), floori(float(ck) / 60.0), ck % 60]
+
+
+func _build_diary_ui() -> void:
+	diary_ui = Control.new()
+	diary_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
+	diary_ui.visible = false
+	diary_ui.z_index = 57
+	add_child(diary_ui)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.8)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	diary_ui.add_child(dim)
+	var cc := CenterContainer.new()
+	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	diary_ui.add_child(cc)
+	var panel := PanelContainer.new()
+	var ps: StyleBoxFlat = _panel_style()
+	ps.bg_color = Color(0.93, 0.88, 0.74)
+	ps.border_color = Color(0.45, 0.3, 0.15)
+	ps.set_border_width_all(4)
+	panel.add_theme_stylebox_override("panel", ps)
+	cc.add_child(panel)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 6)
+	panel.add_child(vb)
+	var title: Label = _label(Lang.t("DIARIO DE EXPLORACIÓN"), 22)
+	title.add_theme_color_override("font_color", Color(0.3, 0.17, 0.07))
+	vb.add_child(title)
+	diary_text = RichTextLabel.new()
+	diary_text.bbcode_enabled = true
+	diary_text.scroll_active = true
+	diary_text.add_theme_font_size_override("normal_font_size", 15)
+	diary_text.add_theme_font_size_override("bold_font_size", 15)
+	diary_text.add_theme_color_override("default_color", Color(0.18, 0.12, 0.08))
+	diary_text.custom_minimum_size = Vector2(700, 440)
+	vb.add_child(diary_text)
+	var hint: Label = _label(Lang.t("[J] o [Esc]: cerrar · [↑][↓]: desplazar"), 13)
+	hint.add_theme_color_override("font_color", Color(0.4, 0.28, 0.15))
+	vb.add_child(hint)
+
+
+func _diary_content() -> String:
+	var zs: Array = _zones()
+	var t: String = Lang.t("[b]Día %d de %d[/b] · %s · %s\n") % [day, MAX_DAYS, Lang.loc(location), _clock_text()]
+	var seen_n: int = 0
+	var study_n: int = 0
+	for zi in range(1, zs.size()):
+		if zones_seen.has(zi):
+			seen_n += 1
+		if studied.has(zi):
+			study_n += 1
+	t += Lang.t("Lugares visitados: %d de %d · Lugares estudiados: %d de %d\n\n") % [seen_n, zs.size() - 1, study_n, zs.size() - 1]
+	for zi in range(1, zs.size()):
+		var z: Dictionary = zs[zi]
+		var e: Dictionary = diary.get(zi, {})
+		if not zones_seen.has(zi):
+			t += "[color=#8a7a66][b]?????[/b] — %s[/color]\n\n" % Lang.t("lugar por descubrir")
+			continue
+		t += "[b]%s[/b]\n" % z["name"]
+		t += "[i]%s[/i]\n" % z["desc"]
+		var w: String = _diary_when(e, "seen")
+		if w != "":
+			t += Lang.t("• Llegaste el %s.\n") % w
+		else:
+			t += Lang.t("• Visitado (anotado antes del diario).\n")
+		if studied.has(zi):
+			var ws: String = _diary_when(e, "study")
+			if ws != "":
+				t += Lang.t("• Estudiaste la placa el %s:\n") % ws
+			else:
+				t += Lang.t("• Estudiaste la placa:\n")
+			for f in z["facts"]:
+				t += "   – %s\n" % f
+		else:
+			t += Lang.t("• Aún no has leído su placa (acércate y pulsa E).\n")
+		t += "\n"
+	t += Lang.t("[b]Tus números[/b]\n")
+	t += Lang.t("• Casillas recorridas: %d\n") % int(stats.get("distance", 0.0))
+	t += Lang.t("• Expediciones fuera de la base: %d\n") % int(stats.get("expeditions", 0))
+	t += Lang.t("• Materiales recogidos: %d\n") % int(stats.get("collected", 0))
+	t += Lang.t("• Herramientas fabricadas: %d\n") % int(stats.get("tools_built", 0))
+	t += Lang.t("• Mejoras terminadas: %d\n") % int(stats.get("upgrades", 0))
+	t += Lang.t("• Conversaciones: %d\n") % int(stats.get("talks", 0))
+	return t
+
+
+func _open_diary() -> void:
+	if mode != 0 or airborne or fall_t >= 0.0:
+		return
+	mode = 11
+	diary_text.text = _diary_content()
+	diary_text.scroll_to_line(0)
+	diary_ui.visible = true
+	_sfx("next", -6.0)
+
+
+func _close_diary() -> void:
+	diary_ui.visible = false
+	if mode == 11:
+		mode = 0
+
+
+func _input_diary(k: InputEventKey) -> void:
+	match k.keycode:
+		KEY_J, KEY_ESCAPE:
+			_close_diary()
+		KEY_DOWN:
+			diary_text.get_v_scroll_bar().value += 60.0
+		KEY_UP:
+			diary_text.get_v_scroll_bar().value -= 60.0
 
 
 # ---------- mapa del mundo (Tab) ----------
@@ -4512,6 +4646,9 @@ func _input(event: InputEvent) -> void:
 		10:
 			if not k.echo:
 				pack_ui.call("handle_key", k)
+		11:
+			if not k.echo:
+				_input_diary(k)
 		8:
 			if not k.echo:
 				_input_topinfo(k)
@@ -4540,6 +4677,9 @@ func _input_play(k: InputEventKey) -> void:
 		KEY_TAB:
 			if not k.echo:
 				_open_world_map()
+		KEY_J:
+			if not k.echo:
+				_open_diary()
 		KEY_ESCAPE:
 			if not k.echo:
 				_open_pause(true)
@@ -4644,7 +4784,7 @@ func _save_game() -> bool:
 		"st_lvl": st_lvl, "build": build, "pack_lvl": pack_lvl, "suit_lvl_o2": suit_lvl_o2, "suit_lvl_st": suit_lvl_st, "suit_o2": suit_o2, "stamina": stamina, "held": held,
 		"shown_facts": shown_facts.keys(), "talked_today": talked_today.keys(),
 		"story_seen": story_seen.keys(), "depleted": depleted, "stats": stats,
-		"zones_seen": zones_seen.keys(), "studied": studied.keys(), "learned": learned.keys(), "explored": Marshalls.raw_to_base64(explored), "history": history
+		"zones_seen": zones_seen.keys(), "studied": studied.keys(), "diary": diary, "learned": learned.keys(), "explored": Marshalls.raw_to_base64(explored), "history": history
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
@@ -4745,6 +4885,18 @@ func _load_game() -> bool:
 	studied = {}
 	for k in d.get("studied", []):
 		studied[int(k)] = true
+	diary = {}
+	var dd: Variant = d.get("diary", {})
+	if typeof(dd) == TYPE_DICTIONARY:
+		for k in (dd as Dictionary).keys():
+			var e: Variant = (dd as Dictionary)[k]
+			if typeof(e) == TYPE_DICTIONARY:
+				var ne: Dictionary = {}
+				for kk in (e as Dictionary).keys():
+					var arr: Variant = (e as Dictionary)[kk]
+					if typeof(arr) == TYPE_ARRAY and (arr as Array).size() == 2:
+						ne[str(kk)] = [int(arr[0]), int(arr[1])]
+				diary[int(k)] = ne
 	var ex: Variant = d.get("explored", "")
 	if typeof(ex) == TYPE_STRING and str(ex) != "":
 		var raw: PackedByteArray = Marshalls.base64_to_raw(str(ex))

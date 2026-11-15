@@ -234,3 +234,9 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Obra en segundo plano a cargo de **ENOC**: 60 / 120 / 180 minutos de juego (`_build_mins`). Solo una obra a la vez; la estación no se puede usar mientras está en obra; el tiempo avanza también durmiendo. Se guarda y se carga con la partida.
 - Visual: cada nivel cambia el modelo de la estación en 3D y 2D (tanques extra, paneles, lámparas, pilonas, anillos, etc.), y mientras dura la obra se ve un andamio amarillo y a ENOC martillando con chispas.
 - Exterior de la base rediseñado y más grande (10 x 4 casillas en vez de 6 x 3, con módulos laterales, cúpula, marquesina en la esclusa y balizas) que **crece con las mejoras**: más paneles solares, tanques de oxígeno, invernadero en el techo, torre de agua, pilonas y anillo del escudo, y mirador.
+
+## Alfa 0.9.8 — Interior, cámara y Diario
+- Interior con texturas procedurales (int_tex.gd) según la calidad de texturas: 0 = colores lisos, 1 = 128 px, 2 = 512 px + relieve (normal map). Suelo (placas de 2 m con remaches), paredes (paneles, zócalo con franjas, rejillas, luces) y techo (placas de 1 m).
+- Cámara dentro de la base limitada al volumen interior (ya no atraviesa techo ni paredes).
+- Diario de exploración (tecla J): lugares visitados/estudiados con día y hora, datos de las placas leídas y estadísticas. Se guarda en la partida.
+- Pruebas: solo con render por software (sin GPU real ni navegadores); textos en inglés sin revisar.

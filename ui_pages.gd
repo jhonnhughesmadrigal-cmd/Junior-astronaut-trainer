@@ -1222,7 +1222,7 @@ func tutorial_pages() -> Array:
 	pages.append({"t": Lang.t("Controles y objetivo"), "b":
 		Lang.t("[b]Moverte:[/b] W A S D (Shift para correr, [b]Espacio[/b] para saltar afuera). El ratón mira en primera persona.\n") +
 		Lang.t("[b]Usar:[/b] E frente a una estación, persona o puerta.\n") +
-		Lang.t("[b]Cámara:[/b] C cambia de vista. [b]Mapa:[/b] Tab (cuando fabriques el mapa). [b]Mochila:[/b] I. [b]Mano:[/b] Q.\n") +
+		Lang.t("[b]Cámara:[/b] C cambia de vista. [b]Mapa:[/b] Tab (cuando fabriques el mapa). [b]Mochila:[/b] I. [b]Mano:[/b] Q. [b]Diario:[/b] J.\n") +
 		Lang.t("[b]Menús:[/b] F1 controles, F2 estadísticas, Esc pausa.\n\n") +
 		Lang.t("[b]Objetivo:[/b] llega con vida al día %d. Hay [b]11 finales[/b]: 5 de victoria y 6 de derrota. ¿Los descubrirás todos?\n\n") % game.MAX_DAYS +
 		Lang.t("[color=#ffe29a]¡Buena suerte, Wilson!  Pulsa «Empezar» para comenzar el Día 1.[/color]")})
