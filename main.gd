@@ -408,7 +408,7 @@ var haze_on: bool = true
 var bright: float = 1.0       # 0.8 - 1.2
 const FPS_CAPS: Array = [0, 30, 60, 120]
 const FX_FACTOR: Array = [0.3, 0.6, 1.0]
-const STAR_COUNTS: Array = [120, 240, 380]
+const STAR_COUNTS: Array = [350, 800, 1500]
 const PRESETS: Array = [
 	{"shadow_q": 0, "aa_mode": 0, "render_scale": 0.6, "fps_idx": 0, "fx_idx": 0, "sky_idx": 0, "glow_on": false, "haze_on": false, "tex_quality": 0},
 	{"shadow_q": 1, "aa_mode": 1, "render_scale": 0.85, "fps_idx": 0, "fx_idx": 1, "sky_idx": 1, "glow_on": false, "haze_on": true, "tex_quality": 1},

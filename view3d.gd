@@ -51,6 +51,7 @@ var act_u: float = 0.0
 var ext_mats: Array = []   # [material, tipo de textura]
 const ExtTex = preload("res://ext_tex.gd")
 const IntTex = preload("res://int_tex.gd")
+const SpaceTex = preload("res://space_tex.gd")
 var craters: Array = []                 # Vector4(x, y, radio en casillas, profundidad en m)
 var crater_hf: PackedFloat32Array = PackedFloat32Array()
 var terrain_mat: StandardMaterial3D = null
@@ -453,28 +454,70 @@ func _build_sky() -> void:
 	add_child(skydome)
 	var g := RandomNumberGenerator.new()
 	g.seed = 777
-	var count: int = 380
+	# Via Lactea: esfera interior con textura aditiva
+	var mw := SphereMesh.new()
+	mw.radius = 440.0
+	mw.height = 880.0
+	mw.radial_segments = 40
+	mw.rings = 20
+	var mwm := StandardMaterial3D.new()
+	mwm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mwm.cull_mode = BaseMaterial3D.CULL_FRONT
+	mwm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mwm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mwm.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	mwm.albedo_texture = SpaceTex.milky_way(256)
+	mwm.render_priority = -5
+	var mwi: MeshInstance3D = _add(skydome, mw, mwm, Vector3.ZERO, Vector3.ZERO, false)
+	mwi.name = "ViaLactea"
+	# estrellas: destellos suaves con colores y tamanos variados
+	var count: int = int(game.STAR_COUNTS[2])
 	var star_mat := StandardMaterial3D.new()
 	star_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	star_mat.vertex_color_use_as_albedo = true
-	var mmi: MultiMeshInstance3D = _make_mm(skydome, _sph(1.0, 4), star_mat, count, false)
+	star_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	star_mat.billboard_keep_scale = true
+	star_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	star_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	star_mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	star_mat.albedo_texture = SpaceTex.glow_sprite(32, 0.18)
+	star_mat.render_priority = -4
+	var qm := QuadMesh.new()
+	qm.size = Vector2(1.0, 1.0)
+	var mmi: MultiMeshInstance3D = _make_mm(skydome, qm, star_mat, count, false)
 	for i in count:
-		var v := Vector3(g.randf_range(-1.0, 1.0), g.randf_range(0.02, 1.0), g.randf_range(-1.0, 1.0)).normalized()
-		var s: float = g.randf_range(0.7, 1.7)
+		var v := Vector3(g.randf_range(-1.0, 1.0), g.randf_range(-0.05, 1.0), g.randf_range(-1.0, 1.0)).normalized()
+		# unas pocas estrellas brillantes y muchas debiles
+		var mag: float = pow(g.randf(), 3.2)
+		var s: float = 2.2 + mag * 9.0
 		mmi.multimesh.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(s, s, s)), v * 420.0))
-		var b: float = g.randf_range(0.5, 1.0)
-		mmi.multimesh.set_instance_color(i, Color(b, b, b * 1.05, 1.0))
-	if game.location == "Luna":
-		var q := QuadMesh.new()
-		q.size = Vector2(46.0, 46.0)
-		var em := StandardMaterial3D.new()
-		em.albedo_texture = _earth_tex()
-		em.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		em.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		em.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		var earth := _add(skydome, q, em, Vector3(160.0, 150.0, -330.0), Vector3.ZERO, false)
-		earth.name = "Tierra"
+		var col: Color = SpaceTex.star_color(g)
+		var b: float = 0.35 + mag * 0.9 + g.randf() * 0.25
+		mmi.multimesh.set_instance_color(i, Color(col.r * b, col.g * b, col.b * b, 1.0))
 	mmi.name = "Estrellas"
+	if game.location == "Luna":
+		# la Tierra: esfera con continentes, nubes, fase, brillo del oceano y atmosfera
+		var epos: Vector3 = Vector3(160.0, 150.0, -330.0)
+		var hq := QuadMesh.new()
+		hq.size = Vector2(124.0, 124.0)
+		var hm := StandardMaterial3D.new()
+		hm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		hm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		hm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		hm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		hm.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+		hm.albedo_texture = SpaceTex.halo_sprite(128)
+		hm.render_priority = -3
+		var halo := _add(skydome, hq, hm, epos, Vector3.ZERO, false)
+		halo.name = "TierraHalo"
+		var es := SphereMesh.new()
+		es.radius = 36.0
+		es.height = 72.0
+		es.radial_segments = 48
+		es.rings = 24
+		var earth := _add(skydome, es, SpaceTex.earth_material(), epos, Vector3(0.0, 0.0, 0.0), false)
+		earth.rotation = Vector3(0.0, 2.2, 0.0)
+		earth.name = "Tierra"
 
 
 func _earth_tex() -> ImageTexture:
@@ -1178,30 +1221,11 @@ func _floor_tex(moon: bool) -> ImageTexture:
 
 
 func _window_tex(moon: bool, x: int) -> ImageTexture:
-	var n: int = 64
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
-	for y in n:
-		for xx in n:
-			var c: Color
-			if moon:
-				c = Color(0.01, 0.01, 0.04)
-				if game._hf(xx, y, 40 + x) > 0.985:
-					c = Color(1, 1, 1)
-				if y > 52:
-					c = Color(0.5, 0.5, 0.54)
-			else:
-				c = Color(0.85, 0.55, 0.4).lerp(Color(0.95, 0.7, 0.5), float(y) / 64.0)
-				if y > 50:
-					c = Color(0.55, 0.28, 0.2)
-			img.set_pixel(xx, y, c)
-	if moon and x == 7:
-		for y in n:
-			for xx in n:
-				var dx: float = float(xx - 40)
-				var dy: float = float(y - 22)
-				if dx * dx + dy * dy < 100.0:
-					img.set_pixel(xx, y, Color(0.2, 0.45, 0.9) if dx * 0.3 + dy * 0.2 > -1.5 else Color(0.3, 0.7, 0.4))
-	return ImageTexture.create_from_image(img)
+	var lv: int = clampi(int(game.tex_quality), 0, 2)
+	var w: int = 128 if lv < 2 else 192
+	var img: Image = SpaceTex.window_image(moon, x, w, int(float(w) * 1.07))
+	var t: ImageTexture = ImageTexture.create_from_image(img)
+	return t
 
 
 func _panel_tex() -> ImageTexture:

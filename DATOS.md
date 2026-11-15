@@ -252,3 +252,9 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Luz de borde suave en la tela, trama de tela con costuras acolchadas (textura según calidad: lisa / 128 px / 256 px + relieve), juntas acolchadas en codos y rodillas, botas más redondeadas, mochila y antena como piezas móviles.
 - Animación: suavizado independiente de los FPS, balanceo de cadera, giro del torso contra la cadera, la cabeza compensa la inclinación y la mochila y la antena se mueven con retraso.
 - No se importó ningún pack de animaciones externo (ver notas de la sesión).
+
+## Alfa 0.9.11 — Espacio
+- Estrellas: destellos suaves con colores y tamaños variados (hasta 1500 según la calidad del cielo) y una Vía Láctea con polvo oscuro, todo generado por código (space_tex.gd).
+- Tierra: esfera con continentes, nubes que se mueven, fase de luz, brillo del océano, atmósfera, luces de ciudades en la parte oscura y halo azul. Solo se ve desde la Luna.
+- Ventanas de la base: cielo con estrellas, Vía Láctea, horizonte con colinas y la Tierra en una ventana (imagen fija, no cambia con la hora).
+- Los continentes son inventados (ruido procedural), no el mapa real de la Tierra. Probado solo con render por software.
