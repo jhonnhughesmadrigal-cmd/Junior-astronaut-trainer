@@ -31,6 +31,8 @@ var heights: PackedFloat32Array = PackedFloat32Array()
 var node_data: Array = []
 var zs: Array = []
 var mats: Dictionary = {}
+var suit_mats: Array = []   # materiales de tela de los trajes [material, "fabric"]
+var anim_k: float = 0.22
 var zoom: float = 1.0
 var cam_focus: Vector3 = Vector3.ZERO
 var yaw_player: float = 0.0
@@ -188,6 +190,22 @@ func _sm(c: Color, metal: float = 0.0, rough: float = 0.8, emit: float = 0.0) ->
 		return mats[key]
 	var m: StandardMaterial3D = _m(c, metal, rough, emit).duplicate() as StandardMaterial3D
 	m.disable_receive_shadows = true
+	if metal < 0.5 and emit <= 0.0:
+		# luz de borde suave: el traje se ve menos plano y duro
+		m.rim_enabled = true
+		m.rim = 0.35
+		m.rim_tint = 0.55
+	mats[key] = m
+	return m
+
+
+func _fabric(c: Color, rough: float = 0.65) -> StandardMaterial3D:
+	# tela del traje: igual que _sm pero con trama (textura segun la calidad)
+	var key: String = "F%s_%.2f" % [c.to_html(true), rough]
+	if mats.has(key):
+		return mats[key]
+	var m: StandardMaterial3D = _sm(c, 0.0, rough).duplicate() as StandardMaterial3D
+	suit_mats.append([m, "fabric"])
 	mats[key] = m
 	return m
 
@@ -246,6 +264,7 @@ func apply_textures() -> void:
 	var lv: int = clampi(int(game.tex_quality), 0, 2)
 	_apply_terrain_tex()
 	_apply_interior_tex()
+	_apply_suit_tex()
 	var scales: Dictionary = {"rock": 0.55, "ore": 1.3, "ice": 1.1, "crate": 0.83}
 	for e in ext_mats:
 		var m: StandardMaterial3D = e[0]
@@ -265,6 +284,29 @@ func apply_textures() -> void:
 			m.normal_enabled = true
 			m.normal_texture = tx[1]
 			m.normal_scale = 1.1
+		else:
+			m.normal_enabled = false
+			m.normal_texture = null
+
+
+func _apply_suit_tex() -> void:
+	var lv: int = clampi(int(game.tex_quality), 0, 2)
+	for e in suit_mats:
+		var m: StandardMaterial3D = e[0]
+		if lv == 0:
+			m.albedo_texture = null
+			m.normal_enabled = false
+			m.normal_texture = null
+			continue
+		var tx: Array = IntTex.make("fabric", false, 128 if lv == 1 else 256, lv == 2)
+		m.albedo_texture = tx[0]
+		m.uv1_triplanar = true
+		m.uv1_scale = Vector3(3.5, 3.5, 3.5)
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		if lv == 2 and tx[1] != null:
+			m.normal_enabled = true
+			m.normal_texture = tx[1]
+			m.normal_scale = 0.8
 		else:
 			m.normal_enabled = false
 			m.normal_texture = null
@@ -386,6 +428,7 @@ func setup() -> void:
 	node_data.clear()
 	led_mats.clear()
 	mats.clear()
+	suit_mats.clear()
 	shield_mat = null
 	shield_ring = null
 	beacon_mat = null
@@ -396,6 +439,7 @@ func setup() -> void:
 	player_node = _make_astronaut(Color(0.97, 0.97, 1.0), "wilson")
 	add_child(player_node)
 	_nametag(player_node, "Wilson", Color(0.7, 0.95, 1.0))
+	_apply_suit_tex()
 	var ring_mat: StandardMaterial3D = _m(Color(0.3, 0.9, 1.0, 0.55), 0.0, 0.5, 2.0)
 	target_ring = _add(self, _tor(0.78, 0.92), ring_mat, Vector3.ZERO, Vector3.ZERO, false)
 	target_ring.visible = false
@@ -604,8 +648,8 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 			accent = Color(0.15, 0.5, 0.6)
 		"l":
 			accent = Color(0.9, 0.25, 0.35)
-	var white: StandardMaterial3D = _sm(Color(0.94, 0.95, 0.99), 0.0, 0.6)
-	var suitm: StandardMaterial3D = _sm(suit.lerp(Color(0.95, 0.95, 1.0), 0.35), 0.0, 0.62)
+	var white: StandardMaterial3D = _fabric(Color(0.94, 0.95, 0.99), 0.6)
+	var suitm: StandardMaterial3D = _fabric(suit.lerp(Color(0.95, 0.95, 1.0), 0.35), 0.62)
 	var accm: StandardMaterial3D = _sm(accent, 0.1, 0.5)
 	var dark: StandardMaterial3D = _sm(Color(0.22, 0.24, 0.3), 0.4, 0.55)
 	var metal: StandardMaterial3D = _sm(Color(0.7, 0.72, 0.8), 0.85, 0.3)
@@ -633,17 +677,25 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 		_add(body, _box(Vector3(0.08, 0.025, 0.035)), white, Vector3(-0.17, 1.5, -0.26), Vector3.ZERO, false)
 		_add(body, _box(Vector3(0.025, 0.08, 0.035)), white, Vector3(-0.17, 1.5, -0.26), Vector3.ZERO, false)
 	# mochila de soporte vital con tanques y mangueras
-	_add(body, _box(Vector3(0.46, 0.62, 0.24)), metal, Vector3(0, 1.28, 0.3))
-	_add(body, _cyl(0.07, 0.07, 0.56, 10), white, Vector3(-0.12, 1.28, 0.44))
-	_add(body, _cyl(0.07, 0.07, 0.56, 10), white, Vector3(0.12, 1.28, 0.44))
+	var pack := Node3D.new()
+	pack.position = Vector3(0, 1.6, 0.3)
+	body.add_child(pack)
+	_add(pack, _box(Vector3(0.46, 0.62, 0.24)), metal, Vector3(0, -0.32, 0))
+	_add(pack, _cyl(0.07, 0.07, 0.56, 14), white, Vector3(-0.12, -0.32, 0.14))
+	_add(pack, _cyl(0.07, 0.07, 0.56, 14), white, Vector3(0.12, -0.32, 0.14))
+	_add(pack, _sph(0.07, 12), white, Vector3(-0.12, -0.04, 0.14))
+	_add(pack, _sph(0.07, 12), white, Vector3(0.12, -0.04, 0.14))
 	_add(body, _cyl(0.025, 0.025, 0.3, 6), dark, Vector3(-0.2, 1.5, -0.1), Vector3(0.6, 0, 0.0), false)
 	_add(body, _cyl(0.025, 0.025, 0.3, 6), dark, Vector3(0.2, 1.5, -0.1), Vector3(0.6, 0, 0.0), false)
 	_add(body, _box(Vector3(0.18, 0.04, 0.02)), accm, Vector3(0, 1.45, 0.43), Vector3.ZERO, false)
 	# detalles extra del traje: correas, lampara del casco, antena y bandera
 	_add(body, _box(Vector3(0.05, 0.55, 0.03)), accm, Vector3(-0.14, 1.28, -0.26), Vector3.ZERO, false)
 	_add(body, _box(Vector3(0.05, 0.55, 0.03)), accm, Vector3(0.14, 1.28, -0.26), Vector3.ZERO, false)
-	_add(body, _cyl(0.012, 0.012, 0.3), metal, Vector3(0.18, 1.78, 0.32), Vector3.ZERO, false)
-	_add(body, _sph(0.025, 6), _sm(Color(1.0, 0.3, 0.3), 0.0, 0.3, 1.8), Vector3(0.18, 1.94, 0.32), Vector3.ZERO, false)
+	var ant := Node3D.new()
+	ant.position = Vector3(0.18, 1.78, 0.32)
+	body.add_child(ant)
+	_add(ant, _cyl(0.012, 0.012, 0.3), metal, Vector3(0, 0.0, 0), Vector3.ZERO, false)
+	_add(ant, _sph(0.025, 6), _sm(Color(1.0, 0.3, 0.3), 0.0, 0.3, 1.8), Vector3(0, 0.16, 0), Vector3.ZERO, false)
 	_add(body, _box(Vector3(0.13, 0.07, 0.025)), _sm(Color(0.2, 0.3, 0.75), 0.0, 0.7), Vector3(0.17, 1.5, -0.25), Vector3.ZERO, false)
 	_add(body, _box(Vector3(0.13, 0.025, 0.027)), _sm(Color(0.9, 0.2, 0.2), 0.0, 0.7), Vector3(0.17, 1.488, -0.25), Vector3.ZERO, false)
 	_add(body, _cyl(0.14, 0.14, 0.05, 12), _sm(Color(0.3, 0.32, 0.4), 0.5, 0.5), Vector3(0, 1.14, 0.0), Vector3.ZERO, false)
@@ -669,6 +721,8 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 		_add(sh, _cap(0.095, 0.38), suitm, Vector3(0, -0.18, 0))
 		var el: Node3D = _limb(sh, Vector3(0, -0.34, 0))
 		_add(el, _sph(0.09, 8), dark, Vector3.ZERO)
+		_add(el, _tor(0.075, 0.115), suitm, Vector3(0, -0.02, 0), Vector3.ZERO, false)
+		_add(sh, _tor(0.085, 0.125), suitm, Vector3(0, -0.3, 0), Vector3.ZERO, false)
 		_add(el, _cap(0.085, 0.34), suitm, Vector3(0, -0.16, 0))
 		_add(el, _box(Vector3(0.17, 0.05, 0.17)), accm, Vector3(0, -0.04, 0), Vector3.ZERO, false)
 		_add(el, _sph(0.095, 10), glove, Vector3(0, -0.34, 0))
@@ -691,12 +745,15 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 		_add(hp, _cap(0.125, 0.4), suitm, Vector3(0, -0.18, 0))
 		var kn: Node3D = _limb(hp, Vector3(0, -0.34, 0))
 		_add(kn, _sph(0.115, 8), dark, Vector3.ZERO)
+		_add(kn, _tor(0.1, 0.15), suitm, Vector3(0, -0.02, 0), Vector3.ZERO, false)
+		_add(kn, _sph(0.1, 10), accm, Vector3(0, 0.0, -0.1), Vector3.ZERO, false)
+		_add(kn, _sph(0.14, 12), dark, Vector3(0, -0.4, -0.2))
 		_add(kn, _cap(0.105, 0.34), suitm, Vector3(0, -0.16, 0))
 		_add(kn, _box(Vector3(0.22, 0.05, 0.1)), accm, Vector3(0, -0.03, -0.09), Vector3.ZERO, false)
 		_add(kn, _box(Vector3(0.22, 0.13, 0.36)), dark, Vector3(0, -0.34, -0.06))
 		_add(kn, _box(Vector3(0.24, 0.04, 0.38)), metal, Vector3(0, -0.4, -0.06), Vector3.ZERO, false)
 		legs.append([hp, kn])
-	n.set_meta("parts", {"rig": rig, "body": body, "head": head,
+	n.set_meta("parts", {"pack": pack, "ant": ant, "rig": rig, "body": body, "head": head,
 		"arm_l": arms[0][0], "elb_l": arms[0][1], "arm_r": arms[1][0], "elb_r": arms[1][1],
 		"leg_l": legs[0][0], "kn_l": legs[0][1], "leg_r": legs[1][0], "kn_r": legs[1][1]})
 	return n
@@ -719,7 +776,7 @@ func _anim_astronaut(n: Node3D, pose: String, t: float, phase: float = 0.0) -> v
 	# valores por defecto (reposo con respiracion)
 	var tg: Dictionary = {
 		"rig_y": 0.0, "body_x": 0.0, "head_x": 0.0, "head_y": sin(t * 0.7 + phase) * 0.18,
-		"al_x": 0.0, "ar_x": 0.0, "al_z": 0.0, "ar_z": 0.0, "el_x": 0.12, "er_x": 0.12,
+		"al_x": sin(t * 1.6 + phase + 1.0) * 0.04, "ar_x": sin(t * 1.6 + phase) * 0.04, "al_z": 0.06, "ar_z": -0.06, "el_x": 0.12, "er_x": 0.12,
 		"ll_x": 0.0, "lr_x": 0.0, "kl_x": 0.0, "kr_x": 0.0, "bob": sin(t * 1.6 + phase) * 0.012
 	}
 	match pose:
@@ -850,7 +907,8 @@ func _anim_astronaut(n: Node3D, pose: String, t: float, phase: float = 0.0) -> v
 			tg["er_x"] = 0.0
 			tg["er_x"] = 0.4 * sin(t * 7.0)
 			tg["head_y"] = -0.2
-	var k: float = 0.22 # suavizado hacia la pose
+	tg["head_x"] = float(tg["head_x"]) - float(tg["body_x"]) * 0.55   # la cabeza compensa la inclinacion del torso
+	var k: float = anim_k # suavizado hacia la pose (independiente de los FPS)
 	rig.position.y = lerpf(rig.position.y, float(tg["rig_y"]) + float(tg["bob"]), k)
 	body.rotation.x = lerpf(body.rotation.x, tg["body_x"], k)
 	head.rotation.x = lerpf(head.rotation.x, tg["head_x"], k)
@@ -865,6 +923,21 @@ func _anim_astronaut(n: Node3D, pose: String, t: float, phase: float = 0.0) -> v
 	lr.rotation.x = lerpf(lr.rotation.x, tg["lr_x"], k)
 	kl.rotation.x = lerpf(kl.rotation.x, tg["kl_x"], k)
 	kr.rotation.x = lerpf(kr.rotation.x, tg["kr_x"], k)
+	# movimiento secundario: la cadera se balancea, el torso gira contra ella, mochila y antena con retraso
+	var moving_p: bool = pose == "walk" or pose == "run"
+	var wf: float = 12.0 if pose == "walk" else 17.0
+	var sw3: float = sin(t * wf) if moving_p else 0.0
+	var amp3: float = 1.0 if pose == "walk" else 1.4
+	rig.rotation.z = lerpf(rig.rotation.z, sw3 * 0.035 * amp3 + sin(t * 0.9 + phase) * 0.012, k)
+	rig.rotation.y = lerpf(rig.rotation.y, -sw3 * 0.07 * amp3, k)
+	body.rotation.y = lerpf(body.rotation.y, sw3 * 0.11 * amp3, k)
+	body.rotation.z = lerpf(body.rotation.z, -sw3 * 0.02 * amp3, k)
+	var pk: Node3D = P["pack"]
+	var an: Node3D = P["ant"]
+	var bounce: float = absf(sw3)
+	pk.rotation.x = lerpf(pk.rotation.x, 0.05 * bounce * amp3 + (0.06 if pose == "gather" or pose == "grab" else 0.0), 0.12)
+	an.rotation.z = lerpf(an.rotation.z, sin(t * wf * 0.5 + 1.0) * 0.12 * bounce * amp3 + sin(t * 1.3 + phase) * 0.03, 0.1)
+	an.rotation.x = lerpf(an.rotation.x, cos(t * wf * 0.5) * 0.1 * bounce * amp3, 0.1)
 
 
 func _player_pose() -> String:
@@ -2510,6 +2583,7 @@ func _update_actors(delta: float) -> void:
 	if game.outside:
 		player_node.position.y += game.jump_z
 	_update_jump_shadow(ground_p)
+	anim_k = clampf(1.0 - exp(-13.0 * delta), 0.04, 0.6)
 	var target: float = game.heading
 	yaw_player = lerp_angle(yaw_player, target, 1.0 - exp(-14.0 * delta))
 	player_node.rotation.y = yaw_player

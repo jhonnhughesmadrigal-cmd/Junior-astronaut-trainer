@@ -247,3 +247,8 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - 13 logros con insignias dibujadas por código, aviso al desbloquear y panel con [K]. Se guardan en los ajustes (valen para todas las partidas).
 - Rediseño visual de cama, banco de trabajo, radio, puerta de la esclusa y trajes (solo aspecto).
 - Pendiente de verificar: la radio no se vio de frente en las pruebas; sin GPU real ni navegadores; textos en inglés sin revisar.
+
+## Alfa 0.9.10 — Trajes más suaves
+- Luz de borde suave en la tela, trama de tela con costuras acolchadas (textura según calidad: lisa / 128 px / 256 px + relieve), juntas acolchadas en codos y rodillas, botas más redondeadas, mochila y antena como piezas móviles.
+- Animación: suavizado independiente de los FPS, balanceo de cadera, giro del torso contra la cadera, la cabeza compensa la inclinación y la mochila y la antena se mueven con retraso.
+- No se importó ningún pack de animaciones externo (ver notas de la sesión).

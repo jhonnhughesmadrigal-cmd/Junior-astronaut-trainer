@@ -47,6 +47,9 @@ static func make(kind: String, moon: bool, size: int, with_normal: bool) -> Arra
 		"wall":
 			_wall(a, h, size, moon)
 			res = _finish(a, h, with_normal, 2.0)
+		"fabric":
+			_fabric(a, h, size)
+			res = _finish(a, h, with_normal, 1.2)
 		_:
 			_ceiling(a, h, size)
 			res = _finish(a, h, with_normal, 1.5)
@@ -206,4 +209,26 @@ static func _ceiling(a: Image, h: Image, size: int) -> void:
 				c = c.lightened(0.06)
 				ht = 0.45
 			a.set_pixel(x, y, c)
+			h.set_pixel(x, y, Color(ht, ht, ht))
+
+
+static func _fabric(a: Image, h: Image, size: int) -> void:
+	# trama de tela con costuras acolchadas suaves (casi blanca: se tine con el color del material)
+	var noise: Image = _noise(77, 0.5, 2)
+	var cells: float = 24.0
+	for y in size:
+		for x in size:
+			var u: float = fposmod(float(x) / float(size) * cells, 1.0)
+			var v: float = fposmod(float(y) / float(size) * cells, 1.0)
+			var wx: float = 0.5 + 0.5 * sin(u * TAU)
+			var wy: float = 0.5 + 0.5 * sin(v * TAU)
+			var weave: float = ((wx if (int(float(x) / float(size) * cells) + int(float(y) / float(size) * cells)) % 2 == 0 else wy))
+			var n: float = noise.get_pixel(x % 128, y % 128).r
+			var k: float = 0.88 + 0.08 * weave + 0.06 * n
+			# acolchado: surcos suaves cada 1/4 de la textura
+			var q: float = absf(fposmod(float(y) / float(size) * 4.0, 1.0) - 0.5) * 2.0
+			var quilt: float = smoothstep(0.82, 1.0, q)
+			k *= 1.0 - 0.18 * quilt
+			a.set_pixel(x, y, Color(k, k, k))
+			var ht: float = 0.45 + 0.3 * weave - 0.25 * quilt
 			h.set_pixel(x, y, Color(ht, ht, ht))
