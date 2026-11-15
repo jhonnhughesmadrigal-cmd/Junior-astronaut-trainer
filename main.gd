@@ -2603,7 +2603,7 @@ func _is_depleted(x: int, y: int) -> bool:
 
 func _door_inside() -> void:
 	outside = true
-	_set_player_tile(ext_spawn, Vector2i(0, -1))
+	_set_player_tile(ext_spawn, Vector2i(0, 1))   # al salir se mira hacia afuera (sur), de espaldas a la base
 	stats["expeditions"] += 1
 	_mark_explored(player, 8)
 	cur_zone = -1

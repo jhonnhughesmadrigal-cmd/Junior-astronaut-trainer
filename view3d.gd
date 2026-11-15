@@ -2696,6 +2696,15 @@ func _update_actors(delta: float) -> void:
 	target_ring.visible = show
 
 
+func _in_base_box(p: Vector3) -> bool:
+	# volumen del casco y los modulos de la base (en metros del mundo), con un margen
+	var x0: float = float(game.BASE_X0 - 3) * T3 - 0.5
+	var x1: float = float(game.BASE_X0 + 7) * T3 + 0.5
+	var z0: float = float(game.BASE_Y0 - 1) * T3 - 0.5
+	var z1: float = float(game.BASE_Y0 + 3) * T3 + 0.5
+	return p.x > x0 and p.x < x1 and p.z > z0 and p.z < z1 and p.y < 8.5
+
+
 func _update_camera(delta: float) -> void:
 	var mode: int = game.cam_mode
 	var pos: Vector3 = player_node.position
@@ -2753,6 +2762,23 @@ func _update_camera(delta: float) -> void:
 		if mode == 2:
 			# si el recorte la acerca al jugador, subimos el punto de mira para no mirar al suelo
 			look.y = maxf(look.y, 0.9)
+	if game.outside and mode == 2:
+		# la camara en tercera persona no puede meterse dentro del casco de la base: se acerca y sube
+		var fp: Vector3 = focus + Vector3(0.0, 1.3, 0.0)
+		if _in_base_box(fp.lerp(cp, 1.0)) or _in_base_box(fp.lerp(cp, 0.6)) or _in_base_box(fp.lerp(cp, 0.3)):
+			# bloqueada por el casco: probamos mirar al jugador desde un lado o desde delante
+			var back2: float = 8.5 * zoom
+			var done: bool = false
+			for ang in [PI / 2.0, -PI / 2.0, PI]:
+				var dv: Vector3 = Vector3(-sin(yaw_cam + ang), 0.0, -cos(yaw_cam + ang))
+				var alt: Vector3 = focus - dv * back2 + Vector3(0.0, 3.6 * zoom + 0.6, 0.0)
+				if not _in_base_box(alt) and not _in_base_box(fp.lerp(alt, 0.5)) and not _in_base_box(fp.lerp(alt, 0.25)):
+					cp = alt
+					look = focus + Vector3(0.0, 1.3, 0.0)
+					done = true
+					break
+			if not done:
+				cp = fp
 	if game.outside and mode != 1:
 		cp.y = maxf(cp.y, ground_y(cp.x / T3, cp.z / T3) + (1.4 if mode == 2 else 3.0))
 	if game.shake_t > 0.0:

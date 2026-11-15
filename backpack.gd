@@ -47,7 +47,9 @@ func _panel() -> Rect2:
 	var cap: int = game._pack_cap()
 	var rows: int = int(ceil(float(cap) / float(COLS_N)))
 	var w: float = float(COLS_N) * (SLOT + 8.0) + 60.0 + 300.0
-	var h: float = maxf(float(rows) * (SLOT + 8.0) + 150.0, 330.0)
+	# alto minimo: la columna de mejoras (9 filas) + 'en mano' + pie de texto tienen que caber dentro del panel
+	var h: float = maxf(float(rows) * (SLOT + 8.0) + 150.0, 500.0)
+	h = minf(h, size.y - 20.0)
 	return Rect2((size.x - w) / 2.0, (size.y - h) / 2.0, w, h)
 
 
@@ -155,4 +157,6 @@ func _draw() -> void:
 	var hold_txt: String = Lang.t("En mano: %s") % (game._tool_name(game.held) if game.held != "" else Lang.t("nada"))
 	draw_string(font, Vector2(x, y + 36.0), hold_txt, HORIZONTAL_ALIGNMENT_LEFT, 280.0, 17, Color(1.0, 0.9, 0.5))
 	var foot: String = _desc(hover) if hover != "" else Lang.t("Clic en el kit de parche para ponerlo en la mano ([Q] también). [I] o [Esc] cierra.")
-	draw_multiline_string(font, p.position + Vector2(30, p.size.y - 46.0), foot, HORIZONTAL_ALIGNMENT_LEFT, p.size.x - 60.0, 15, 2, Color(0.8, 0.88, 1.0))
+	# el pie ocupa solo la parte izquierda (debajo de las casillas), nunca se cruza con la columna derecha
+	draw_line(p.position + Vector2(24, p.size.y - 78.0), p.position + Vector2(p.size.x - 320.0, p.size.y - 78.0), Color(0.3, 0.4, 0.65), 1.0)
+	draw_multiline_string(font, p.position + Vector2(30, p.size.y - 54.0), foot, HORIZONTAL_ALIGNMENT_LEFT, p.size.x - 370.0, 15, 3, Color(0.8, 0.88, 1.0))

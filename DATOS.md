@@ -262,3 +262,8 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 ## Alfa 0.9.12 — Marte más cálido
 - Sol anaranjado más intenso, cielo ocre/caramelo, luz ambiente cálida, bruma de polvo algo más densa y polvo tibio que el viento arrastra cerca del suelo (más intenso en tormentas).
 - Color del suelo: se dejó rojizo-anaranjado (aprox. 72/41/27 en RGB). No está calibrado con datos de la NASA; es una elección artística. Conviene compararlo con fotos de las misiones reales antes de afirmar que es exacto.
+
+## Alfa 0.9.12.1 — Correcciones
+- Mochila: el panel ahora es más alto y el texto de ayuda queda a la izquierda, debajo de las casillas, sin cruzarse con la columna de "Equipo y mejoras".
+- Al salir de la nave el jugador mira hacia afuera (de espaldas a la base). La cámara en tercera persona ya no entra en el casco: si lo atraviesa, se coloca a un lado del jugador.
+- Limitación conocida: al salir, el jugador queda bajo el techo de la esclusa y desde ese lado puede taparlo un poste hasta que camine unos pasos.
