@@ -288,3 +288,6 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 ### 0.9.17 Roles de la tripulación (v24.4)
 - Wilson: ingeniero y botánico. Dra. YARISBEL: médica (aplica el botiquín, avisa de comida, agua y moral; cruz blanca en el parche del traje). ENOC: técnico de sistemas (oxígeno, energía, agua; construye las obras). PAM: comandante (avisa de oxígeno, energía, escudo y moral; parche dorado). Las líneas de historia y finales se reasignaron a quien encaja con su rol. El rol se ve al mirar a cada uno ("Hablar con Dra. YARISBEL, médica").
 - Los síntomas de enfermedad en los minijuegos siguen nombrando a PAM como paciente (no es un rol). Verificado solo por carga del juego, no revisé cada diálogo en pantalla.
+
+### 0.9.18 Diálogos graciosos de ENOC (v24.5)
+- ENOC suma 13 frases de humor sobre su tema (sistemas, oxígeno, energía, agua, herramientas) a las 3 que tenía; al hablar con él, cuando nada está bajo, dice una al azar. Son chistes de diseño del juego, sin datos científicos. Interpreté "tema claro" como "el tema de ENOC"; si te referías a otra cosa, dímelo. Textos en inglés sin revisar.

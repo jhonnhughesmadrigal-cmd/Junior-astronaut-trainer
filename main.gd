@@ -214,7 +214,20 @@ var npcs: Dictionary = {
 		"flavor": [
 			Lang.t("Los sistemas funcionan, aunque hacen ruidos que prefiero no investigar."),
 			Lang.t("Si la energía es la sangre de la base, el oxígeno es su pulso."),
-			Lang.t("Con un buen banco de trabajo se arregla casi todo.")
+			Lang.t("Con un buen banco de trabajo se arregla casi todo."),
+			Lang.t("Le puse nombre a cada ruido de la base. El de la bomba de agua se llama Gerardo."),
+			Lang.t("El oxígeno es como el wifi: solo te acuerdas de él cuando falla."),
+			Lang.t("Arreglar algo con cinta adhesiva es ingeniería. Arreglarlo con tres cintas es ingeniería espacial."),
+			Lang.t("Si algo hace «clic», es normal. Si hace «clac», avísame."),
+			Lang.t("Los tornillos y yo tenemos un trato: yo los aprieto y ellos fingen que no se aflojan."),
+			Lang.t("Esta mañana la batería estaba al cien por ciento. Ahora está al noventa y nueve. No quiero hablar de eso."),
+			Lang.t("Mi herramienta favorita es la llave inglesa. La segunda es la llave inglesa de repuesto."),
+			Lang.t("Apagar y volver a encender arregla muchos problemas. Lo sé, suena a broma, pero es ingeniería."),
+			Lang.t("Los filtros de aire me caen bien: trabajan duro y nunca se quejan."),
+			Lang.t("Hoy le di las gracias al panel solar. No contestó, pero brilló un poco más."),
+			Lang.t("La energía es como las galletas de la base: si no las cuidas, desaparecen."),
+			Lang.t("Dicen que el agua del reciclador es la más reciclada de la historia. Yo digo que está en su mejor versión."),
+			Lang.t("Una luz roja parpadeando es una alarma. Una verde es buena señal. Una azul... pregúntame antes de tocar.")
 		]
 	},
 	"l": {
