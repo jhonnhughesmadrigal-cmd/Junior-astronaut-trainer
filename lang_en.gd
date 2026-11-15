@@ -968,4 +968,7 @@ const EN: Dictionary = {
 	"Repetir tutorial guiado": "Repeat guided tutorial",
 	"Modo de lectura fácil (letra grande y frases cortas)": "Easy-reading mode (large text and short sentences)",
 	"Tutorial guiado al empezar cada misión": "Guided tutorial at the start of each mission",
+	"Diario de exploración": "Exploration diary",
+	"Logros e insignias": "Achievements and badges",
+	"Saltar el tutorial guiado": "Skip the guided tutorial",
 }
