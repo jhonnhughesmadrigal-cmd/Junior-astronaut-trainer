@@ -298,11 +298,29 @@ func _draw() -> void:
 	if toast_t > 0.0 and toast_id != "":
 		for a in ach_list():
 			if a["id"] == toast_id:
-				var slide: float = clampf(minf(toast_t, 5.0 - toast_t) * 4.0, 0.0, 1.0)
+				# v28: entrada con aceleracion suave, medalla que "salta", un destello y barra de tiempo
+				var el: float = 5.0 - toast_t                     # segundos desde que aparecio
+				var lin: float = clampf(minf(toast_t, el) * 3.2, 0.0, 1.0)
+				var slide: float = 1.0 - pow(1.0 - lin, 3.0)     # ease-out cubico
 				var w: float = 330.0
 				var p: Vector2 = Vector2(vs.x - w - 14.0 + (1.0 - slide) * (w + 20.0), 70.0)
-				draw_style_box(DS.card(2, DS.R_LG, 0.97), Rect2(p, Vector2(w, 72)))
-				_medal(p + Vector2(38, 36), 24.0, a["c"], a["s"], true)
+				var card: StyleBoxFlat = DS.card(2, DS.R_LG, 0.97)
+				card.border_color = Color(DS.C_WARN, 0.55)
+				draw_style_box(card, Rect2(p, Vector2(w, 72)))
+				var pop: float = 1.0
+				if el < 0.6:
+					var k: float = clampf((el - 0.15) / 0.45, 0.0, 1.0)
+					pop = 0.6 + 0.4 * k + sin(k * PI) * 0.14
+				_medal(p + Vector2(38, 36), 24.0 * pop, a["c"], a["s"], true)
+				if el > 0.25 and el < 1.15:
+					var sx: float = p.x + (el - 0.25) / 0.9 * (w + 60.0) - 30.0
+					var band := PackedVector2Array([Vector2(sx, p.y + 2), Vector2(sx + 18, p.y + 2), Vector2(sx - 4, p.y + 70), Vector2(sx - 22, p.y + 70)])
+					var clip_l: float = p.x + 6.0
+					var clip_r: float = p.x + w - 6.0
+					if sx > clip_l and sx < clip_r:
+						draw_colored_polygon(band, Color(1, 1, 1, 0.07))
+				var rem: float = clampf(toast_t / 5.0, 0.0, 1.0)
+				draw_rect(Rect2(p + Vector2(14, 66), Vector2((w - 28.0) * rem, 2)), Color(DS.C_WARN, 0.6))
 				draw_string(fsb, p + Vector2(76, 26), Lang.t("LOGRO DESBLOQUEADO").to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, DS.C_ACCENT)
 				draw_string(fsb, p + Vector2(76, 48), a["n"], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, DS.C_TEXT)
 				draw_string(font, p + Vector2(76, 65), a["d"], HORIZONTAL_ALIGNMENT_LEFT, w - 84.0, 12, DS.C_DIM)

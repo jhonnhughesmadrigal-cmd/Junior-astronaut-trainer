@@ -326,3 +326,45 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 **Datos de las tarjetas de misión (aproximados, "≈"):** Luna: gravedad 1,62 m/s², temperatura ecuatorial ~95–390 K; Marte: gravedad 3,73 m/s², presión ~6,36 mb (~0,6 % de la terrestre), temperatura media ~−59 °C. Fuentes: https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html y https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html. Verifique en la fuente primaria antes de citar.
 
 **Límites conocidos:** el rendimiento real en GPU/navegador de usuarios no se midió (solo pruebas en renderizador por software); no se hicieron nuevos modelos 3D ni normal maps; el control táctil no se probó; la revisión del texto en inglés es automática de cobertura (0 claves sin traducir), no una revisión humana.
+
+
+## v28 — Gráficos: mundo 3D, tripulación, pantallas con DS y microinteracciones
+
+Solo cambia el **dibujo**: la lógica del juego no se tocó (ver «Verificación»). Todo el arte nuevo está generado por código; sin modelos, imágenes ni sonidos externos y sin logotipos de la NASA.
+
+**Módulos nuevos** (main.gd no crece: pasa de 6.147 a ~6.080 líneas porque la pantalla de final se movió a un módulo):
+- `terrain3d.gd`: terreno subdividido (2 vértices por casilla = cada 1 m en calidad Media/Alta; 1 por casilla en Baja), en bloques de 24×24 casillas para descartar lo que no se ve. Cráteres con perfil continuo (antes escalonado por casilla). Rocas facetadas (`rock_mesh`): en la Luna más redondeadas, en Marte más planas y angulosas.
+- `world_look.gd`: luz, sombras y gradación de cada mundo. Luna: cielo negro, sol blanco y duro, sombras nítidas, casi sin luz de relleno y sin niebla. Marte: luz cálida más difusa, sombras más suaves, bruma y color tierra/óxido menos saturado.
+- `base_look.gd`: casco de la base con paneles, juntas y remaches (textura + relieve procedural, triplanar), plataforma de aterrizaje, cables por el suelo, equipo junto al muro y bandera de la misión (diseño propio con colores de la paleta, sin logotipos).
+- `world_fx.gd`: polvo al caminar, nube al aterrizar de un salto y destellos suaves sobre el hielo (solo con luz de sol; desactivados en calidad Baja).
+- `crew_look.gd`: materiales de los trajes (casco duro brillante, visor dorado reflectante, rodamientos metálicos, franjas de color por astronauta).
+- `ui_screens.gd`: Cómo jugar (teclas agrupadas), Créditos (tarjetas), lista de Finales (progreso y tarjetas) y pantalla de final de partida, con el sistema de diseño.
+- `ui_motion.gd`: microinteracciones (hover y pulsación de botones, fundido corto de paneles).
+- `tests/t_ui.gd`, `tests/t_logic.gd`, `tests/t_perf.gd`, `tools/shots_all.sh`: herramientas de prueba (ver «Verificación»).
+
+**Decisiones artísticas (NO son datos medidos):**
+- Luna y Marte: colores de luz, cantidad de luz ambiente, exposición, desenfoque de sombras y gradación (`world_look.gd`). El suelo de Marte en 3D se oscurece y desatura un poco respecto al color de zona (tono tierra/óxido); no está calibrado con fotos de las misiones.
+- El arco del sol en 3D es más lateral (este-oeste) y algo más bajo (máx. ~40° en la Luna, ~38° en Marte) para que las sombras crucen la vista y den relieve. No representa la posición real del Sol en ningún lugar concreto.
+- Dunas de Marte (orientadas con el mismo viento que el polvo), "mares" oscuros y eyecciones claras alrededor de algunos cráteres de la Luna, cráteres secundarios (~150 en la Luna, ~40 en Marte) y microcráteres solo en la textura: formas y cantidades de juego, no un mapa real.
+- La bandera no ondea en la Luna (no hay aire que la mueva; queda tensada por una barra). Es conocimiento general que no verifiqué con una fuente en esta sesión.
+
+**Física usada en las partículas** (valores ya citados en «Alfa 0.9.4»): el polvo de los pasos cae con la gravedad de cada mundo — Luna 1,62 m/s² (nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html) y Marte 3,73 m/s² (nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html). En la Luna no hay frenado del aire (el polvo sale en arcos y cae); en Marte se frena y lo arrastra el viento. La forma, la cantidad y el frenado son de juego.
+
+**Correcciones de fallos anteriores encontrados al revisar:**
+- El sprite de polvo de Marte se veía como cuadrados: `glow_sprite(32, 0.0)` usa `smoothstep(0, 0, d)`, que vale 1 en casi todo el sprite. Ahora se usa un núcleo de 0,02. El polvo ya no va pegado a la cámara sino alrededor del jugador.
+- La noche lunar era azul intenso; ahora la luz de la Tierra y el ambiente nocturno son más neutros.
+- Ventanas, balizas, LEDs de los trajes, visor y franjas de la esclusa emitían demasiado (efecto neón): emisión reducida.
+- Remaches del suelo interior casi blancos (mucho ruido): ahora discretos.
+- Opciones: el panel no cabía en pantallas bajas (el botón «Cerrar» quedaba fuera); la pestaña Pantalla ahora se desplaza.
+- Faltaban 58 traducciones al inglés (p. ej. «Día %d / %d», roles de los hablantes, tarjetas de destino de «Nueva misión», banco de trabajo y mochila). Añadidas en `lang_en.gd`. Siguen sin revisión de una persona nativa.
+
+**Verificación (Godot 4.4.1, render por software con xvfb y SwiftShader; sin GPU real):**
+- `tests/t_emg.gd` (94 pruebas) **no está en el repositorio** ni en los zips de `releases/`, así que no se pudo ejecutar. En su lugar, `tests/t_logic.gd` simula 16 partidas con semilla fija (Luna/Marte × 4 dificultades × con y sin reposición de recursos, 8 días) y escribe una huella del estado cada hora de juego (recursos, día, reloj, inventario, herramientas, tormenta, enfermedad, brecha y el historial completo de emergencias). Huella del código original (commit ead1d75) y de v28: idénticas (md5 `9d5ba3a6…`, 1.722 líneas). Esto comprueba que la lógica no cambió en esos recorridos; no sustituye a las 94 pruebas originales.
+- Capturas antes/después a 1920×1080, 1366×768 y 1024×600 (`tests/t_ui.gd` + `tools/shots_all.sh`).
+- Exportación web (preset «Web», sin hilos) y prueba en Chromium con Playwright: carga en ~11 s (servidor local, render por software), fuente Inter e iconos SVG visibles, páginas del menú correctas. En la consola aparecen errores `keyboard_get_keycode_from_physical: Not supported by this display server` que vienen de los nombres de tecla de los controles reasignables (v25), no de v28; no impiden jugar.
+- Coste medido con `tests/t_perf.gd` (render por software, cifras solo relativas), exterior junto a la base, 1280×720:
+  - Alta: primitivas visibles Luna ~150 k → ~202 k (+35 %), Marte ~147 k → ~179 k (+22 %); llamadas de dibujo ~580 → ~673 (+16 %); primitivas de sombra +3 %.
+  - Baja: primitivas casi iguales (~103 k → ~106 k Luna); llamadas de dibujo ~290 → ~350 (bloques de terreno y piedras sueltas).
+  - Crear la partida: Luna Alta ~160 → ~270 ms; Marte Alta ~1,0 → ~1,1 s (en este equipo; en el navegador será más lento).
+
+**No medido / pendiente:** rendimiento en GPU real y en PCs escolares o tabletas; control táctil; navegadores distintos de Chromium; revisión humana del inglés; si la calidad automática baja de escalón antes por el coste extra en equipos lentos. La forma de las rocas y la resolución del terreno se aplican al empezar una misión nueva (como antes).

@@ -58,7 +58,7 @@ static func make(kind: String, moon: bool, size: int, with_normal: bool) -> Arra
 
 
 static func _floor(a: Image, h: Image, size: int, moon: bool) -> void:
-	var base: Color = Color(0.46, 0.49, 0.58) if moon else Color(0.60, 0.40, 0.33)
+	var base: Color = Color(0.47, 0.49, 0.54) if moon else Color(0.58, 0.41, 0.35)
 	var stain: Image = _noise(7, 0.03, 4)
 	var grain: Image = _noise(19, 0.4, 2)
 	var T: float = float(size) * 0.5          # una placa = una casilla (2 m)
@@ -99,12 +99,12 @@ static func _floor(a: Image, h: Image, size: int, moon: bool) -> void:
 			for cx in [0.10, 0.90]:
 				for cy in [0.10, 0.90]:
 					rv = minf(rv, Vector2(u - cx, v - cy).length())
-			if rv < 0.030:
-				c = Color(0.78, 0.80, 0.88)
-				ht = 0.95
-			elif rv < 0.040:
-				c = c.darkened(0.3)
-				ht = 0.3
+			if rv < 0.026:
+				c = c.lightened(0.12)     # v28: remache discreto (antes casi blanco: mucho ruido)
+				ht = 0.85
+			elif rv < 0.034:
+				c = c.darkened(0.18)
+				ht = 0.35
 			a.set_pixel(x, y, c)
 			h.set_pixel(x, y, Color(ht, ht, ht))
 

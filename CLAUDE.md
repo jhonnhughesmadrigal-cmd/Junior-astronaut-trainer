@@ -14,25 +14,28 @@ Wilson mantiene vivos a 4 tripulantes 30 días en la Luna o Marte. Español/ingl
 ## Estructura clave
 - `design_system.gd` (DS): paleta, espaciado, radios, fuentes Inter, iconos SVG por código, `DS.make_theme()`. Toda UI nueva debe usar DS.
 - `hud_ui.gd`, `menu_art.gd` (planetas/paisajes procedurales), `ui_pages.gd` (menú, misión, opciones), `backpack.gd`, `workbench.gd`, `tutor.gd`, `diag_ui.gd`.
-- `view3d.gd`: mundo 3D (iluminación, terreno, base, personajes, partículas, presets de calidad Bajo/Medio/Alto). `ext_tex.gd` / `int_tex.gd` / `space_tex.gd`: texturas procedurales.
+- `view3d.gd`: mundo 3D (iluminación, terreno, base, personajes, partículas, presets de calidad Bajo/Medio/Alto). `ext_tex.gd` / `int_tex.gd` / `space_tex.gd`: texturas procedurales. v28: `terrain3d.gd`, `world_look.gd`, `base_look.gd`, `world_fx.gd`, `crew_look.gd`.
+- `ui_screens.gd` (pantallas con DS) y `ui_motion.gd` (microinteracciones).
 - `main.gd`: orquestador; modos de juego 0 juego, 1 diálogo, 2 sueño, 3 pausa, 4 banco, 5 tarea, 6 mapa, 7 minijuego, 8 info, 9 mejora, 10 mochila, 11 diario, 12 logros, 13 fundido, 14 diagnóstico.
 - `emergency*.gd`: sistema de emergencias (v26). `DATOS.md`: datos, fuentes y límites.
 
 ## Cómo probar
 - Sintaxis: `godot --headless --check-only --script res://main.gd --path .`
-- Lógica (debe dar 94/94): copia `tests/t_emg.gd` a la raíz y ejecuta `xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_emg.gd`
-- Capturas: copia `tests/t_ui.gd` a la raíz y usa `tools/shot.sh 1280x720 menu new hud_mars out_moon out_mars pack bench map pause diag`.
+- Lógica (debe dar 94/94): copia `tests/t_emg.gd` a la raíz y ejecuta `xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_emg.gd`. **Ojo (v28): `tests/t_emg.gd` no está en el repositorio**; hay que recuperarlo de quien lo tenga.
+- Huella de lógica (v28): copia `tests/t_logic.gd` a la raíz y ejecuta `LOGIC_OUT=/tmp/l.txt xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_logic.gd`. Compara el md5 ("HUELLA") con el del commit anterior: si la lógica no cambia, debe coincidir (v28: `9d5ba3a6…`).
+- Capturas: copia `tests/t_ui.gd` a la raíz y usa `tools/shot.sh 1280x720 menu new hud_mars out_moon out_mars pack bench map pause diag` (salida en /tmp/shots), o en paralelo `JOBS=3 tools/shots_all.sh <carpeta> 1920x1080 <estados...>`. Estados extra: opts credits howto endings end_win end_lose hud_moon crew_moon far_moon far_mars out_moon_low out_mars_low night_moon storm_mars ach.
+- Coste relativo: `tests/t_perf.gd` (primitivas y llamadas de dibujo; `LOC=Luna Q=2`).
 - Web: `godot --headless --import`, luego `--export-release Web web/index.html`, servir con HTTP y revisar con Playwright (verificar fuentes e iconos SVG).
 - El viewport del proyecto es 1100×650 (canvas_items, aspect expand): comprobar 1920×1080, 1600×900, 1366×768, 1280×720 y 1024×600.
 
-## Trabajo visual pendiente (prioridad)
+## Trabajo visual
 Hecho en v27: sistema de diseño, menú, selección de misión, HUD, diálogos, mochila, banco, diario, logros, mapa, pausa, gradación de color por mundo.
-Pendiente, sin hacer:
-1. **Mundo 3D (lo más importante):** terreno con más relieve y variación (regolito/cráteres/rocas en la Luna; suelo rojo, dunas y profundidad en Marte), materiales con rugosidad/metal/normal, detalles de la base, objetos, partículas discretas (polvo, destellos), iluminación y sombras mejores. Límite: renderer Compatibility y web; mantener los presets de calidad funcionando.
-2. Personajes (mantener a Wilson, YARISBEL, ENOC y PAM): mejor modelado/materiales.
-3. Rediseñar opciones, créditos, cómo jugar y pantallas de finales con DS.
-4. Microinteracciones y animaciones (hover, transiciones, desbloqueo de logros).
-5. Verificar táctil, rendimiento real en GPU/navegador y revisión humana del inglés (nada de esto está medido).
+Hecho en v28 (ver DATOS.md): terreno subdividido (`terrain3d.gd`), luz por mundo (`world_look.gd`), casco y detalles de la base (`base_look.gd`), partículas (`world_fx.gd`), trajes (`crew_look.gd`), Cómo jugar/Créditos/Finales/pantalla de final con DS (`ui_screens.gd`), microinteracciones (`ui_motion.gd`).
+Pendiente:
+1. Verificar táctil, rendimiento real en GPU/navegador y revisión humana del inglés (nada de esto está medido).
+2. Interior de la base: mismo nivel de materiales que el exterior (solo se retocaron remaches y color del suelo).
+3. Personajes: siguen hechos con primitivas; un modelo por piezas más orgánico mejoraría los primeros planos.
+4. Recuperar `tests/t_emg.gd` (94 pruebas).
 Criterio: menos ruido visual, mejores materiales, más profundidad, identidad consistente; sin neón ni efectos recargados.
 
 ## Skills útiles

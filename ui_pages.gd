@@ -4,6 +4,7 @@ extends Node
 
 const DS = preload("res://design_system.gd")
 const MenuArt = preload("res://menu_art.gd")
+const UiScreens = preload("res://ui_screens.gd")
 const ACCENT: Color = DS.C_ACCENT
 const VERSION_TXT: String = "ALFA 0.1"
 
@@ -24,8 +25,8 @@ var loc_buttons: Dictionary = {}
 var diff_buttons: Array = []
 var dest_text: RichTextLabel
 var diff_text: Label
-var endings_text: RichTextLabel
-var howto_text: RichTextLabel
+var endings_box: VBoxContainer     # v28: lista de finales (ui_screens.gd)
+var howto_box: VBoxContainer       # v28: controles con teclas (ui_screens.gd)
 var learn_overlay: Control
 var learn_title: Label
 var learn_meta: Label
@@ -69,6 +70,12 @@ func build_all() -> void:
 	_build_controls()
 	_build_stats()
 	_build_learn()
+	# v28: microinteracciones (hover, pulsacion, fundido de paneles)
+	var motion := Node.new()
+	motion.set_script(load("res://ui_motion.gd"))
+	motion.name = "UiMotion"
+	game.add_child(motion)
+	motion.call("setup", game, [game.get("fade_rect"), game.get("load_ov")])
 
 
 # ---------- utilidades de interfaz ----------
@@ -238,7 +245,7 @@ func _build_menu() -> void:
 
 func _page(nm: String, title: String) -> VBoxContainer:
 	var pc := PanelContainer.new()
-	pc.custom_minimum_size = Vector2(620 if nm == "new" else 560, 0)
+	pc.custom_minimum_size = Vector2({"new": 620, "howto": 720, "credits": 620}.get(nm, 580), 0)
 	pc.size_flags_horizontal = Control.SIZE_SHRINK_END
 	pc.add_theme_stylebox_override("panel", DS.card(1, DS.R_LG, 0.93))
 	page_holder.add_child(pc)
@@ -260,7 +267,7 @@ func show_page(nm: String) -> void:
 	if nm == "endings":
 		_fill_endings()
 	elif nm == "howto":
-		howto_text.text = controls_bbcode()
+		_fill_howto()
 	if game != null and nm != "new" and game.in_menu:
 		game._menu_preview(game.menu_loc)
 
@@ -403,34 +410,32 @@ func _build_page_new() -> void:
 
 func _build_page_howto() -> void:
 	var v: VBoxContainer = _page("howto", Lang.t("Cómo jugar"))
-	howto_text = _rich(380)
-	v.add_child(howto_text)
+	howto_box = VBoxContainer.new()
+	v.add_child(howto_box)
+	v.add_child(UiScreens.hint(Lang.t("Las teclas se pueden cambiar en Opciones > Controles.")))
 
 
 func _build_page_endings() -> void:
 	var v: VBoxContainer = _page("endings", Lang.t("Finales"))
-	endings_text = _rich(380)
-	v.add_child(endings_text)
+	endings_box = VBoxContainer.new()
+	v.add_child(endings_box)
 
 
 func _build_page_credits() -> void:
 	var v: VBoxContainer = _page("credits", Lang.t("Créditos"))
-	var r: RichTextLabel = _rich(300)
-	r.text = Lang.t("[b]Misión Perseo[/b] · Junior Astronaut Mission Trainer\n\nProyecto escolar hecho en [b]Godot 4[/b].\n\n[b]Historia[/b]: original, inspirada en la premisa de la película The Martian (2015). Los personajes y diálogos son inventados para este proyecto.\n\n[b]Datos reales[/b]: NASA y otras fuentes citadas en DATOS.md (verifícalos en la fuente original).\n\n[b]Arte, música y sonido[/b]: generados por código, sin archivos externos.\n\nVersión alfa.")
-	v.add_child(r)
+	v.add_child(UiScreens.credits())
 
 
 func _fill_endings() -> void:
-	var order: Array = ["heroes", "ingenio", "unidos", "hilo", "supervivientes", "fail_oxygen", "fail_energy", "fail_food", "fail_water", "fail_shield", "fail_morale"]
-	var t: String = Lang.t("Descubiertos: [b]%d / %d[/b]\n\n") % [game.endings_seen.size(), game.ENDINGS.size()]
-	for eid in order:
-		var e: Dictionary = game.ENDINGS[eid]
-		var kind: String = Lang.t("Supervivencia") if not str(eid).begins_with("fail_") else Lang.t("Derrota")
-		if game.endings_seen.has(eid):
-			t += Lang.t("[color=#7fd0ff][b]%s[/b][/color]  [color=#8899aa](%s)[/color]\n%s\n\n") % [e["title"], kind, e["desc"]]
-		else:
-			t += Lang.t("[color=#667788][b]???[/b]  (%s)\nFinal por descubrir.[/color]\n\n") % kind
-	endings_text.text = t
+	for c in endings_box.get_children():
+		c.queue_free()
+	endings_box.add_child(UiScreens.endings_list(game))
+
+
+func _fill_howto() -> void:
+	for c in howto_box.get_children():
+		c.queue_free()
+	howto_box.add_child(UiScreens.howto(controls_rows()))
 
 
 func refresh_continue() -> void:
@@ -557,7 +562,7 @@ func _overlay(title: String, w: float) -> Array:
 	ov.visible = false
 	game.add_child(ov)
 	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.72)
+	dim.color = Color(DS.C_BG, 0.78)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ov.add_child(dim)
 	var cc := CenterContainer.new()
@@ -565,11 +570,12 @@ func _overlay(title: String, w: float) -> Array:
 	ov.add_child(cc)
 	var pc := PanelContainer.new()
 	pc.custom_minimum_size = Vector2(w, 0)
+	pc.add_theme_stylebox_override("panel", DS.card(2, DS.R_LG, 0.97))
 	cc.add_child(pc)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	pc.add_child(v)
-	v.add_child(_lbl(title, 26, Color(0.85, 0.95, 1.0)))
+	v.add_child(_lbl(title, DS.F_H1, DS.C_TEXT))
 	v.add_child(_hline())
 	return [ov, v]
 
@@ -581,11 +587,15 @@ func _build_options() -> void:
 	var tabs := TabContainer.new()
 	tabs.custom_minimum_size = Vector2(0, 380)
 	v.add_child(tabs)
-	# --- pantalla ---
+	# --- pantalla --- (v28: con desplazamiento, para que el panel quepa en pantallas bajas)
+	var t1sc := ScrollContainer.new()
+	t1sc.name = Lang.t("Pantalla")
+	t1sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tabs.add_child(t1sc)
 	var t1 := VBoxContainer.new()
-	t1.name = Lang.t("Pantalla")
-	t1.add_theme_constant_override("separation", 12)
-	tabs.add_child(t1)
+	t1.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	t1.add_theme_constant_override("separation", 10)
+	t1sc.add_child(t1)
 	var r1: HBoxContainer = _opt_row(Lang.t("Modo de pantalla"), [Lang.t("Ventana"), Lang.t("Pantalla completa"), Lang.t("Ventana sin bordes")], _on_display_mode)
 	opt["display"] = r1.get_child(1)
 	t1.add_child(r1)
@@ -621,7 +631,7 @@ func _build_options() -> void:
 	ct.toggled.connect(_on_tut_opt)
 	opt["tut"] = ct
 	t1.add_child(ct)
-	screen_info = _lbl("", 13, Color(0.6, 0.8, 1.0))
+	screen_info = _lbl("", 13, DS.C_MUTED)
 	t1.add_child(screen_info)
 	# --- gráficos ---
 	var gsc := ScrollContainer.new()
@@ -635,8 +645,8 @@ func _build_options() -> void:
 	var g1: HBoxContainer = _opt_row(Lang.t("Calidad general"), [Lang.t("Baja"), Lang.t("Media"), Lang.t("Alta"), Lang.t("Personalizada")], _on_quality)
 	opt["quality"] = g1.get_child(1)
 	t2.add_child(g1)
-	t2.add_child(_lbl(Lang.t("Baja, Media y Alta ajustan todo lo de abajo de una vez. Si cambias algo por tu cuenta pasa a «Personalizada»."), 13, Color(0.7, 0.8, 0.95)))
-	t2.add_child(_lbl(Lang.t("Rendimiento (si el juego va lento, baja esto primero)"), 15, Color(1.0, 0.9, 0.6)))
+	t2.add_child(UiScreens.hint(Lang.t("Baja, Media y Alta ajustan todo lo de abajo de una vez. Si cambias algo por tu cuenta pasa a «Personalizada».")))
+	t2.add_child(UiScreens.section("", Lang.t("Rendimiento (si el juego va lento, baja esto primero)")))
 	t2.add_child(_gfx_row("shadow_q", Lang.t("Sombras"), [Lang.t("Apagadas"), Lang.t("Bajas"), Lang.t("Altas")]))
 	t2.add_child(_gfx_row("aa_mode", Lang.t("Suavizado de bordes (MSAA)"), [Lang.t("Apagado"), "2x", "4x"]))
 	var rs: HBoxContainer = _slider(Lang.t("Escala de render: 100 %"), (game.render_scale - 0.5) / 0.5, _on_scale)
@@ -645,8 +655,8 @@ func _build_options() -> void:
 	t2.add_child(rs)
 	t2.add_child(_gfx_row("fps_idx", Lang.t("Límite de FPS"), [Lang.t("Sin límite"), "30", "60", "120"]))
 	t2.add_child(_gfx_row("fx_idx", Lang.t("Efectos y partículas"), [Lang.t("Pocos"), Lang.t("Medios"), Lang.t("Todos")]))
-	t2.add_child(_lbl(Lang.t("Sombras: la opción que más cuesta. Escala: dibuja el 3D a menos resolución (se ve más borroso pero rinde más). MSAA suaviza los bordes. FPS: limitar ahorra batería. Efectos: menos chispas y piedritas."), 13, Color(0.7, 0.8, 0.95)))
-	t2.add_child(_lbl(Lang.t("Calidad visual"), 15, Color(1.0, 0.9, 0.6)))
+	t2.add_child(UiScreens.hint(Lang.t("Sombras: la opción que más cuesta. Escala: dibuja el 3D a menos resolución (se ve más borroso pero rinde más). MSAA suaviza los bordes. FPS: limitar ahorra batería. Efectos: menos chispas y piedritas.")))
+	t2.add_child(UiScreens.section("", Lang.t("Calidad visual")))
 	t2.add_child(_gfx_row("tex_quality", Lang.t("Texturas del exterior"), [Lang.t("Sencillas"), Lang.t("Detalladas"), Lang.t("Alta (relieve)")]))
 	t2.add_child(_gfx_row("sky_idx", Lang.t("Estrellas del cielo"), [Lang.t("Pocas"), Lang.t("Medias"), Lang.t("Todas")]))
 	var c4 := CheckButton.new()
@@ -663,7 +673,7 @@ func _build_options() -> void:
 	opt["bright"] = br.get_child(1)
 	opt["bright_lbl"] = br.get_child(0)
 	t2.add_child(br)
-	t2.add_child(_lbl(Lang.t("Texturas y piedritas: el detalle de forma de las rocas se actualiza al empezar una misión nueva; lo demás se aplica al instante."), 13, Color(0.7, 0.8, 0.95)))
+	t2.add_child(UiScreens.hint(Lang.t("Texturas y piedritas: el detalle de forma de las rocas se actualiza al empezar una misión nueva; lo demás se aplica al instante.")))
 	var caq := CheckButton.new()
 	caq.text = Lang.t("Bajar la calidad automáticamente si el juego va lento")
 	caq.toggled.connect(_on_auto_q)
@@ -696,11 +706,11 @@ func _build_options() -> void:
 	var s3: HBoxContainer = _slider(Lang.t("Sensibilidad del ratón"), (game.mouse_sens - 0.3) / 1.7, _on_sens)
 	opt["sens"] = s3.get_child(1)
 	t4.add_child(s3)
-	t4.add_child(_lbl(Lang.t("El ratón gira la mirada en primera persona y en la cámara detrás del personaje."), 13, Color(0.7, 0.8, 0.95)))
+	t4.add_child(UiScreens.hint(Lang.t("El ratón gira la mirada en primera persona y en la cámara detrás del personaje.")))
 	var rl: HBoxContainer = _opt_row("Idioma / Language", ["Español", "English"], _on_lang_opt)
 	opt["lang"] = rl.get_child(1)
 	t4.add_child(rl)
-	opt["lang_hint"] = _lbl(Lang.t("El idioma se cambia desde el menú principal (reinicia la escena)."), 13, Color(0.7, 0.8, 0.95))
+	opt["lang_hint"] = UiScreens.hint(Lang.t("El idioma se cambia desde el menú principal (reinicia la escena)."))
 	t4.add_child(opt["lang_hint"])
 	# --- controles reasignables ---
 	var csc := ScrollContainer.new()
@@ -711,7 +721,7 @@ func _build_options() -> void:
 	t5.add_theme_constant_override("separation", 6)
 	t5.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	csc.add_child(t5)
-	t5.add_child(_lbl(Lang.t("Pulsa una acción y luego la tecla que quieras. Si esa tecla ya la usa otra acción, se intercambian. Las flechas siempre mueven; Esc, F1, F2, F3, F11 y Enter no se pueden cambiar."), 13, Color(0.7, 0.8, 0.95)))
+	t5.add_child(UiScreens.hint(Lang.t("Pulsa una acción y luego la tecla que quieras. Si esa tecla ya la usa otra acción, se intercambian. Las flechas siempre mueven; Esc, F1, F2, F3, F11 y Enter no se pueden cambiar.")))
 	for d in game.BIND_DEFS:
 		var brow := HBoxContainer.new()
 		var bl: Label = _lbl(Lang.t(str(d[1])), 15)
@@ -725,7 +735,7 @@ func _build_options() -> void:
 		brow.add_child(bb)
 		bind_btns[str(d[0])] = bb
 		t5.add_child(brow)
-	t5.add_child(_lbl(Lang.t("Clic del ratón"), 15, Color(1.0, 0.9, 0.6)))
+	t5.add_child(UiScreens.section("", Lang.t("Clic del ratón")))
 	var cl: HBoxContainer = _opt_row(Lang.t("Clic izquierdo"), _click_names(), _on_click_left)
 	opt["click_left"] = cl.get_child(1)
 	t5.add_child(cl)
@@ -994,8 +1004,20 @@ func _on_reset_options() -> void:
 # ---------- controles ----------
 
 func controls_bbcode() -> String:
+	var rows: Array = controls_rows()
+	var t: String = "[table=2]"
+	for r in rows:
+		if r[1] == "":
+			t += "[cell][color=#7fd0ff]%s[/color][/cell][cell] [/cell]" % r[0]
+		else:
+			t += "[cell][color=#ffe29a]%s[/color]    [/cell][cell]%s[/cell]" % [r[0], r[1]]
+	t += "[/table]"
+	return t
+
+
+func controls_rows() -> Array:
 	var kn: Callable = game.key_name
-	var rows: Array = [
+	return [
 		[Lang.t("[b]Moverse[/b]"), ""],
 		["%s %s %s %s / %s" % [kn.call("up"), kn.call("left"), kn.call("down"), kn.call("right"), Lang.t("flechas")], Lang.t("Caminar (vista fija o aérea)")],
 		[kn.call("sprint"), Lang.t("Correr")],
@@ -1024,14 +1046,6 @@ func controls_bbcode() -> String:
 		[kn.call("mute"), Lang.t("Silenciar la música")],
 		["Esc", Lang.t("Pausa")]
 	]
-	var t: String = "[table=2]"
-	for r in rows:
-		if r[1] == "":
-			t += "[cell][color=#7fd0ff]%s[/color][/cell][cell] [/cell]" % r[0]
-		else:
-			t += "[cell][color=#ffe29a]%s[/color]    [/cell][cell]%s[/cell]" % [r[0], r[1]]
-	t += "[/table]"
-	return t
 
 
 func _build_controls() -> void:

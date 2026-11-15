@@ -252,11 +252,11 @@ static func make_grain(size: int) -> Array:
 		for x in size:
 			var v1: float = f1.get_pixel(x, y).r
 			var v2: float = f2.get_pixel(x, y).r
-			var v: float = 0.86 + 0.14 * (v1 * 0.6 + v2 * 0.4)
+			var v: float = 0.91 + 0.09 * (v1 * 0.6 + v2 * 0.4)   # v28: grano mas suave (menos ruido)
 			a.set_pixel(x, y, Color(v, v, v))
 			var hv: float = v1 * 0.55 + v2 * 0.45
 			h.set_pixel(x, y, Color(hv, hv, hv))
-	h.bump_map_to_normal_map(2.0)
+	h.bump_map_to_normal_map(1.2)
 	var res: Array = [ImageTexture.create_from_image(a), ImageTexture.create_from_image(h)]
 	_cache[key] = res
 	return res

@@ -6074,74 +6074,8 @@ func _build_ending_screen(won: bool, eid: String) -> void:
 	add_child(ending_art)
 	move_child(ending_art, 1)
 	ending_art.call("setup", eid, location)
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root_box.add_child(spacer)
-	var cc := CenterContainer.new()
-	root_box.add_child(cc)
-	var pc := PanelContainer.new()
-	pc.custom_minimum_size = Vector2(860, 0)
-	var st: StyleBoxFlat = _panel_style()
-	st.bg_color = Color(0.05, 0.06, 0.12, 0.9)
-	pc.add_theme_stylebox_override("panel", st)
-	cc.add_child(pc)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	pc.add_child(v)
-	# --- página 1: historia ---
-	var p1 := VBoxContainer.new()
-	p1.add_theme_constant_override("separation", 8)
-	v.add_child(p1)
-	var tl: Label = _label(Lang.t("¡MISIÓN CUMPLIDA!") if won else Lang.t("MISIÓN FALLIDA"), 30)
-	tl.add_theme_color_override("font_color", Color(0.5, 1.0, 0.7) if won else Color(1.0, 0.5, 0.45))
-	p1.add_child(tl)
-	p1.add_child(_label(Lang.t("Final: %s") % e["title"], 22))
-	p1.add_child(_label(e["desc"], 16))
-	var epi: Label = _label(ENDING_EPILOGUE[eid], 15)
-	epi.add_theme_color_override("font_color", Color(0.78, 0.86, 1.0))
-	p1.add_child(epi)
-	if ENDING_TIP.has(eid):
-		var tip: Label = _label(ENDING_TIP[eid], 14)
-		tip.add_theme_color_override("font_color", Color(1.0, 0.85, 0.5))
-		p1.add_child(tip)
-	p1.add_child(_label(Lang.t("Finales descubiertos: %d / %d") % [endings_seen.size(), ENDINGS.size()], 14))
-	# --- página 2: estadísticas ---
-	var p2 := VBoxContainer.new()
-	p2.add_theme_constant_override("separation", 6)
-	p2.visible = false
-	v.add_child(p2)
-	var hb := HBoxContainer.new()
-	hb.add_theme_constant_override("separation", 16)
-	p2.add_child(hb)
-	var rt := RichTextLabel.new()
-	rt.bbcode_enabled = true
-	rt.custom_minimum_size = Vector2(380, 250)
-	rt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rt.add_theme_font_size_override("normal_font_size", 14)
-	rt.text = ui.stats_bbcode()
-	hb.add_child(rt)
-	var rv := VBoxContainer.new()
-	rv.custom_minimum_size = Vector2(380, 0)
-	hb.add_child(rv)
-	rv.add_child(_label(Lang.t("Recursos por día"), 15))
-	rv.add_child(ui.make_chart(230.0))
-	v.add_child(HSeparator.new())
-	var br := HBoxContainer.new()
-	br.add_theme_constant_override("separation", 10)
-	v.add_child(br)
-	var bt: Button = _button(Lang.t("Ver estadísticas"), Callable())
-	bt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bt.pressed.connect(_toggle_ending_page.bind(p1, p2, bt))
-	br.add_child(bt)
-	var b1: Button = _button(Lang.t("Volver al menú"), _show_menu)
-	b1.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	br.add_child(b1)
-	var b2: Button = _button(Lang.t("Jugar de nuevo"), _new_game.bind(location))
-	b2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	br.add_child(b2)
+	# v28: tarjeta del final con el sistema de diseno (ui_screens.gd)
+	var screens = load("res://ui_screens.gd")
+	screens.ending_screen(self, won, eid)
 
 
-func _toggle_ending_page(p1: Control, p2: Control, bt: Button) -> void:
-	p2.visible = not p2.visible
-	p1.visible = not p2.visible
-	bt.text = Lang.t("Ver historia") if p2.visible else Lang.t("Ver estadísticas")

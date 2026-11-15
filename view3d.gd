@@ -56,6 +56,18 @@ const IntTex = preload("res://int_tex.gd")
 const SpaceTex = preload("res://space_tex.gd")
 var craters: Array = []                 # Vector4(x, y, radio en casillas, profundidad en m)
 var crater_hf: PackedFloat32Array = PackedFloat32Array()
+var young_craters: Array = []           # v28: crateres con eyecciones claras (Luna)
+var micro_craters: Array = []           # v28: solo para la textura del suelo
+var t_sub: int = 1                      # v28: vertices de terreno por casilla
+var t_gw: int = 0
+const Terrain3D = preload("res://terrain3d.gd")
+const WorldLook = preload("res://world_look.gd")
+const BaseLook = preload("res://base_look.gd")
+const CrewLook = preload("res://crew_look.gd")
+var hull_mats: Array = []               # v28: materiales del casco con textura de paneles
+var wfx: Node3D = null                  # v28: particulas del exterior (world_fx.gd)
+var ice_pts: PackedVector3Array = PackedVector3Array()
+var last_daylight: float = 1.0
 var terrain_mat: StandardMaterial3D = null
 var jump_shadow: MeshInstance3D = null
 var fx_list: Array = []
@@ -77,7 +89,7 @@ func _ready() -> void:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	add_child(sun)
 	moonlight = DirectionalLight3D.new()
-	moonlight.light_color = Color(0.45, 0.55, 1.0)
+	moonlight.light_color = Color(0.66, 0.72, 0.88)   # v28: luz de la Tierra mas neutra (antes azul intenso)
 	moonlight.light_energy = 0.3
 	moonlight.rotation_degrees = Vector3(-50.0, -30.0, 0.0)
 	add_child(moonlight)
@@ -268,6 +280,8 @@ func apply_textures() -> void:
 	_apply_terrain_tex()
 	_apply_interior_tex()
 	_apply_suit_tex()
+	for hm in hull_mats:
+		BaseLook.apply_hull_tex(hm, lv)
 	var scales: Dictionary = {"rock": 0.55, "ore": 1.3, "ice": 1.1, "crate": 0.83}
 	for e in ext_mats:
 		var m: StandardMaterial3D = e[0]
@@ -417,7 +431,7 @@ func setup() -> void:
 	zs = game._zones()
 	W = game.EXT_W
 	H = game.EXT_H
-	for n in [interior, exterior, skydome, player_node, target_ring, dust_fx]:
+	for n in [interior, exterior, skydome, player_node, target_ring, dust_fx, wfx]:
 		if n != null:
 			n.queue_free()
 	for k in npc_nodes:
@@ -533,14 +547,14 @@ func _build_dust() -> void:
 	dust_fx.preprocess = 8.0
 	dust_fx.local_coords = false
 	dust_fx.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	dust_fx.emission_box_extents = Vector3(16.0, 2.5, 16.0)
+	dust_fx.emission_box_extents = Vector3(16.0, 1.1, 16.0)
 	dust_fx.direction = Vector3(1.0, 0.04, 0.35)
 	dust_fx.spread = 18.0
 	dust_fx.gravity = Vector3.ZERO
 	dust_fx.initial_velocity_min = 1.4
 	dust_fx.initial_velocity_max = 2.8
-	dust_fx.scale_amount_min = 0.5
-	dust_fx.scale_amount_max = 1.4
+	dust_fx.scale_amount_min = 0.4
+	dust_fx.scale_amount_max = 0.9
 	dust_fx.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var q := QuadMesh.new()
 	q.size = Vector2(1.4, 1.4)
@@ -550,7 +564,7 @@ func _build_dust() -> void:
 	dust_mat.billboard_keep_scale = true
 	dust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	dust_mat.vertex_color_use_as_albedo = true
-	dust_mat.albedo_texture = SpaceTex.glow_sprite(32, 0.0)
+	dust_mat.albedo_texture = SpaceTex.glow_sprite(32, 0.02)
 	dust_mat.albedo_color = Color(0.95, 0.65, 0.4, 0.16)
 	dust_mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
 	q.material = dust_mat
@@ -730,8 +744,11 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 			accent = Color(0.15, 0.5, 0.6)
 		"l":
 			accent = Color(0.95, 0.78, 0.2)   # comandante: dorado
-	var white: StandardMaterial3D = _fabric(Color(0.94, 0.95, 0.99), 0.6)
-	var suitm: StandardMaterial3D = _fabric(suit.lerp(Color(0.95, 0.95, 1.0), 0.35), 0.62)
+	accent = CrewLook.role_color(role, accent)
+	var white: StandardMaterial3D = _fabric(Color(0.93, 0.92, 0.9), 0.72)
+	var suitm: StandardMaterial3D = _fabric(suit.lerp(Color(0.94, 0.93, 0.91), 0.55), 0.74)
+	var shell: StandardMaterial3D = CrewLook.helmet()
+	var bear: StandardMaterial3D = CrewLook.bearing()
 	var accm: StandardMaterial3D = _sm(accent, 0.1, 0.5)
 	var dark: StandardMaterial3D = _sm(Color(0.22, 0.24, 0.3), 0.4, 0.55)
 	var metal: StandardMaterial3D = _sm(Color(0.7, 0.72, 0.8), 0.85, 0.3)
@@ -749,9 +766,9 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 	_add(body, _box(Vector3(0.1, 0.07, 0.03)), metal, Vector3(0, 1.02, -0.27), Vector3.ZERO, false)
 	# panel de control del pecho con luces
 	_add(body, _box(Vector3(0.32, 0.2, 0.06)), dark, Vector3(0, 1.32, -0.27))
-	_add(body, _sph(0.028, 6), _sm(Color(0.3, 1.0, 0.45), 0.0, 0.3, 2.0), Vector3(-0.09, 1.34, -0.31), Vector3.ZERO, false)
-	_add(body, _sph(0.028, 6), _sm(Color(1.0, 0.8, 0.2), 0.0, 0.3, 2.0), Vector3(0.0, 1.34, -0.31), Vector3.ZERO, false)
-	_add(body, _sph(0.028, 6), _sm(Color(1.0, 0.3, 0.3), 0.0, 0.3, 1.6), Vector3(0.09, 1.34, -0.31), Vector3.ZERO, false)
+	_add(body, _sph(0.028, 6), _sm(Color(0.3, 1.0, 0.45), 0.0, 0.3, 1.0), Vector3(-0.09, 1.34, -0.31), Vector3.ZERO, false)
+	_add(body, _sph(0.028, 6), _sm(Color(1.0, 0.8, 0.2), 0.0, 0.3, 1.0), Vector3(0.0, 1.34, -0.31), Vector3.ZERO, false)
+	_add(body, _sph(0.028, 6), _sm(Color(1.0, 0.3, 0.3), 0.0, 0.3, 0.9), Vector3(0.09, 1.34, -0.31), Vector3.ZERO, false)
 	_add(body, _box(Vector3(0.22, 0.04, 0.02)), metal, Vector3(0, 1.26, -0.305), Vector3.ZERO, false)
 	# parche de rol en el pecho izquierdo
 	_add(body, _box(Vector3(0.1, 0.1, 0.03)), accm, Vector3(-0.17, 1.5, -0.25), Vector3.ZERO, false)
@@ -777,7 +794,7 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 	ant.position = Vector3(0.18, 1.78, 0.32)
 	body.add_child(ant)
 	_add(ant, _cyl(0.012, 0.012, 0.3), metal, Vector3(0, 0.0, 0), Vector3.ZERO, false)
-	_add(ant, _sph(0.025, 6), _sm(Color(1.0, 0.3, 0.3), 0.0, 0.3, 1.8), Vector3(0, 0.16, 0), Vector3.ZERO, false)
+	_add(ant, _sph(0.025, 6), _sm(Color(1.0, 0.3, 0.3), 0.0, 0.3, 0.9), Vector3(0, 0.16, 0), Vector3.ZERO, false)
 	_add(body, _box(Vector3(0.13, 0.07, 0.025)), _sm(Color(0.2, 0.3, 0.75), 0.0, 0.7), Vector3(0.17, 1.5, -0.25), Vector3.ZERO, false)
 	_add(body, _box(Vector3(0.13, 0.025, 0.027)), _sm(Color(0.9, 0.2, 0.2), 0.0, 0.7), Vector3(0.17, 1.488, -0.25), Vector3.ZERO, false)
 	_add(body, _cyl(0.14, 0.14, 0.05, 12), _sm(Color(0.3, 0.32, 0.4), 0.5, 0.5), Vector3(0, 1.14, 0.0), Vector3.ZERO, false)
@@ -785,28 +802,33 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 	var head := Node3D.new()
 	head.position = Vector3(0, 1.66, 0)
 	body.add_child(head)
-	_add(head, _sph(0.31, 18), white, Vector3.ZERO)
-	var visor: MeshInstance3D = _add(head, _sph(0.24, 16), _sm(Color(0.95, 0.66, 0.2), 0.55, 0.1, 0.55), Vector3(0, -0.01, -0.2))
+	_add(head, _sph(0.31, 24), shell, Vector3.ZERO)
+	var visor: MeshInstance3D = _add(head, _sph(0.24, 20), CrewLook.visor(), Vector3(0, -0.01, -0.2))
 	visor.scale = Vector3(1.05, 0.86, 0.8)
-	var hl: MeshInstance3D = _add(head, _sph(0.06, 8), _sm(Color(1, 1, 1, 0.8), 0.0, 0.2, 1.2), Vector3(0.1, 0.08, -0.37), Vector3.ZERO, false)
+	var hl: MeshInstance3D = _add(head, _sph(0.06, 8), _sm(Color(1, 1, 1, 0.55), 0.0, 0.2, 0.6), Vector3(0.1, 0.08, -0.37), Vector3.ZERO, false)
 	hl.scale = Vector3(1.0, 0.6, 0.4)
 	_add(head, _box(Vector3(0.08, 0.04, 0.2)), accm, Vector3(0, 0.3, 0.0))
-	_add(head, _sph(0.04, 6), _sm(Color(0.9, 1.0, 1.0), 0.0, 0.3, 2.2), Vector3(0.26, 0.05, -0.1), Vector3.ZERO, false)
-	_add(head, _tor(0.24, 0.31), metal, Vector3(0, -0.27, 0))
-	_add(head, _box(Vector3(0.1, 0.06, 0.08)), _sm(Color(1.0, 0.97, 0.8), 0.0, 0.3, 1.8), Vector3(-0.22, 0.14, -0.2), Vector3.ZERO, false)
+	_add(head, _sph(0.04, 6), _sm(Color(0.9, 1.0, 1.0), 0.0, 0.3, 1.0), Vector3(0.26, 0.05, -0.1), Vector3.ZERO, false)
+	_add(head, _tor(0.24, 0.31), bear, Vector3(0, -0.27, 0))
+	_add(head, _box(Vector3(0.1, 0.06, 0.08)), _sm(Color(1.0, 0.97, 0.8), 0.0, 0.3, 1.0), Vector3(-0.22, 0.14, -0.2), Vector3.ZERO, false)
+	# franja de rol en el casco (identifica a cada astronauta tambien de espaldas)
+	var hb: MeshInstance3D = _add(head, _tor(0.295, 0.318), accm, Vector3(0, 0.02, 0), Vector3(PI / 2.0, PI / 2.0, 0), false)
+	hb.scale = Vector3(1.0, 1.0, 1.0)
 	_add(head, _tor(0.17, 0.2), _sm(Color(0.6, 0.62, 0.7), 0.8, 0.3), Vector3(0, -0.01, -0.09), Vector3(PI / 2.0, 0, 0), false)
 	# brazos: hombro -> codo -> mano
 	var arms: Array = []
 	for sd in [-1.0, 1.0]:
 		var sh: Node3D = _limb(body, Vector3(0.34 * sd, 1.48, 0))
-		_add(sh, _sph(0.15, 10), accm, Vector3(0, 0.0, 0))
+		_add(sh, _sph(0.15, 14), suitm, Vector3(0, 0.0, 0))
+		_add(sh, _tor(0.1, 0.135), bear, Vector3(0, -0.08, 0), Vector3.ZERO, false)
 		_add(sh, _cap(0.095, 0.38), suitm, Vector3(0, -0.18, 0))
+		_add(sh, _cyl(0.104, 0.104, 0.07, 16), accm, Vector3(0, -0.21, 0), Vector3.ZERO, false)
 		var el: Node3D = _limb(sh, Vector3(0, -0.34, 0))
 		_add(el, _sph(0.09, 8), dark, Vector3.ZERO)
 		_add(el, _tor(0.075, 0.115), suitm, Vector3(0, -0.02, 0), Vector3.ZERO, false)
 		_add(sh, _tor(0.085, 0.125), suitm, Vector3(0, -0.3, 0), Vector3.ZERO, false)
 		_add(el, _cap(0.085, 0.34), suitm, Vector3(0, -0.16, 0))
-		_add(el, _box(Vector3(0.17, 0.05, 0.17)), accm, Vector3(0, -0.04, 0), Vector3.ZERO, false)
+		_add(el, _box(Vector3(0.17, 0.05, 0.17)), bear, Vector3(0, -0.24, 0), Vector3.ZERO, false)
 		_add(el, _sph(0.095, 10), glove, Vector3(0, -0.34, 0))
 		_add(el, _box(Vector3(0.1, 0.09, 0.06)), glove, Vector3(0, -0.39, -0.05), Vector3.ZERO, false)
 		arms.append([sh, el])
@@ -823,15 +845,16 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 	var legs: Array = []
 	for sd in [-1.0, 1.0]:
 		var hp: Node3D = _limb(rig, Vector3(0.15 * sd, 0.68, 0))
-		_add(hp, _sph(0.14, 10), suitm, Vector3.ZERO)
+		_add(hp, _sph(0.14, 12), suitm, Vector3.ZERO)
 		_add(hp, _cap(0.125, 0.4), suitm, Vector3(0, -0.18, 0))
+		_add(hp, _cyl(0.134, 0.134, 0.07, 16), accm, Vector3(0, -0.22, 0), Vector3.ZERO, false)
 		var kn: Node3D = _limb(hp, Vector3(0, -0.34, 0))
 		_add(kn, _sph(0.115, 8), dark, Vector3.ZERO)
 		_add(kn, _tor(0.1, 0.15), suitm, Vector3(0, -0.02, 0), Vector3.ZERO, false)
-		_add(kn, _sph(0.1, 10), accm, Vector3(0, 0.0, -0.1), Vector3.ZERO, false)
+		_add(kn, _sph(0.1, 10), dark, Vector3(0, 0.0, -0.1), Vector3.ZERO, false)
 		_add(kn, _sph(0.14, 12), dark, Vector3(0, -0.4, -0.2))
 		_add(kn, _cap(0.105, 0.34), suitm, Vector3(0, -0.16, 0))
-		_add(kn, _box(Vector3(0.22, 0.05, 0.1)), accm, Vector3(0, -0.03, -0.09), Vector3.ZERO, false)
+		_add(kn, _box(Vector3(0.22, 0.05, 0.1)), dark, Vector3(0, -0.03, -0.09), Vector3.ZERO, false)
 		_add(kn, _box(Vector3(0.22, 0.13, 0.36)), dark, Vector3(0, -0.34, -0.06))
 		_add(kn, _box(Vector3(0.24, 0.04, 0.38)), metal, Vector3(0, -0.4, -0.06), Vector3.ZERO, false)
 		legs.append([hp, kn])
@@ -1853,16 +1876,7 @@ func _tile_h(x: int, y: int) -> float:
 func ground_y(fx: float, fy: float) -> float:
 	if heights.is_empty():
 		return 0.0
-	var W1: int = W + 1
-	var x0: int = clampi(int(floor(fx)), 0, W - 1)
-	var y0: int = clampi(int(floor(fy)), 0, H - 1)
-	var tx: float = clampf(fx - float(x0), 0.0, 1.0)
-	var ty: float = clampf(fy - float(y0), 0.0, 1.0)
-	var h00: float = heights[y0 * W1 + x0]
-	var h10: float = heights[y0 * W1 + x0 + 1]
-	var h01: float = heights[(y0 + 1) * W1 + x0]
-	var h11: float = heights[(y0 + 1) * W1 + x0 + 1]
-	return lerpf(lerpf(h00, h10, tx), lerpf(h01, h11, tx), ty)
+	return Terrain3D.sample(heights, t_gw, t_sub, W, H, fx, fy)
 
 
 # ---------- crateres del suelo (relieve + textura) ----------
@@ -1908,20 +1922,37 @@ func _make_craters() -> void:
 		if not ok:
 			continue
 		craters.append(Vector4(x, y, r, clampf(r * 0.2, 0.2, 1.6)))
-	# relieve real: cuenco con borde elevado, por casilla
-	for cr in craters:
-		var c: Vector4 = cr
-		var reach: float = c.z * 1.4
-		for ty in range(maxi(int(c.y - reach), 0), mini(int(c.y + reach) + 1, H)):
-			for tx in range(maxi(int(c.x - reach), 0), mini(int(c.x + reach) + 1, W)):
-				var u: float = Vector2(float(tx) + 0.5 - c.x, float(ty) + 0.5 - c.y).length() / c.z
-				var h: float = 0.0
-				if u < 1.0:
-					h = -c.w * (1.0 - u * u) + c.w * 0.42 * smoothstep(0.6, 1.0, u)
-				else:
-					var d1: float = (u - 1.04) / 0.16
-					h = c.w * 0.45 * exp(-d1 * d1)
-				crater_hf[ty * W + tx] += h
+	# v28: crateres secundarios pequenos (mas en la Luna) y crateres "jovenes" con eyecciones claras.
+	# El relieve ya no se suma por casilla: terrain3d.gd usa un perfil continuo (crater_hf queda vacio).
+	var extra: int = 150 if moon else 40
+	for i in extra:
+		var r2: float = g.randf_range(0.9, 2.3) if moon else g.randf_range(0.9, 1.8)
+		var x2: float = g.randf_range(3.0, float(W) - 3.0)
+		var y2: float = g.randf_range(3.0, float(H) - 3.0)
+		if x2 > bx0 - r2 and x2 < bx1 + r2 and y2 > by0 - r2 and y2 < by1 + r2:
+			continue
+		var ch2: String = _tile_char(int(floor(x2)), int(floor(y2)))
+		if ch2 != ".":
+			continue
+		var ok2: bool = true
+		for o in craters:
+			var oc2: Vector4 = o
+			if Vector2(x2, y2).distance_to(Vector2(oc2.x, oc2.y)) < (r2 + oc2.z) * 0.8:
+				ok2 = false
+				break
+		if ok2:
+			craters.append(Vector4(x2, y2, r2, clampf(r2 * 0.22, 0.18, 0.5)))
+	young_craters.clear()
+	if moon:
+		for cr in craters:
+			var c3: Vector4 = cr
+			if c3.z > 2.2 and g.randf() < 0.3:
+				young_craters.append(c3)
+	# microcrateres: solo en la textura del suelo (normal map), no en la malla
+	micro_craters.clear()
+	for i in (700 if moon else 160):
+		micro_craters.append(Vector4(g.randf_range(1.0, float(W) - 1.0), g.randf_range(1.0, float(H) - 1.0), g.randf_range(0.18, 0.6), 0.0))
+	crater_hf = PackedFloat32Array()
 
 
 func _apply_terrain_tex() -> void:
@@ -1936,7 +1967,7 @@ func _apply_terrain_tex() -> void:
 		m.detail_enabled = false
 		return
 	var ppt: int = 6 if lv == 1 else 10
-	var tx: Array = ExtTex.make_ground(craters, W, H, ppt, lv == 2, 7.0)
+	var tx: Array = ExtTex.make_ground(craters + micro_craters, W, H, ppt, lv == 2, 7.0)
 	m.albedo_texture = tx[0]
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	var gr: Array = ExtTex.make_grain(128 if lv == 1 else 256)
@@ -1968,13 +1999,12 @@ func _tile_color(x: int, y: int) -> Color:
 	elif ch == "X":
 		c = Color(0.2, 0.1, 0.08)
 	if game.location == "Luna":
-		c = Color(c.r * 0.6, c.g * 0.6, c.b * 0.62)
-	return c
+		c = Color(c.r * 0.6, c.g * 0.6, c.b * 0.57)
+	return WorldLook.grade_ground(c, game.location)
 
 
 func _build_terrain(parent: Node3D) -> void:
-	var W1: int = W + 1
-	var H1: int = H + 1
+	# v28: malla subdividida y por bloques (terrain3d.gd). Calidad baja: 1 vertice por casilla.
 	var th := PackedFloat32Array()
 	th.resize(W * H)
 	var tc: Array = []
@@ -1983,96 +2013,24 @@ func _build_terrain(parent: Node3D) -> void:
 		for x in W:
 			th[y * W + x] = _tile_h(x, y)
 			tc[y * W + x] = _tile_color(x, y)
-	heights = PackedFloat32Array()
-	heights.resize(W1 * H1)
-	var verts := PackedVector3Array()
-	verts.resize(W1 * H1)
-	var cols := PackedColorArray()
-	cols.resize(W1 * H1)
-	for cy in H1:
-		for cx in W1:
-			var hs: float = 0.0
-			var rs: float = 0.0
-			var gs: float = 0.0
-			var bs: float = 0.0
-			var cnt: int = 0
-			for oy in range(-1, 1):
-				for ox in range(-1, 1):
-					var tx: int = cx + ox
-					var ty: int = cy + oy
-					if tx >= 0 and ty >= 0 and tx < W and ty < H:
-						hs += th[ty * W + tx]
-						var tcol: Color = tc[ty * W + tx]
-						rs += tcol.r
-						gs += tcol.g
-						bs += tcol.b
-						cnt += 1
-			var hh: float = hs / float(cnt)
-			heights[cy * W1 + cx] = hh
-			verts[cy * W1 + cx] = Vector3(float(cx) * T3, hh, float(cy) * T3)
-			cols[cy * W1 + cx] = Color(rs / float(cnt), gs / float(cnt), bs / float(cnt))
-	var norms := PackedVector3Array()
-	norms.resize(W1 * H1)
-	for cy in H1:
-		for cx in W1:
-			var hl: float = heights[cy * W1 + maxi(cx - 1, 0)]
-			var hr: float = heights[cy * W1 + mini(cx + 1, W)]
-			var hu: float = heights[maxi(cy - 1, 0) * W1 + cx]
-			var hd: float = heights[mini(cy + 1, H) * W1 + cx]
-			norms[cy * W1 + cx] = Vector3(hl - hr, 2.0 * T3, hu - hd).normalized()
-	var uvs := PackedVector2Array()
-	var uvs2 := PackedVector2Array()
-	var tans := PackedFloat32Array()
-	uvs.resize(W1 * H1)
-	uvs2.resize(W1 * H1)
-	tans.resize(W1 * H1 * 4)
-	for cy in H1:
-		for cx in W1:
-			var vi: int = cy * W1 + cx
-			uvs[vi] = Vector2(float(cx) / float(W), float(cy) / float(H))
-			uvs2[vi] = Vector2(float(cx), float(cy)) / 5.0
-			var nn: Vector3 = norms[vi]
-			var tt: Vector3 = (Vector3(1, 0, 0) - nn * nn.x).normalized()
-			tans[vi * 4] = tt.x
-			tans[vi * 4 + 1] = tt.y
-			tans[vi * 4 + 2] = tt.z
-			tans[vi * 4 + 3] = 1.0
-	var idx := PackedInt32Array()
-	idx.resize(W * H * 6)
-	var k: int = 0
-	for y in H:
-		for x in W:
-			var a: int = y * W1 + x
-			var b: int = a + 1
-			var c: int = a + W1 + 1
-			var d: int = a + W1
-			idx[k] = a
-			idx[k + 1] = b
-			idx[k + 2] = c
-			idx[k + 3] = a
-			idx[k + 4] = c
-			idx[k + 5] = d
-			k += 6
-	var arr: Array = []
-	arr.resize(Mesh.ARRAY_MAX)
-	arr[Mesh.ARRAY_VERTEX] = verts
-	arr[Mesh.ARRAY_NORMAL] = norms
-	arr[Mesh.ARRAY_COLOR] = cols
-	arr[Mesh.ARRAY_TEX_UV] = uvs
-	arr[Mesh.ARRAY_TEX_UV2] = uvs2
-	arr[Mesh.ARRAY_TANGENT] = tans
-	arr[Mesh.ARRAY_INDEX] = idx
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	var sub: int = 1 if clampi(int(game.tex_quality), 0, 2) == 0 else 2
+	var base_rect := Rect2(float(game.BASE_X0) - 7.0, float(game.BASE_Y0) - 6.0, 21.0, 15.0)
+	var r: Dictionary = Terrain3D.build(W, H, th, tc, craters, game.ext_rows, game.location == "Luna", base_rect, sub, young_craters)
+	heights = r["heights"]
+	t_sub = int(r["sub"])
+	t_gw = int(r["gw"])
 	var tm := StandardMaterial3D.new()
 	tm.vertex_color_use_as_albedo = true
-	tm.roughness = 0.96
+	tm.roughness = 0.97 if game.location == "Luna" else 0.92
 	tm.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var mi := MeshInstance3D.new()
-	mi.mesh = mesh
-	mi.material_override = tm
-	mi.name = "Terreno"
-	parent.add_child(mi)
+	var holder := Node3D.new()
+	holder.name = "Terreno"
+	parent.add_child(holder)
+	for m in r["meshes"]:
+		var mi := MeshInstance3D.new()
+		mi.mesh = m
+		mi.material_override = tm
+		holder.add_child(mi)
 	terrain_mat = tm
 	_apply_terrain_tex()
 
@@ -2096,20 +2054,21 @@ func _build_exterior() -> void:
 	var rocks: Array = lists["r"]
 	var lvm: int = clampi(int(game.tex_quality), 0, 2)
 	var rock_seg: int = [8, 10, 12][lvm]
-	var mm_r: ChunkMM = _make_mm_c(exterior, ExtTex.lumpy_mesh(rock_seg, 0.3, 1), _ext_mat("rock", 0.05, 0.95), rocks, 1)
+	var moon_w: bool = game.location == "Luna"
+	var mm_r: ChunkMM = _make_mm_c(exterior, Terrain3D.rock_mesh(1, moon_w, rock_seg), _ext_mat("rock", 0.0, 0.93), rocks, 1)
 	for i in rocks.size():
 		var p: Vector2i = rocks[i]
 		var zc: Color = game.zone_rock[game._zone_at(p.x, p.y)]
 		var s: float = g.randf_range(0.6, 1.0)
-		var pos: Vector3 = _tp(p.x, p.y, ground_y(float(p.x) + 0.5, float(p.y) + 0.5) + 0.25)
-		mm_r.set_xf(i, _xf(pos, g.randf() * TAU, Vector3(s * 1.1, s * 0.8, s)))
+		var pos: Vector3 = _tp(p.x, p.y, ground_y(float(p.x) + 0.5, float(p.y) + 0.5) + 0.18 * s)
+		mm_r.set_xf(i, _xf(pos, g.randf() * TAU, Vector3(s * 1.1, s * 0.85, s)))
 		var sh: float = g.randf_range(0.85, 1.15)
 		mm_r.set_col(i, Color(zc.r * sh, zc.g * sh, zc.b * sh))
 	# vetas de metal: roca oscura + trozos metalicos
 	var metals: Array = lists["m"]
 	if _place_glb_nodes("material_scrap", float(MAT_SIZE["scrap"]), metals, 0.0, g):
 		metals = []
-	var mm_mr: ChunkMM = _make_mm_c(exterior, ExtTex.lumpy_mesh(rock_seg, 0.32, 2), _ext_mat("rock", 0.05, 0.95), metals, 1)
+	var mm_mr: ChunkMM = _make_mm_c(exterior, Terrain3D.rock_mesh(2, moon_w, rock_seg), _ext_mat("rock", 0.0, 0.93), metals, 1)
 	var mm_mm: ChunkMM = _make_mm_c(exterior, ExtTex.lumpy_mesh(6, 0.22, 3), _ext_mat("ore", 0.55, 0.5), metals, 3)
 	for i in metals.size():
 		var p2: Vector2i = metals[i]
@@ -2128,6 +2087,7 @@ func _build_exterior() -> void:
 			parts.append([mm_mm, i * 3 + j, xm])
 		node_data.append({"x": p2.x, "y": p2.y, "hidden": false, "parts": parts})
 	# hielo: cristales
+	ice_pts = PackedVector3Array()
 	var ices: Array = lists["i"]
 	if _place_glb_nodes("material_ice", float(MAT_SIZE["ice"]), ices, 0.0, g):
 		ices = []
@@ -2142,6 +2102,7 @@ func _build_exterior() -> void:
 			var xi: Transform3D = Transform3D(Basis.from_euler(Vector3(g.randf_range(-0.3, 0.3), g.randf() * TAU, g.randf_range(-0.3, 0.3))) * Basis.from_scale(Vector3(0.62, hgt, 0.62)), _tp(p3.x, p3.y, gy3) + off3)
 			mm_i.set_xf(i * 3 + j, xi)
 			mm_i.set_col(i * 3 + j, Color(0.72, 0.92, 1.0, 0.82))
+			ice_pts.append(xi.origin + Vector3(0, hgt * 0.45, 0))
 			parts3.append([mm_i, i * 3 + j, xi])
 		node_data.append({"x": p3.x, "y": p3.y, "hidden": false, "parts": parts3})
 	# cargamento: cajas
@@ -2185,6 +2146,7 @@ func _build_exterior() -> void:
 		var zr5: Color = game.zone_rock[game._zone_at(p5.x, p5.y)]
 		mm_p.set_xf(i, _xf(Vector3(fx * T3, ground_y(fx, fy) + s5 * 0.4, fy * T3), g.randf() * TAU, Vector3(s5 * 1.3, s5 * 0.7, s5)))
 		mm_p.set_col(i, Color(zr5.r * 1.1, zr5.g * 1.1, zr5.b * 1.1))
+	_scatter_boulders(g)
 	# placas / monumentos
 	for p6 in lists["L"]:
 		var zid: int = game._zone_at(p6.x, p6.y)
@@ -2193,9 +2155,62 @@ func _build_exterior() -> void:
 		model.position = _tp(p6.x, p6.y, ground_y(float(p6.x) + 0.5, float(p6.y) + 0.5))
 		exterior.add_child(model)
 	_build_base_exterior()
+	wfx = Node3D.new()
+	wfx.set_script(load("res://world_fx.gd"))
+	add_child(wfx)
+	wfx.call("setup", self, game.location == "Luna", ice_pts)
 	apply_textures()
 	apply_gfx()
 	refresh_nodes()
+
+
+func _scatter_boulders(g: RandomNumberGenerator) -> void:
+	# v28: bloques sueltos decorativos (sin colision). Luna: sobre todo en los bordes de los crateres
+	# (material expulsado por el impacto); Marte: piedras planas dispersas. Cantidad segun "Efectos".
+	var moon: bool = game.location == "Luna"
+	var k: float = float(game.FX_FACTOR[clampi(int(game.fx_idx), 0, 2)])
+	var spots: Array = []   # [fx, fy, escala]
+	if moon:
+		for cr in craters:
+			var c: Vector4 = cr
+			if c.z < 1.6:
+				continue
+			var n: int = int(c.z * 2.2 * k)
+			for i in n:
+				var an: float = g.randf() * TAU
+				var rr: float = c.z * g.randf_range(0.95, 1.5)
+				spots.append([c.x + cos(an) * rr, c.y + sin(an) * rr, g.randf_range(0.12, 0.34) * (1.0 + c.z * 0.05)])
+	var n2: int = int((260.0 if moon else 420.0) * k)
+	for i in n2:
+		spots.append([g.randf_range(2.0, float(W) - 2.0), g.randf_range(2.0, float(H) - 2.0), g.randf_range(0.1, 0.3)])
+	var tiles: Array = []
+	var keep: Array = []
+	var bx0: float = float(game.BASE_X0) - 5.0
+	var bx1: float = float(game.BASE_X0) + 12.0
+	var by0: float = float(game.BASE_Y0) - 4.0
+	var by1: float = float(game.BASE_Y0) + 8.0
+	for sp in spots:
+		var fx: float = sp[0]
+		var fy: float = sp[1]
+		if fx > bx0 and fx < bx1 and fy > by0 and fy < by1:
+			continue
+		var ch: String = _tile_char(int(fx), int(fy))
+		if ch != "." and ch != "#":
+			continue
+		tiles.append(Vector2i(int(fx), int(fy)))
+		keep.append(sp)
+	if tiles.is_empty():
+		return
+	var mm: ChunkMM = _make_mm_c(exterior, Terrain3D.rock_mesh(7, moon, 8), _ext_mat("rock", 0.0, 0.95), tiles, 1, false)
+	for i in keep.size():
+		var sp2: Array = keep[i]
+		var fx2: float = sp2[0]
+		var fy2: float = sp2[1]
+		var s2: float = sp2[2]
+		var zr: Color = game.zone_rock[game._zone_at(int(fx2), int(fy2))]
+		var sh: float = g.randf_range(0.8, 1.1)
+		mm.set_xf(i, _xf(Vector3(fx2 * T3, ground_y(fx2, fy2) + s2 * 0.12, fy2 * T3), g.randf() * TAU, Vector3(s2 * 1.2, s2 * 0.9, s2)))
+		mm.set_col(i, Color(zr.r * sh, zr.g * sh, zr.b * sh))
 
 
 func refresh_nodes() -> void:
@@ -2274,10 +2289,14 @@ func _build_base_exterior() -> void:
 	var cz: float = (z0 + z1) * 0.5
 	var W2: float = x1 - x0
 	var D2: float = z1 - z0
-	var hull: StandardMaterial3D = _m(Color(0.66, 0.7, 0.8), 0.55, 0.4)
-	var hull2: StandardMaterial3D = _m(Color(0.42, 0.47, 0.6), 0.55, 0.4)
-	var dark: StandardMaterial3D = _m(Color(0.22, 0.25, 0.33), 0.6, 0.4)
-	var trim: StandardMaterial3D = _m(Color(0.88, 0.9, 0.97), 0.6, 0.3)
+	# v28: casco blanco calido con paneles (textura procedural), grafito y acentos ambar
+	hull_mats.clear()
+	var hull: StandardMaterial3D = BaseLook.hull_mat(Color(0.8, 0.81, 0.82), 0.35, 0.5)
+	var hull2: StandardMaterial3D = BaseLook.hull_mat(Color(0.36, 0.39, 0.44), 0.45, 0.45)
+	hull_mats.append(hull)
+	hull_mats.append(hull2)
+	var dark: StandardMaterial3D = _m(Color(0.2, 0.22, 0.27), 0.55, 0.45)
+	var trim: StandardMaterial3D = _m(Color(0.86, 0.87, 0.88), 0.5, 0.35)
 	# cimientos y casco por capas
 	_add(exterior, _box(Vector3(W2 + 0.8, 0.35, D2 + 0.8)), dark, Vector3(cx, 0.17, cz))
 	_add(exterior, _box(Vector3(W2, 2.7, D2)), hull, Vector3(cx, 1.7, cz))
@@ -2290,7 +2309,7 @@ func _build_base_exterior() -> void:
 		_add(exterior, _box(Vector3(0.12, 2.6, 0.12)), hull2, Vector3(rx, 1.7, z1 + 0.04), Vector3.ZERO, false)
 		_add(exterior, _box(Vector3(0.12, 2.6, 0.12)), hull2, Vector3(rx, 1.7, z0 - 0.04), Vector3.ZERO, false)
 	# barandilla del techo
-	var rail: StandardMaterial3D = _m(Color(0.95, 0.8, 0.2), 0.3, 0.5)
+	var rail: StandardMaterial3D = _m(Color(0.78, 0.62, 0.24), 0.4, 0.5)
 	for zz in [z0 + 0.5, z1 - 0.5]:
 		_add(exterior, _box(Vector3(W2 - 1.0, 0.07, 0.07)), rail, Vector3(cx, 3.8, zz), Vector3.ZERO, false)
 	for k in 9:
@@ -2298,8 +2317,8 @@ func _build_base_exterior() -> void:
 		for zz in [z0 + 0.5, z1 - 0.5]:
 			_add(exterior, _cyl(0.035, 0.035, 0.55), rail, Vector3(px2, 3.5, zz), Vector3.ZERO, false)
 	# ventanas
-	var wm: StandardMaterial3D = _m(Color(1.0, 0.9, 0.5), 0.0, 0.4, 1.7)
-	var wm2: StandardMaterial3D = _m(Color(0.5, 0.8, 1.0), 0.0, 0.4, 1.3)
+	var wm: StandardMaterial3D = _m(Color(1.0, 0.88, 0.62), 0.0, 0.4, 0.75)
+	var wm2: StandardMaterial3D = _m(Color(0.62, 0.78, 0.92), 0.0, 0.4, 0.55)
 	var ax: float = (bx + 2.5) * T
 	var az: float = z1
 	for i in 9:
@@ -2310,7 +2329,8 @@ func _build_base_exterior() -> void:
 		_add(exterior, _box(Vector3(1.4, 0.95, 0.1)), dark, Vector3(wx, 1.9, z0 - 0.05), Vector3.ZERO, false)
 		_add(exterior, _box(Vector3(1.2, 0.75, 0.06)), wm2, Vector3(wx, 1.9, z0 - 0.09), Vector3.ZERO, false)
 	# modulos laterales (habitaculos cilindricos)
-	var modm: StandardMaterial3D = _m(Color(0.74, 0.78, 0.88), 0.6, 0.35)
+	var modm: StandardMaterial3D = BaseLook.hull_mat(Color(0.82, 0.83, 0.84), 0.35, 0.45)
+	hull_mats.append(modm)
 	for sd in [-1.0, 1.0]:
 		var mx: float = cx + sd * (W2 * 0.5 + 1.0)
 		_add(exterior, _cyl(1.7, 1.7, 2.0), modm, Vector3(mx, 1.7, cz), Vector3(0, 0, PI / 2.0))
@@ -2329,21 +2349,22 @@ func _build_base_exterior() -> void:
 	_add(exterior, _box(Vector3(3.0, 3.1, 1.3)), dark, Vector3(ax, 1.55, az + 0.5))
 	_add(exterior, _box(Vector3(1.6, 2.3, 0.12)), _m(Color(0.14, 0.16, 0.22), 0.6, 0.4), Vector3(ax, 1.15, az + 1.16))
 	for i in 4:
-		_add(exterior, _box(Vector3(1.6, 0.18, 0.14)), _m(Color(0.95, 0.8, 0.1), 0.0, 0.5, 0.5), Vector3(ax, 0.4 + float(i) * 0.55, az + 1.2), Vector3.ZERO, false)
-	_add(exterior, _box(Vector3(3.8, 0.16, 2.0)), _m(Color(0.95, 0.8, 0.15), 0.3, 0.5), Vector3(ax, 3.2, az + 0.9))
+		_add(exterior, _box(Vector3(1.6, 0.18, 0.14)), _m(Color(0.82, 0.64, 0.2), 0.2, 0.55), Vector3(ax, 0.4 + float(i) * 0.55, az + 1.2), Vector3.ZERO, false)
+	_add(exterior, _box(Vector3(3.8, 0.16, 2.0)), _m(Color(0.8, 0.64, 0.24), 0.4, 0.45), Vector3(ax, 3.2, az + 0.9))
 	for sx in [-1.7, 1.7]:
 		_add(exterior, _cyl(0.07, 0.07, 3.1), rail, Vector3(ax + sx, 1.55, az + 1.8))
 	_led(exterior, Vector3(ax, 2.75, az + 1.25), Color(0.2, 1.0, 0.4), Color(0.05, 0.3, 0.1))
 	# balizas del camino a la esclusa
 	for i in 4:
 		for sx in [-1.4, 1.4]:
-			_add(exterior, _box(Vector3(0.18, 0.1, 0.18)), _m(Color(1.0, 0.85, 0.3), 0.0, 0.4, 1.6), Vector3(ax + sx, 0.06, az + 2.2 + float(i) * 1.6), Vector3.ZERO, false)
+			_add(exterior, _box(Vector3(0.14, 0.08, 0.14)), _m(Color(1.0, 0.85, 0.55), 0.0, 0.4, 0.9), Vector3(ax + sx, 0.05, az + 2.2 + float(i) * 1.6), Vector3.ZERO, false)
 	# antenas
 	_add(exterior, _cyl(0.06, 0.08, 4.2), _m(Color(0.8, 0.8, 0.86), 0.7, 0.3), Vector3(x0 + 1.0, 5.2, z0 + 1.2))
 	_led(exterior, Vector3(x0 + 1.0, 7.4, z0 + 1.2), Color(1.0, 0.15, 0.1), Color(0.3, 0.03, 0.02))
 	var dish: MeshInstance3D = _add(exterior, _sph(0.8, 14, true), _m(Color(0.9, 0.9, 0.95), 0.6, 0.3), Vector3(x1 - 2.0, 3.9, z0 + 1.6), Vector3(-0.8, 0.4, 0), false)
 	dish.scale = Vector3(1.0, 0.5, 1.0)
 	_add(exterior, _cyl(0.07, 0.1, 0.8), dark, Vector3(x1 - 2.0, 3.5, z0 + 1.6))
+	BaseLook.build_details(self, exterior, bx, by, game.location == "Luna")
 	_build_base_ext_lv()
 
 
@@ -2504,6 +2525,8 @@ func _process(delta: float) -> void:
 	if not game.view3d_on:
 		return # en la vista 2D no hace falta animar la escena 3D
 	_update_light()
+	if wfx != null:
+		wfx.call("update", delta, last_daylight)
 	_task_fx(delta)
 	_update_actors(delta)
 	_fx_update(delta)
@@ -2527,26 +2550,28 @@ func _update_light() -> void:
 	var lunar_dark: bool = game._is_night()
 	var sk: float = 0.0 if lunar_dark else day_f
 	var daylight: float = clampf(sk * 3.0, 0.0, 1.0)
-	var elev: float = deg_to_rad(6.0 + 50.0 * sk)
+	last_daylight = daylight
+	var elev: float = deg_to_rad(6.0 + (float(WorldLook.get_look(game.location)["max_elev"]) - 6.0) * sk)
 	var phi: float = PI * u
-	var to_sun := Vector3(cos(phi) * cos(elev), sin(elev), sin(phi) * cos(elev))
+	# v28: el arco del sol es mas lateral (este-oeste) para que las sombras crucen la vista y den relieve
+	var to_sun := Vector3(cos(phi) * cos(elev), sin(elev), sin(phi) * cos(elev) * 0.45).normalized()
 	sun.global_transform = Transform3D(Basis.looking_at(-to_sun, Vector3.UP), Vector3.ZERO)
 	sun.light_energy = (1.0 if moon else 1.1) * smoothstep(0.0, 0.3, sk)
 	sun.light_color = Color(1.0, 0.78 + 0.22 * sk, 0.6 + 0.4 * sk) if moon else Color(1.0, 0.72 + 0.16 * sk, 0.5 + 0.26 * sk)
 	if dust_fx != null:
 		dust_fx.visible = game.outside and daylight > 0.05
 		dust_fx.speed_scale = 2.6 if game.storm_left > 0 else 1.0
-		dust_mat.albedo_color = Color(0.95, 0.65, 0.4, (0.34 if game.storm_left > 0 else 0.15) * daylight)
+		dust_mat.albedo_color = Color(0.95, 0.65, 0.4, (0.45 if game.storm_left > 0 else 0.15) * daylight)
 	sun.shadow_enabled = sk > 0.02 and game.shadows_on
-	moonlight.light_energy = lerpf(0.5, 0.12, daylight)
+	moonlight.light_energy = lerpf(0.5, 0.0, daylight)
 	# gradacion suave por mundo: Marte menos saturado y con mas contraste (menos "naranja plano"), Luna neutra
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 0.86 if game.location == "Marte" else 0.95
 	env.adjustment_contrast = 1.06
-	if game.outside:
-		var amb: Color = Color(0.08, 0.1, 0.22).lerp(Color(0.5, 0.55, 0.7) if moon else Color(0.88, 0.62, 0.42), daylight)
-		env.ambient_light_color = amb
-		env.ambient_light_energy = lerpf(0.55, 0.3 if moon else 0.5, daylight)
+	env.tonemap_exposure = 0.9 * float(game.bright)
+	if game.outside or menu_mode:
+		# v28: luz, sombras y gradacion propias de cada mundo (world_look.gd)
+		WorldLook.apply_outside(self, game.location, sk, daylight, game.storm_left > 0)
 		if moon:
 			env.background_mode = Environment.BG_COLOR
 			env.background_color = Color(0.0, 0.0, 0.012)
@@ -2830,7 +2855,10 @@ func _update_camera(delta: float) -> void:
 	cam.look_at(look, Vector3.UP)
 	skydome.position = cam.position
 	if dust_fx != null:
-		dust_fx.position = cam.position + Vector3(0.0, 1.0, 0.0)
+		# v28: el polvo flota cerca del suelo alrededor del jugador (no pegado a la camara:
+		# los sprites cercanos a la camara se veian como rectangulos grandes)
+		var pf: Vector2 = game.pos_f
+		dust_fx.position = Vector3(pf.x * T3, ground_y(pf.x, pf.y) + 2.0, pf.y * T3)
 	if ceiling != null:
 		ceiling.visible = (mode == 1 or mode == 2) and not game.outside
 
