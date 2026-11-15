@@ -36,6 +36,7 @@ var quiz_next: Button
 var quiz_i: int = 0
 var quiz_done: bool = false
 var options_overlay: Control
+var bind_btns: Dictionary = {}
 var controls_overlay: Control
 var stats_overlay: Control
 var controls_text: RichTextLabel
@@ -388,7 +389,10 @@ func _on_loc_toggled(on: bool, loc: String) -> void:
 		return
 	sel_loc = loc
 	_update_dest_text()
-	game._menu_preview(loc)
+	if game.preview_built != loc:
+		game.loading_run(Lang.t("Preparando %s…") % Lang.loc(loc), game._menu_preview.bind(loc))
+	else:
+		game._menu_preview(loc)
 
 
 func _on_diff_toggled(on: bool, i: int) -> void:
@@ -407,11 +411,11 @@ func _on_new_mission() -> void:
 func _on_start() -> void:
 	game.difficulty = sel_diff
 	game._save_settings()
-	game._new_game(sel_loc)
+	game.loading_run(Lang.t("Preparando tu base en %s…") % Lang.loc(sel_loc), game._new_game.bind(sel_loc))
 
 
 func _on_continue() -> void:
-	game._continue_game()
+	game.loading_run(Lang.t("Cargando tu partida…"), game._continue_game)
 
 
 func _on_quit() -> void:
@@ -605,6 +609,37 @@ func _build_options() -> void:
 	t4.add_child(rl)
 	opt["lang_hint"] = _lbl(Lang.t("El idioma se cambia desde el menú principal (reinicia la escena)."), 13, Color(0.7, 0.8, 0.95))
 	t4.add_child(opt["lang_hint"])
+	# --- controles reasignables ---
+	var csc := ScrollContainer.new()
+	csc.name = Lang.t("Controles")
+	csc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tabs.add_child(csc)
+	var t5 := VBoxContainer.new()
+	t5.add_theme_constant_override("separation", 6)
+	t5.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	csc.add_child(t5)
+	t5.add_child(_lbl(Lang.t("Pulsa una acción y luego la tecla que quieras. Si esa tecla ya la usa otra acción, se intercambian. Las flechas siempre mueven; Esc, F1, F2, F3, F11 y Enter no se pueden cambiar."), 13, Color(0.7, 0.8, 0.95)))
+	for d in game.BIND_DEFS:
+		var brow := HBoxContainer.new()
+		var bl: Label = _lbl(Lang.t(str(d[1])), 15)
+		bl.custom_minimum_size = Vector2(230, 0)
+		bl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		brow.add_child(bl)
+		var bb := Button.new()
+		bb.custom_minimum_size = Vector2(150, 0)
+		bb.focus_mode = Control.FOCUS_NONE
+		bb.pressed.connect(_on_rebind.bind(str(d[0])))
+		brow.add_child(bb)
+		bind_btns[str(d[0])] = bb
+		t5.add_child(brow)
+	t5.add_child(_lbl(Lang.t("Clic del ratón"), 15, Color(1.0, 0.9, 0.6)))
+	var cl: HBoxContainer = _opt_row(Lang.t("Clic izquierdo"), _click_names(), _on_click_left)
+	opt["click_left"] = cl.get_child(1)
+	t5.add_child(cl)
+	var cr: HBoxContainer = _opt_row(Lang.t("Clic derecho"), _click_names(), _on_click_right)
+	opt["click_right"] = cr.get_child(1)
+	t5.add_child(cr)
+	t5.add_child(_btn(Lang.t("Restablecer controles"), _on_reset_binds))
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 10)
 	v.add_child(hb)
@@ -617,11 +652,13 @@ func _build_options() -> void:
 func open_options() -> void:
 	_populate_win_sizes()
 	sync_options()
+	refresh_binds()
 	options_overlay.visible = true
 	game._overlay_opened()
 
 
 func close_options() -> void:
+	game.rebinding = ""
 	options_overlay.visible = false
 	game._save_settings()
 	game._overlay_closed()
@@ -734,6 +771,44 @@ func _on_vsync(on: bool) -> void:
 		game._set_vsync(on)
 
 
+func _click_names() -> Array:
+	return [Lang.t("Usar lo que tienes enfrente"), Lang.t("Mejorar la estación"), Lang.t("Saltar"), Lang.t("Abrir la mochila"), Lang.t("Cambiar objeto en mano"), Lang.t("Nada")]
+
+
+func refresh_binds() -> void:
+	for id in bind_btns.keys():
+		(bind_btns[id] as Button).text = Lang.t("Pulsa una tecla...") if game.rebinding == id else game.key_name(id)
+	if opt.has("click_left"):
+		syncing = true
+		(opt["click_left"] as OptionButton).select(game.CLICK_ACTIONS.find(game.click_left))
+		(opt["click_right"] as OptionButton).select(game.CLICK_ACTIONS.find(game.click_right))
+		syncing = false
+
+
+func _on_rebind(id: String) -> void:
+	game.begin_rebind(id, refresh_binds)
+	refresh_binds()
+
+
+func _on_click_left(i: int) -> void:
+	if not syncing:
+		game.click_left = game.CLICK_ACTIONS[i]
+		game._save_settings()
+
+
+func _on_click_right(i: int) -> void:
+	if not syncing:
+		game.click_right = game.CLICK_ACTIONS[i]
+		game._save_settings()
+
+
+func _on_reset_binds() -> void:
+	game._default_binds()
+	game.rebinding = ""
+	game._save_settings()
+	refresh_binds()
+
+
 func _on_easy(on: bool) -> void:
 	if not syncing:
 		game.easy_read = on
@@ -826,34 +901,34 @@ func _on_reset_options() -> void:
 # ---------- controles ----------
 
 func controls_bbcode() -> String:
+	var kn: Callable = game.key_name
 	var rows: Array = [
 		[Lang.t("[b]Moverse[/b]"), ""],
-		[Lang.t("W A S D o flechas"), Lang.t("Caminar (vista fija o aérea)")],
-		["Shift", Lang.t("Correr")],
-		[Lang.t("Espacio"), Lang.t("Saltar (cruza huecos y pasa sobre rocas, solo afuera)")],
+		["%s %s %s %s / %s" % [kn.call("up"), kn.call("left"), kn.call("down"), kn.call("right"), Lang.t("flechas")], Lang.t("Caminar (vista fija o aérea)")],
+		[kn.call("sprint"), Lang.t("Correr")],
+		[kn.call("jump"), Lang.t("Saltar (cruza huecos y pasa sobre rocas, solo afuera)")],
 		[Lang.t("Ratón"), Lang.t("Mirar (primera persona y detrás del personaje)")],
-		["W / S", Lang.t("Avanzar / retroceder (cámaras con ratón)")],
-		["A / D", Lang.t("Desplazarse de lado (cámaras con ratón)")],
-		["← / →", Lang.t("Girar (cámaras con ratón)")],
 		[Lang.t("[b]Actuar[/b]"), ""],
-		["E", Lang.t("Usar lo que tienes enfrente")],
-		["Tab", Lang.t("Mapa de navegación")],
-		["I", Lang.t("Mochila")],
-		["J", Lang.t("Diario de exploración")],
-		["K", Lang.t("Logros e insignias")],
+		[kn.call("interact"), Lang.t("Usar lo que tienes enfrente")],
+		[Lang.t("Clic izquierdo / derecho"), Lang.t("Acciones del ratón (se cambian en Opciones > Controles)")],
+		[kn.call("map"), Lang.t("Mapa de navegación")],
+		[kn.call("pack"), Lang.t("Mochila")],
+		[kn.call("diary"), Lang.t("Diario de exploración")],
+		[kn.call("ach"), Lang.t("Logros e insignias")],
 		["N", Lang.t("Saltar el tutorial guiado")],
-		["U", Lang.t("Mejorar la estación frente a ti (obra de ENOC)")],
-		["Q", Lang.t("Cambiar el objeto en la mano (kit de parche)")],
+		[kn.call("upgrade"), Lang.t("Mejorar la estación frente a ti (obra de ENOC)")],
+		[kn.call("hold"), Lang.t("Cambiar el objeto en la mano (kit de parche)")],
 		[Lang.t("[b]Cámara y pantalla[/b]"), ""],
-		["C", Lang.t("Cambiar de cámara (4 vistas)")],
+		[kn.call("cam"), Lang.t("Cambiar de cámara (4 vistas)")],
 		[Lang.t("Rueda del ratón"), Lang.t("Acercar o alejar")],
-		["V", Lang.t("Vista 3D / 2D")],
+		[kn.call("view"), Lang.t("Vista 3D / 2D")],
 		["F11", Lang.t("Pantalla completa")],
 		[Lang.t("[b]Interfaz[/b]"), ""],
+		[kn.call("chat"), Lang.t("Mostrar u ocultar el chat")],
 		["F1", Lang.t("Controles")],
 		["F2", Lang.t("Estadísticas")],
 		["F3", Lang.t("Mostrar FPS")],
-		["M", Lang.t("Silenciar la música")],
+		[kn.call("mute"), Lang.t("Silenciar la música")],
 		["Esc", Lang.t("Pausa")]
 	]
 	var t: String = "[table=2]"

@@ -1041,7 +1041,7 @@ func _player_pose() -> String:
 	if game.mode == 1:
 		return "talk"
 	if game.moving:
-		return "run" if Input.is_physical_key_pressed(KEY_SHIFT) else "walk"
+		return "run" if game.bind_down("sprint") else "walk"
 	return "idle"
 
 
@@ -2698,18 +2698,46 @@ func _update_actors(delta: float) -> void:
 	target_ring.visible = show
 
 
+func _blocked(p: Vector3) -> bool:
+	# casco de la base o marquesina de la esclusa (que sobresale ~2 m hacia el sur)
+	if _in_base_box(p):
+		return true
+	var ax: float = (float(game.BASE_X0) + 2.5) * T3
+	var z1: float = float(game.BASE_Y0 + 3) * T3
+	return absf(p.x - ax) < 2.3 and p.z > z1 and p.z < z1 + 2.3 and p.y < 3.7
+
+
 func _in_base_box(p: Vector3) -> bool:
 	# volumen del casco y los modulos de la base (en metros del mundo), con un margen
 	var x0: float = float(game.BASE_X0 - 3) * T3 - 0.5
 	var x1: float = float(game.BASE_X0 + 7) * T3 + 0.5
 	var z0: float = float(game.BASE_Y0 - 1) * T3 - 0.5
 	var z1: float = float(game.BASE_Y0 + 3) * T3 + 0.5
-	return p.x > x0 and p.x < x1 and p.z > z0 and p.z < z1 and p.y < 8.5
+	return p.x > x0 and p.x < x1 and p.z > z0 and p.z < z1 and p.y < 3.5   # altura del casco (la cupula alta no estorba)
+
+
+var cam_snap: bool = false
+
+
+func make_preview_model() -> Node3D:
+	# astronauta suelto para la vista del inventario (otro mundo 3D)
+	var n: Node3D = _make_astronaut(Color(0.97, 0.97, 1.0), "wilson")
+	_apply_suit_tex()
+	return n
+
+
+func snap_camera() -> void:
+	cam_snap = true
 
 
 func _update_camera(delta: float) -> void:
 	var mode: int = game.cam_mode
 	var pos: Vector3 = player_node.position
+	if cam_snap:
+		# tras cruzar la esclusa la camara se coloca de golpe detras del jugador (sin girar de lado)
+		cam_snap = false
+		yaw_cam = game.heading
+		cam_focus = pos
 	if mode == 1:
 		yaw_cam = game.heading
 	else:
@@ -2768,10 +2796,18 @@ func _update_camera(delta: float) -> void:
 		# la camara en tercera persona no puede meterse dentro del casco de la base: se acerca y sube
 		var fp: Vector3 = focus + Vector3(0.0, 1.3, 0.0)
 		if _in_base_box(fp.lerp(cp, 1.0)) or _in_base_box(fp.lerp(cp, 0.6)) or _in_base_box(fp.lerp(cp, 0.3)):
-			# bloqueada por el casco: probamos mirar al jugador desde un lado o desde delante
-			var back2: float = 8.5 * zoom
+			# bloqueada por el casco: primero subimos la camara por encima del techo, mirando hacia el jugador
 			var done: bool = false
-			for ang in [PI / 2.0, -PI / 2.0, PI]:
+			for opt_cam in [[3.2, 7.5], [2.2, 9.0], [1.2, 10.5], [0.4, 12.0]]:
+				# camara casi encima del jugador, por encima del techo y de la marquesina de la esclusa
+				var up_cp: Vector3 = focus - dirv * float(opt_cam[0]) * zoom + Vector3(0.0, float(opt_cam[1]) * zoom, 0.0)
+				if not _blocked(up_cp) and not _blocked(fp.lerp(up_cp, 0.7)) and not _blocked(fp.lerp(up_cp, 0.5)) and not _blocked(fp.lerp(up_cp, 0.3)):
+					cp = up_cp
+					look = focus + Vector3(0.0, 1.0, 0.0)
+					done = true
+					break
+			var back2: float = 8.5 * zoom
+			for ang in ([] if done else [PI / 2.0, -PI / 2.0, PI]):
 				var dv: Vector3 = Vector3(-sin(yaw_cam + ang), 0.0, -cos(yaw_cam + ang))
 				var alt: Vector3 = focus - dv * back2 + Vector3(0.0, 3.6 * zoom + 0.6, 0.0)
 				if not _in_base_box(alt) and not _in_base_box(fp.lerp(alt, 0.5)) and not _in_base_box(fp.lerp(alt, 0.25)):

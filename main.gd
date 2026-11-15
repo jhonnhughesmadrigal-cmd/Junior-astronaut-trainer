@@ -489,6 +489,26 @@ var easy_read: bool = false
 var fx_hold: Array = []           # efecto de recogida pendiente: [tipo, texto, color, material, circuitos]
 var fx_hold_node: String = ""     # casilla del material que aun se ve mientras lo recoges
 var fx_hold_at: float = 0.5       # avance de la tarea (0..1) en que se levanta el material
+# --- controles reasignables ---
+const BIND_DEFS: Array = [
+	["up", "Avanzar", KEY_W], ["down", "Retroceder", KEY_S], ["left", "Izquierda", KEY_A], ["right", "Derecha", KEY_D],
+	["sprint", "Correr", KEY_SHIFT], ["jump", "Saltar", KEY_SPACE], ["interact", "Usar lo que tienes enfrente", KEY_E],
+	["upgrade", "Mejorar la estación frente a ti", KEY_U], ["pack", "Mochila", KEY_I], ["hold", "Cambiar el objeto en la mano", KEY_Q],
+	["map", "Mapa de navegación", KEY_TAB], ["diary", "Diario de exploración", KEY_J], ["ach", "Logros e insignias", KEY_K],
+	["chat", "Mostrar u ocultar el chat", KEY_T], ["cam", "Cambiar de cámara", KEY_C], ["view", "Vista 3D / 2D", KEY_V], ["mute", "Silenciar la música", KEY_M]
+]
+const CLICK_ACTIONS: Array = ["interact", "upgrade", "jump", "pack", "hold", "none"]
+const RESERVED_KEYS: Array = [KEY_ESCAPE, KEY_F1, KEY_F2, KEY_F3, KEY_F11, KEY_ENTER, KEY_KP_ENTER, KEY_UNKNOWN]
+var binds: Dictionary = {}
+var click_left: String = "interact"
+var click_right: String = "upgrade"
+var rebinding: String = ""          # accion que se esta reasignando ("" = ninguna)
+var rebind_cb: Callable = Callable()
+var load_ov: Control = null
+var load_title: Label = null
+var load_tip: Label = null
+var load_bar: ProgressBar = null
+var loading_busy: bool = false
 var fade_rect: ColorRect = null
 var fading: bool = false
 var task_speed_idx: int = 1          # 0 lenta, 1 normal, 2 rapida, 3 muy rapida
@@ -500,6 +520,12 @@ var header: Label
 var inv_label: Label
 var inv_icons: Control
 var log_box: RichTextLabel
+var log_panel: PanelContainer = null
+var chat_visible: bool = true
+var tod_panel: PanelContainer = null
+var tod_label: Label = null
+var tod_tween: Tween = null
+var tod_last: int = -1
 var map_view: Control
 
 
@@ -525,6 +551,7 @@ func _ready() -> void:
 	_build_pack()
 	_build_bench()
 	_build_fade()
+	_build_loading()
 	_build_pause()
 	_setup_audio()
 	_apply_volumes()
@@ -567,7 +594,73 @@ func _web_ready() -> void:
 
 # ---------- AJUSTES ----------
 
+func _default_binds() -> void:
+	binds = {}
+	for d in BIND_DEFS:
+		binds[str(d[0])] = int(d[2])
+	click_left = "interact"
+	click_right = "upgrade"
+
+
+func key_name(id: String) -> String:
+	var pk: int = int(binds.get(id, 0))
+	var kc: int = DisplayServer.keyboard_get_keycode_from_physical(pk as Key)
+	var s: String = OS.get_keycode_string(kc if kc != 0 else pk)
+	if s == "":
+		s = "?"
+	return s
+
+
+func bind_down(id: String) -> bool:
+	return Input.is_physical_key_pressed(int(binds[id]) as Key)
+
+
+func _is_bind(k: InputEventKey, id: String) -> bool:
+	return int(k.physical_keycode) == int(binds[id])
+
+
+func begin_rebind(id: String, cb: Callable) -> void:
+	rebinding = id
+	rebind_cb = cb
+
+
+func _finish_rebind(k: InputEventKey) -> void:
+	var id: String = rebinding
+	rebinding = ""
+	var pk: int = int(k.physical_keycode)
+	if pk != int(KEY_ESCAPE) and not RESERVED_KEYS.has(pk):
+		for other in binds.keys():
+			if other != id and int(binds[other]) == pk:
+				binds[other] = binds[id]      # si ya la usaba otra accion, se intercambian
+		binds[id] = pk
+		_save_settings()
+	if rebind_cb.is_valid():
+		rebind_cb.call()
+
+
+func _do_click(button: int) -> void:
+	var act: String = click_left if button == MOUSE_BUTTON_LEFT else click_right
+	_do_bound(act)
+
+
+func _do_bound(act: String) -> void:
+	match act:
+		"jump":
+			_start_jump()
+		"interact":
+			if not airborne and fall_t < 0.0:
+				_interact()
+		"upgrade":
+			if not airborne and fall_t < 0.0:
+				_try_upgrade()
+		"pack":
+			_open_pack()
+		"hold":
+			_cycle_hold()
+
+
 func _load_settings() -> void:
+	_default_binds()
 	var cfg := ConfigFile.new()
 	if cfg.load(SETTINGS_PATH) != OK:
 		# primera ejecucion en el navegador: calidad Media (WebGL y equipos escolares suelen ir justos)
@@ -601,6 +694,15 @@ func _load_settings() -> void:
 	mouse_sens = clampf(float(cfg.get_value("game", "mouse_sens", 1.0)), 0.3, 2.0)
 	show_tutorial = bool(cfg.get_value("game", "tutorial", true))
 	easy_read = bool(cfg.get_value("game", "easy_read", false))
+	_default_binds()
+	for d in BIND_DEFS:
+		var bv: Variant = cfg.get_value("controls", str(d[0]), int(d[2]))
+		if bv is int and not RESERVED_KEYS.has(int(bv)) and int(bv) > 0:
+			binds[str(d[0])] = int(bv)
+	var cl: String = str(cfg.get_value("controls", "click_left", "interact"))
+	var cr: String = str(cfg.get_value("controls", "click_right", "upgrade"))
+	click_left = cl if CLICK_ACTIONS.has(cl) else "interact"
+	click_right = cr if CLICK_ACTIONS.has(cr) else "upgrade"
 	task_speed_idx = clampi(int(cfg.get_value("game", "task_speed", 1)), 0, TASK_SPEED_MULT.size() - 1)
 	var ach: Variant = cfg.get_value("game", "achievements", [])
 	if ach is Array:
@@ -642,6 +744,10 @@ func _save_settings() -> void:
 	cfg.set_value("game", "mouse_sens", mouse_sens)
 	cfg.set_value("game", "tutorial", show_tutorial)
 	cfg.set_value("game", "easy_read", easy_read)
+	for bid in binds.keys():
+		cfg.set_value("controls", str(bid), int(binds[bid]))
+	cfg.set_value("controls", "click_left", click_left)
+	cfg.set_value("controls", "click_right", click_right)
 	cfg.set_value("game", "task_speed", task_speed_idx)
 	cfg.set_value("game", "achievements", ach_done.keys())
 	cfg.set_value("game", "lang", Lang.code)
@@ -1066,6 +1172,84 @@ func _build_bench() -> void:
 func _on_bench_closed() -> void:
 	if mode == 4:
 		mode = 0
+
+
+const LOAD_TIPS: Array = [
+	"Consejo: duerme en la cama desde las 18:00; si no duermes, te desplomas a las 06:00.",
+	"Consejo: afuera el aire del traje se gasta. Vuelve a la esclusa antes de que se acabe.",
+	"Consejo: habla con la tripulación; cada día sube un poco la moral.",
+	"Consejo: fabrica el Mapa de navegación en el banco de trabajo para usar el minimapa.",
+	"Consejo: mejora el tanque del traje para explorar más lejos.",
+	"Consejo: las placas del exterior dan datos reales y moral."
+]
+
+
+func _build_loading() -> void:
+	load_ov = Control.new()
+	load_ov.set_anchors_preset(Control.PRESET_FULL_RECT)
+	load_ov.z_index = 90
+	load_ov.mouse_filter = Control.MOUSE_FILTER_STOP
+	load_ov.visible = false
+	var bg := ColorRect.new()
+	bg.color = Color(0.02, 0.03, 0.08, 1.0)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	load_ov.add_child(bg)
+	var cc := CenterContainer.new()
+	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	load_ov.add_child(cc)
+	var vb := VBoxContainer.new()
+	vb.custom_minimum_size = Vector2(560, 0)
+	vb.add_theme_constant_override("separation", 14)
+	cc.add_child(vb)
+	var t0 := Label.new()
+	t0.text = "MISIÓN PERSEO"
+	t0.add_theme_font_size_override("font_size", 34)
+	t0.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
+	t0.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(t0)
+	load_title = Label.new()
+	load_title.add_theme_font_size_override("font_size", 20)
+	load_title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
+	load_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(load_title)
+	load_bar = ProgressBar.new()
+	load_bar.custom_minimum_size = Vector2(0, 14)
+	load_bar.show_percentage = false
+	load_bar.max_value = 1.0
+	vb.add_child(load_bar)
+	load_tip = Label.new()
+	load_tip.add_theme_font_size_override("font_size", 15)
+	load_tip.add_theme_color_override("font_color", Color(0.7, 0.8, 0.95))
+	load_tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	load_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vb.add_child(load_tip)
+	add_child(load_ov)
+
+
+# Muestra la pantalla de carga, deja que se dibuje y ejecuta el trabajo pesado (construir el mundo).
+func loading_run(text: String, work: Callable) -> void:
+	if loading_busy or load_ov == null:
+		work.call()
+		return
+	loading_busy = true
+	load_title.text = text
+	load_tip.text = Lang.t(str(LOAD_TIPS[randi() % LOAD_TIPS.size()]))
+	load_bar.value = 0.15
+	load_ov.modulate.a = 1.0
+	load_ov.visible = true
+	await get_tree().process_frame
+	await get_tree().process_frame
+	load_bar.value = 0.5
+	await get_tree().process_frame
+	work.call()
+	load_bar.value = 1.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var tw: Tween = create_tween()
+	tw.tween_property(load_ov, "modulate:a", 0.0, 0.4)
+	await tw.finished
+	load_ov.visible = false
+	loading_busy = false
 
 
 func _build_fade() -> void:
@@ -1545,13 +1729,13 @@ func _move_player(delta: float, wish: Vector2, sprint: bool) -> void:
 
 
 func _poll_and_move(delta: float) -> void:
-	var up: bool = Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)
-	var down: bool = Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN)
-	var lf: bool = Input.is_physical_key_pressed(KEY_A)
-	var rt: bool = Input.is_physical_key_pressed(KEY_D)
+	var up: bool = bind_down("up") or Input.is_physical_key_pressed(KEY_UP)
+	var down: bool = bind_down("down") or Input.is_physical_key_pressed(KEY_DOWN)
+	var lf: bool = bind_down("left")
+	var rt: bool = bind_down("right")
 	var al: bool = Input.is_physical_key_pressed(KEY_LEFT)
 	var ar: bool = Input.is_physical_key_pressed(KEY_RIGHT)
-	var sprint: bool = Input.is_physical_key_pressed(KEY_SHIFT)
+	var sprint: bool = bind_down("sprint")
 	var fwd: float = (1.0 if up else 0.0) - (1.0 if down else 0.0)
 	if _rel_controls():
 		var turn: float = (1.0 if al else 0.0) - (1.0 if ar else 0.0)
@@ -1828,6 +2012,7 @@ func _new_game(loc: String) -> void:
 	night_warned = false
 	fx_hold = []
 	fx_hold_node = ""
+	tod_last = -1
 	awake_min = 0
 	fatigue_warned = false
 	pending_nightmare = {}
@@ -1992,28 +2177,8 @@ func _build_game_ui() -> void:
 	inv_icons.set("game", self)
 	side.add_child(inv_icons)
 
-	# --- Botones abajo a la derecha ---
-	var brow := HBoxContainer.new()
-	brow.add_theme_constant_override("separation", 6)
-	brow.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	brow.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	brow.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	brow.offset_right = -10
-	brow.offset_bottom = -10
-	map_view.add_child(brow)
-	var b1 := Button.new()
-	b1.text = Lang.t("Controles  F1")
-	b1.focus_mode = Control.FOCUS_NONE
-	b1.pressed.connect(_on_hud_controls)
-	brow.add_child(b1)
-	var b2 := Button.new()
-	b2.text = Lang.t("Estadísticas  F2")
-	b2.focus_mode = Control.FOCUS_NONE
-	b2.pressed.connect(_on_hud_stats)
-	brow.add_child(b2)
-
 	# --- Registro de mensajes abajo a la izquierda (translucido) ---
-	var log_panel := PanelContainer.new()
+	log_panel = PanelContainer.new()
 	log_panel.add_theme_stylebox_override("panel", _hud_style(0.5))
 	log_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	log_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
@@ -2022,6 +2187,7 @@ func _build_game_ui() -> void:
 	log_panel.offset_right = 520
 	log_panel.offset_top = -108
 	log_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	log_panel.visible = chat_visible
 	map_view.add_child(log_panel)
 	log_box = RichTextLabel.new()
 	log_box.bbcode_enabled = true
@@ -2029,6 +2195,64 @@ func _build_game_ui() -> void:
 	log_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	log_box.add_theme_font_size_override("normal_font_size", 13)
 	log_panel.add_child(log_box)
+
+
+func _toggle_chat() -> void:
+	chat_visible = not chat_visible
+	if log_panel != null and is_instance_valid(log_panel):
+		log_panel.visible = chat_visible
+
+
+func _tod_cat() -> int:
+	if clock >= DAY_START and clock < 720:
+		return 0
+	if clock >= 720 and clock < BED_FROM:
+		return 1
+	if clock >= BED_FROM and clock < NIGHT_START:
+		return 2
+	if clock >= NIGHT_START:
+		return 3
+	return 4
+
+
+func _tod_check() -> void:
+	var c: int = _tod_cat()
+	if tod_last == -1:
+		tod_last = c
+		return
+	if c == tod_last:
+		return
+	tod_last = c
+	var msgs: Array = [Lang.t("Amanece: es de día"), Lang.t("Es de tarde"), Lang.t("Atardece"), Lang.t("Es de noche"), Lang.t("Es muy de noche")]
+	var cols: Array = [Color(1.0, 0.92, 0.5), Color(1.0, 0.75, 0.4), Color(1.0, 0.55, 0.4), Color(0.6, 0.7, 1.0), Color(0.55, 0.6, 1.0)]
+	_tod_toast(str(msgs[c]), cols[c])
+
+
+func _tod_toast(text: String, col: Color) -> void:
+	if map_view == null or not playing:
+		return
+	if tod_panel == null or not is_instance_valid(tod_panel):
+		tod_panel = PanelContainer.new()
+		tod_panel.add_theme_stylebox_override("panel", _hud_style(0.7))
+		tod_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tod_panel.z_index = 40
+		tod_label = Label.new()
+		tod_label.add_theme_font_size_override("font_size", 22)
+		tod_panel.add_child(tod_label)
+		map_view.add_child(tod_panel)
+	tod_label.text = text
+	tod_label.add_theme_color_override("font_color", col)
+	tod_panel.reset_size()
+	tod_panel.position = Vector2((_mv().x - tod_panel.size.x) / 2.0, 96.0)
+	tod_panel.visible = true
+	tod_panel.modulate.a = 0.0
+	if tod_tween != null and tod_tween.is_valid():
+		tod_tween.kill()
+	tod_tween = create_tween()
+	tod_tween.tween_property(tod_panel, "modulate:a", 1.0, 0.25)
+	tod_tween.tween_interval(1.8)
+	tod_tween.tween_property(tod_panel, "modulate:a", 0.0, 0.6)
+	tod_tween.tween_callback(func() -> void: tod_panel.visible = false)
 
 
 func _on_hud_controls() -> void:
@@ -2080,6 +2304,7 @@ func _process(delta: float) -> void:
 				last_blip = shown
 				_sfx("blip", -14.0)
 	if playing and map_view != null:
+		_tod_check()
 		if mode == 5:
 			var adv: float = minf(task_speed * delta, task_left)
 			task_left -= adv
@@ -2698,6 +2923,8 @@ func _door_inside() -> void:
 func _door_inside_do() -> void:
 	outside = true
 	_set_player_tile(ext_spawn, Vector2i(0, 1))   # al salir se mira hacia afuera (sur), de espaldas a la base
+	if view3d != null and is_instance_valid(view3d):
+		view3d.snap_camera()
 	stats["expeditions"] += 1
 	_mark_explored(player, 8)
 	cur_zone = -1
@@ -2724,6 +2951,8 @@ func _exit_eva() -> void:
 func _exit_eva_do() -> void:
 	outside = false
 	_set_player_tile(DOOR_FRONT, Vector2i(0, -1))
+	if view3d != null and is_instance_valid(view3d):
+		view3d.snap_camera()
 	cur_zone = -1
 	_sfx("airlock")
 	_fx("ring", "", Color(0.6, 0.85, 1.0))
@@ -3765,8 +3994,6 @@ func _target_text() -> String:
 		var t: String = "[E] " + _station_text(ch)
 		if not build.is_empty() and str(build["ch"]) == ch:
 			return Lang.t("EN OBRA: ENOC trabaja aquí (%d min restantes)") % int(build["left"])
-		if int(st_lvl[ch]) < MAX_UPG:
-			t += Lang.t("   [U] Mejorar")
 		if ch == "R" and breach:
 			t += Lang.t("  ¡BRECHA! Parches: %d") % tools["patch"]
 		return t
@@ -3787,15 +4014,33 @@ func _target_text() -> String:
 	return ""
 
 
+func _target_extra() -> String:
+	# pista secundaria (mejorar la estacion): va en una linea aparte y de otro color
+	if outside:
+		return ""
+	var np: Vector2i = _find_target()
+	if np.x < 0:
+		return ""
+	var ch: String = _tile(np)
+	if stations.has(ch) and int(st_lvl[ch]) < MAX_UPG and not (not build.is_empty() and str(build["ch"]) == ch):
+		return Lang.t("[U] Mejorar esta estación")
+	return ""
+
+
 func _draw_caption() -> void:
 	var text: String = _target_text()
 	if text == "":
 		return
+	var extra: String = _target_extra()
+	text = text.replace("[E]", "[%s]" % key_name("interact"))
+	extra = extra.replace("[U]", "[%s]" % key_name("upgrade"))
 	var font: Font = ThemeDB.fallback_font
 	var np: Vector2i = _find_target()
 	var tp: Vector2 = Vector2(np * TILE) - _cam_offset()
-	var sz: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13)
-	var box := Rect2(tp + Vector2(TILE / 2.0 - sz.x / 2.0 - 6.0, -26.0), sz + Vector2(12, 8))
+	var sz1: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13)
+	var sz2: Vector2 = font.get_string_size(extra, HORIZONTAL_ALIGNMENT_LEFT, -1, 13) if extra != "" else Vector2.ZERO
+	var sz: Vector2 = Vector2(maxf(sz1.x, sz2.x), sz1.y + (sz2.y + 3.0 if extra != "" else 0.0))
+	var box := Rect2(tp + Vector2(TILE / 2.0 - sz.x / 2.0 - 6.0, -26.0 - (sz2.y + 3.0 if extra != "" else 0.0)), sz + Vector2(12, 8))
 	if view3d_on and view3d != null and cam_mode == 1:
 		box = Rect2(Vector2(_mv().x / 2.0 - sz.x / 2.0 - 6.0, _mv().y / 2.0 + 34.0), sz + Vector2(12, 8))
 		tp = Vector2(box.position.x, box.position.y)
@@ -3804,13 +4049,15 @@ func _draw_caption() -> void:
 		if sp.x < -500.0:
 			return
 		tp = sp - Vector2(float(TILE) / 2.0, 14.0 + float(TILE) / 2.0)
-		box = Rect2(tp + Vector2(TILE / 2.0 - sz.x / 2.0 - 6.0, -26.0), sz + Vector2(12, 8))
+		box = Rect2(tp + Vector2(TILE / 2.0 - sz.x / 2.0 - 6.0, -26.0 - (sz2.y + 3.0 if extra != "" else 0.0)), sz + Vector2(12, 8))
 	box.position.x = clampf(box.position.x, 2.0, _mv().x - box.size.x - 2.0)
 	if box.position.y < 2.0:
 		box.position.y = tp.y + TILE + 4.0
 	map_view.draw_rect(box, Color(0.04, 0.05, 0.1, 0.92))
 	map_view.draw_rect(box, Color(0.5, 0.7, 1.0), false, 1.0)
-	map_view.draw_string(font, box.position + Vector2(6, sz.y - 3.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color.WHITE)
+	map_view.draw_string(font, box.position + Vector2(6, sz1.y - 3.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color.WHITE)
+	if extra != "":
+		map_view.draw_string(font, box.position + Vector2(6, sz.y - 3.0), extra, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1.0, 0.82, 0.3))
 
 
 # ---------- DIÁLOGOS ----------
@@ -4681,6 +4928,14 @@ func _pick_ending() -> String:
 # ---------- ENTRADA ----------
 
 func _input(event: InputEvent) -> void:
+	if rebinding != "":
+		var rk := event as InputEventKey
+		if rk != null and rk.pressed and not rk.echo:
+			_finish_rebind(rk)
+			get_viewport().set_input_as_handled()
+		elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+			pass   # los clics siguen funcionando mientras se espera la tecla (para cancelar con otro boton)
+		return
 	var mmo := event as InputEventMouseMotion
 	if mmo != null:
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and playing and (mode == 0 or mode == 5):
@@ -4692,6 +4947,8 @@ func _input(event: InputEvent) -> void:
 			view3d.zoom_by(-0.1)
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			view3d.zoom_by(0.1)
+		elif mode == 0 and (mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_RIGHT):
+			_do_click(mb.button_index)
 		return
 	var k := event as InputEventKey
 	if k == null or not k.pressed:
@@ -4724,11 +4981,11 @@ func _input(event: InputEvent) -> void:
 					ui.open_stats()
 				get_viewport().set_input_as_handled()
 		return
-	if k.keycode == KEY_M and not k.echo:
+	if _is_bind(k, "mute") and not k.echo:
 		muted = not muted
 		AudioServer.set_bus_mute(0, muted)
 		return
-	if k.keycode == KEY_C and not k.echo and playing and mode == 0 and view3d_on and view3d != null:
+	if _is_bind(k, "cam") and not k.echo and playing and mode == 0 and view3d_on and view3d != null:
 		_cycle_cam()
 		get_viewport().set_input_as_handled()
 		return
@@ -4739,7 +4996,7 @@ func _input(event: InputEvent) -> void:
 			ui.open_stats()
 		get_viewport().set_input_as_handled()
 		return
-	if k.keycode == KEY_V and not k.echo and playing and mode == 0:
+	if _is_bind(k, "view") and not k.echo and playing and mode == 0:
 		_set_view3d(not view3d_on)
 		_log(Lang.t("Vista %s.") % ("3D" if view3d_on else "2D"))
 		get_viewport().set_input_as_handled()
@@ -4790,34 +5047,28 @@ func _input(event: InputEvent) -> void:
 
 
 func _input_play(k: InputEventKey) -> void:
-	match k.keycode:
-		KEY_SPACE:
-			if not k.echo:
-				_start_jump()
-		KEY_E:
-			if not k.echo and not airborne and fall_t < 0.0:
-				_interact()
-		KEY_U:
-			if not k.echo and not airborne and fall_t < 0.0:
-				_try_upgrade()
-		KEY_I:
-			if not k.echo:
-				_open_pack()
-		KEY_Q:
-			if not k.echo:
-				_cycle_hold()
-		KEY_TAB:
-			if not k.echo:
-				_open_world_map()
-		KEY_J:
-			if not k.echo:
-				_open_diary()
-		KEY_K:
-			if not k.echo:
-				tut.call("open_panel")
-		KEY_ESCAPE:
-			if not k.echo:
-				_open_pause(true)
+	if k.echo:
+		return
+	if k.keycode == KEY_ESCAPE:
+		_open_pause(true)
+	elif _is_bind(k, "jump"):
+		_do_bound("jump")
+	elif _is_bind(k, "interact"):
+		_do_bound("interact")
+	elif _is_bind(k, "upgrade"):
+		_do_bound("upgrade")
+	elif _is_bind(k, "pack"):
+		_do_bound("pack")
+	elif _is_bind(k, "hold"):
+		_do_bound("hold")
+	elif _is_bind(k, "map"):
+		_open_world_map()
+	elif _is_bind(k, "diary"):
+		_open_diary()
+	elif _is_bind(k, "ach"):
+		tut.call("open_panel")
+	elif _is_bind(k, "chat"):
+		_toggle_chat()
 
 
 func _cur_rows() -> Array:
@@ -5056,6 +5307,7 @@ func _continue_game() -> void:
 	_build_game_ui()
 	playing = true
 	mode = 0
+	tod_last = -1
 	_play_music(_wanted_music())
 	_log(Lang.t("Partida cargada. Día %d en %s.") % [day, Lang.loc(location)])
 	_refresh()

@@ -291,3 +291,13 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 
 ### 0.9.18 Diálogos graciosos de ENOC (v24.5)
 - ENOC suma 13 frases de humor sobre su tema (sistemas, oxígeno, energía, agua, herramientas) a las 3 que tenía; al hablar con él, cuando nada está bajo, dice una al azar. Son chistes de diseño del juego, sin datos científicos. Interpreté "tema claro" como "el tema de ENOC"; si te referías a otra cosa, dímelo. Textos en inglés sin revisar.
+
+### 0.9.19 Controles, carga, HUD e inventario (v25)
+- Controles reasignables (Opciones > Controles): 17 acciones (mover, correr, saltar, usar, mejorar, mochila, objeto en mano, mapa, diario, logros, chat, cámara, vista, silencio). Se guardan en la configuración (`[controls]`); si una tecla ya está en uso, se intercambian. Fijos: flechas, Esc, F1, F2, F3, F11, Enter y las teclas de los menús (E/Enter en diálogos). Se guardan como código de tecla físico: en teclados no QWERTY el nombre mostrado sigue la distribución del usuario (no probado en otras distribuciones).
+- Clic del ratón: izquierdo = usar lo de enfrente, derecho = mejorar la estación (por defecto); cada uno se puede cambiar (usar, mejorar, saltar, mochila, objeto en mano, nada). Solo actúa jugando, sin menús abiertos.
+- Pantalla de carga con consejos al empezar partida, continuar y cambiar de destino en el menú (`loading_run`). Mientras se construye el mundo la pantalla se congela (un solo hilo): la barra marca etapas, no progreso real.
+- La pista de mejorar sale en una segunda línea, en dorado, debajo del texto principal.
+- Cámara de salida: al cruzar la esclusa se recoloca de golpe detrás del jugador; si el casco o la marquesina estorban, sube casi encima del jugador (antes se ponía de lado).
+- Chat inferior: se oculta y muestra con T. Quitados los botones F1/F2 de la esquina (las teclas y el menú de pausa siguen).
+- Aviso rápido arriba al cambiar de momento: amanece/de día (06:00), de tarde (12:00), atardece (18:00), de noche (20:00) y muy de noche (00:00).
+- Inventario: muñeco 3D de Wilson con su traje (como el de Minecraft), gira solo y se arrastra con el ratón. Usa otro mundo 3D en un SubViewport; no medí su costo en navegadores.

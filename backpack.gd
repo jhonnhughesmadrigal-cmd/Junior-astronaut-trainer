@@ -5,8 +5,13 @@ signal closed
 
 const SLOT: float = 78.0
 const COLS_N: int = 5
+const DOLL_W: float = 215.0     # columna del muñeco (estilo Minecraft) a la izquierda
 var mouse: Vector2 = Vector2.ZERO
 var slots: Array = []
+var doll_vp: SubViewportContainer = null
+var doll_pivot: Node3D = null
+var doll_yaw: float = 0.35
+var dragging: bool = false
 
 
 func _init() -> void:
@@ -18,13 +23,82 @@ func _init() -> void:
 
 func open() -> void:
 	_build()
+	_ensure_doll()
 	visible = true
+	set_process(true)
+	_place_doll()
 	queue_redraw()
 
 
 func close() -> void:
 	visible = false
+	set_process(false)
+	dragging = false
+	if doll_vp != null:
+		doll_vp.visible = false
 	closed.emit()
+
+
+func _process(delta: float) -> void:
+	if not visible:
+		return
+	if not dragging and doll_pivot != null:
+		doll_yaw += delta * 0.6
+	if doll_pivot != null:
+		doll_pivot.rotation.y = doll_yaw
+
+
+# Vista 3D del astronauta con su traje, como el muñeco del inventario de Minecraft.
+func _ensure_doll() -> void:
+	if doll_vp != null or game == null or game.view3d == null:
+		return
+	doll_vp = SubViewportContainer.new()
+	doll_vp.stretch = true
+	doll_vp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sv := SubViewport.new()
+	sv.own_world_3d = true
+	sv.transparent_bg = true
+	sv.size = Vector2i(190, 330)
+	sv.msaa_3d = Viewport.MSAA_2X
+	doll_vp.add_child(sv)
+	var env := Environment.new()
+	env.background_mode = Environment.BG_CLEAR_COLOR
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.75, 0.8, 0.95)
+	env.ambient_light_energy = 0.9
+	var we := WorldEnvironment.new()
+	we.environment = env
+	sv.add_child(we)
+	var sun := DirectionalLight3D.new()
+	sun.rotation = Vector3(-0.7, -2.6, 0.0)
+	sun.light_energy = 1.3
+	sv.add_child(sun)
+	var fill := DirectionalLight3D.new()
+	fill.rotation = Vector3(-0.3, 0.8, 0.0)
+	fill.light_energy = 0.5
+	sv.add_child(fill)
+	var cam := Camera3D.new()
+	cam.fov = 32.0
+	sv.add_child(cam)
+	cam.look_at_from_position(Vector3(0.0, 1.15, -4.6), Vector3(0.0, 0.92, 0.0), Vector3.UP)
+	doll_pivot = Node3D.new()
+	sv.add_child(doll_pivot)
+	doll_pivot.add_child(game.view3d.make_preview_model())
+	add_child(doll_vp)
+
+
+func _doll_rect() -> Rect2:
+	var p: Rect2 = _panel()
+	return Rect2(p.position.x + 22.0, p.position.y + 72.0, DOLL_W - 30.0, minf(330.0, p.size.y - 190.0))
+
+
+func _place_doll() -> void:
+	if doll_vp == null:
+		return
+	var r: Rect2 = _doll_rect()
+	doll_vp.position = r.position
+	doll_vp.size = r.size
+	doll_vp.visible = true
 
 
 func _build() -> void:
@@ -46,7 +120,8 @@ func _build() -> void:
 func _panel() -> Rect2:
 	var cap: int = game._pack_cap()
 	var rows: int = int(ceil(float(cap) / float(COLS_N)))
-	var w: float = float(COLS_N) * (SLOT + 8.0) + 60.0 + 300.0
+	var w: float = DOLL_W + float(COLS_N) * (SLOT + 8.0) + 60.0 + 300.0
+	w = minf(w, size.x - 20.0)
 	# alto minimo: la columna de mejoras (9 filas) + 'en mano' + pie de texto tienen que caber dentro del panel
 	var h: float = maxf(float(rows) * (SLOT + 8.0) + 150.0, 500.0)
 	h = minf(h, size.y - 20.0)
@@ -57,7 +132,7 @@ func _slot_rect(i: int) -> Rect2:
 	var p: Rect2 = _panel()
 	var cx: int = i % COLS_N
 	var cy: int = i / COLS_N
-	return Rect2(p.position.x + 30.0 + float(cx) * (SLOT + 8.0), p.position.y + 80.0 + float(cy) * (SLOT + 8.0), SLOT, SLOT)
+	return Rect2(p.position.x + 30.0 + DOLL_W + float(cx) * (SLOT + 8.0), p.position.y + 80.0 + float(cy) * (SLOT + 8.0), SLOT, SLOT)
 
 
 func handle_key(k: InputEventKey) -> void:
@@ -72,9 +147,16 @@ func _gui_input(ev: InputEvent) -> void:
 	var mm := ev as InputEventMouseMotion
 	if mm != null:
 		mouse = mm.position
+		if dragging:
+			doll_yaw += mm.relative.x * 0.01
 		queue_redraw()
 		return
 	var mb := ev as InputEventMouseButton
+	if mb != null and mb.button_index == MOUSE_BUTTON_LEFT and not mb.pressed:
+		dragging = false
+	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and _doll_rect().has_point(mb.position):
+		dragging = true    # arrastra el muñeco para girarlo
+		return
 	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 		for i in slots.size():
 			if _slot_rect(i).has_point(mb.position):
@@ -121,6 +203,11 @@ func _draw() -> void:
 	var used: int = game._slots_used()
 	var cap: int = game._pack_cap()
 	draw_string(font, p.position + Vector2(30, 44), Lang.t("Mochila  %d / %d casillas") % [used, cap], HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color(1.0, 0.9, 0.5))
+	var dr: Rect2 = _doll_rect()
+	draw_rect(dr.grow(4.0), Color(0.08, 0.1, 0.19))
+	draw_rect(dr.grow(4.0), Color(0.3, 0.4, 0.65), false, 2.0)
+	draw_string(font, Vector2(dr.position.x, dr.end.y + 26.0), "Wilson", HORIZONTAL_ALIGNMENT_CENTER, dr.size.x, 18, Color(0.7, 0.95, 1.0))
+	draw_string(font, Vector2(dr.position.x, dr.end.y + 46.0), Lang.t("Arrastra para girar"), HORIZONTAL_ALIGNMENT_CENTER, dr.size.x, 12, Color(0.6, 0.7, 0.9))
 	var hover: String = ""
 	for i in cap:
 		var r: Rect2 = _slot_rect(i)
@@ -158,5 +245,5 @@ func _draw() -> void:
 	draw_string(font, Vector2(x, y + 36.0), hold_txt, HORIZONTAL_ALIGNMENT_LEFT, 280.0, 17, Color(1.0, 0.9, 0.5))
 	var foot: String = _desc(hover) if hover != "" else Lang.t("Clic en el kit de parche para ponerlo en la mano ([Q] también). [I] o [Esc] cierra.")
 	# el pie ocupa solo la parte izquierda (debajo de las casillas), nunca se cruza con la columna derecha
-	draw_line(p.position + Vector2(24, p.size.y - 78.0), p.position + Vector2(p.size.x - 320.0, p.size.y - 78.0), Color(0.3, 0.4, 0.65), 1.0)
-	draw_multiline_string(font, p.position + Vector2(30, p.size.y - 54.0), foot, HORIZONTAL_ALIGNMENT_LEFT, p.size.x - 370.0, 15, 3, Color(0.8, 0.88, 1.0))
+	draw_line(p.position + Vector2(24.0 + DOLL_W, p.size.y - 78.0), p.position + Vector2(p.size.x - 320.0, p.size.y - 78.0), Color(0.3, 0.4, 0.65), 1.0)
+	draw_multiline_string(font, p.position + Vector2(30.0 + DOLL_W, p.size.y - 54.0), foot, HORIZONTAL_ALIGNMENT_LEFT, p.size.x - 370.0 - DOLL_W, 15, 3, Color(0.8, 0.88, 1.0))
