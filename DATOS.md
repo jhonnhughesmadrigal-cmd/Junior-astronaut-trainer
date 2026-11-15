@@ -258,3 +258,7 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Tierra: esfera con continentes, nubes que se mueven, fase de luz, brillo del océano, atmósfera, luces de ciudades en la parte oscura y halo azul. Solo se ve desde la Luna.
 - Ventanas de la base: cielo con estrellas, Vía Láctea, horizonte con colinas y la Tierra en una ventana (imagen fija, no cambia con la hora).
 - Los continentes son inventados (ruido procedural), no el mapa real de la Tierra. Probado solo con render por software.
+
+## Alfa 0.9.12 — Marte más cálido
+- Sol anaranjado más intenso, cielo ocre/caramelo, luz ambiente cálida, bruma de polvo algo más densa y polvo tibio que el viento arrastra cerca del suelo (más intenso en tormentas).
+- Color del suelo: se dejó rojizo-anaranjado (aprox. 72/41/27 en RGB). No está calibrado con datos de la NASA; es una elección artística. Conviene compararlo con fotos de las misiones reales antes de afirmar que es exacto.

@@ -16,6 +16,8 @@ var sky_mat: ProceduralSkyMaterial
 var interior: Node3D
 var exterior: Node3D
 var skydome: Node3D
+var dust_fx: CPUParticles3D = null
+var dust_mat: StandardMaterial3D = null
 var player_node: Node3D
 var npc_nodes: Dictionary = {}
 var prop_nodes: Dictionary = {}
@@ -415,7 +417,7 @@ func setup() -> void:
 	zs = game._zones()
 	W = game.EXT_W
 	H = game.EXT_H
-	for n in [interior, exterior, skydome, player_node, target_ring]:
+	for n in [interior, exterior, skydome, player_node, target_ring, dust_fx]:
 		if n != null:
 			n.queue_free()
 	for k in npc_nodes:
@@ -518,6 +520,43 @@ func _build_sky() -> void:
 		var earth := _add(skydome, es, SpaceTex.earth_material(), epos, Vector3(0.0, 0.0, 0.0), false)
 		earth.rotation = Vector3(0.0, 2.2, 0.0)
 		earth.name = "Tierra"
+	dust_fx = null
+	if game.location == "Marte":
+		_build_dust()
+
+
+func _build_dust() -> void:
+	# polvo tibio que el viento arrastra cerca del suelo (ambiente caluroso de Marte)
+	dust_fx = CPUParticles3D.new()
+	dust_fx.amount = 160
+	dust_fx.lifetime = 8.0
+	dust_fx.preprocess = 8.0
+	dust_fx.local_coords = false
+	dust_fx.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	dust_fx.emission_box_extents = Vector3(16.0, 2.5, 16.0)
+	dust_fx.direction = Vector3(1.0, 0.04, 0.35)
+	dust_fx.spread = 18.0
+	dust_fx.gravity = Vector3.ZERO
+	dust_fx.initial_velocity_min = 1.4
+	dust_fx.initial_velocity_max = 2.8
+	dust_fx.scale_amount_min = 0.5
+	dust_fx.scale_amount_max = 1.4
+	dust_fx.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var q := QuadMesh.new()
+	q.size = Vector2(1.4, 1.4)
+	dust_mat = StandardMaterial3D.new()
+	dust_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dust_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	dust_mat.billboard_keep_scale = true
+	dust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dust_mat.vertex_color_use_as_albedo = true
+	dust_mat.albedo_texture = SpaceTex.glow_sprite(32, 0.0)
+	dust_mat.albedo_color = Color(0.95, 0.65, 0.4, 0.16)
+	dust_mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	q.material = dust_mat
+	dust_fx.mesh = q
+	dust_fx.visible = false
+	add_child(dust_fx)
 
 
 func _earth_tex() -> ImageTexture:
@@ -2442,6 +2481,8 @@ func _menu_process(delta: float) -> void:
 	cam.position = cp
 	cam.look_at(center + Vector3(0.0, 2.5, 0.0), Vector3.UP)
 	skydome.position = cam.position
+	if dust_fx != null:
+		dust_fx.position = cam.position + Vector3(0.0, 1.0, 0.0)
 
 
 func _process(delta: float) -> void:
@@ -2488,12 +2529,16 @@ func _update_light() -> void:
 	var phi: float = PI * u
 	var to_sun := Vector3(cos(phi) * cos(elev), sin(elev), sin(phi) * cos(elev))
 	sun.global_transform = Transform3D(Basis.looking_at(-to_sun, Vector3.UP), Vector3.ZERO)
-	sun.light_energy = (1.0 if moon else 0.95) * smoothstep(0.0, 0.3, sk)
-	sun.light_color = Color(1.0, 0.78 + 0.22 * sk, 0.6 + 0.4 * sk)
+	sun.light_energy = (1.0 if moon else 1.1) * smoothstep(0.0, 0.3, sk)
+	sun.light_color = Color(1.0, 0.78 + 0.22 * sk, 0.6 + 0.4 * sk) if moon else Color(1.0, 0.72 + 0.16 * sk, 0.5 + 0.26 * sk)
+	if dust_fx != null:
+		dust_fx.visible = game.outside and daylight > 0.05
+		dust_fx.speed_scale = 2.6 if game.storm_left > 0 else 1.0
+		dust_mat.albedo_color = Color(0.95, 0.65, 0.4, (0.34 if game.storm_left > 0 else 0.15) * daylight)
 	sun.shadow_enabled = sk > 0.02 and game.shadows_on
 	moonlight.light_energy = lerpf(0.5, 0.12, daylight)
 	if game.outside:
-		var amb: Color = Color(0.08, 0.1, 0.22).lerp(Color(0.5, 0.55, 0.7) if moon else Color(0.75, 0.55, 0.45), daylight)
+		var amb: Color = Color(0.08, 0.1, 0.22).lerp(Color(0.5, 0.55, 0.7) if moon else Color(0.88, 0.62, 0.42), daylight)
 		env.ambient_light_color = amb
 		env.ambient_light_energy = lerpf(0.55, 0.3 if moon else 0.5, daylight)
 		if moon:
@@ -2504,8 +2549,8 @@ func _update_light() -> void:
 		else:
 			env.background_mode = Environment.BG_SKY
 			refl_kind = "mars"
-			var top: Color = Color(0.03, 0.04, 0.1).lerp(Color(0.55, 0.38, 0.32), daylight)
-			var hor: Color = Color(0.12, 0.08, 0.12).lerp(Color(0.92, 0.62, 0.45), daylight)
+			var top: Color = Color(0.03, 0.04, 0.1).lerp(Color(0.66, 0.45, 0.32), daylight)
+			var hor: Color = Color(0.12, 0.08, 0.12).lerp(Color(0.97, 0.7, 0.44), daylight)
 			if game.storm_left > 0:
 				top = top.lerp(Color(0.6, 0.38, 0.22), 0.7)
 				hor = hor.lerp(Color(0.75, 0.48, 0.28), 0.8)
@@ -2515,7 +2560,7 @@ func _update_light() -> void:
 			sky_mat.ground_bottom_color = hor.darkened(0.4)
 			env.fog_enabled = game.haze_on
 			env.fog_light_color = hor
-			env.fog_density = 0.012 if game.storm_left > 0 else 0.0035
+			env.fog_density = 0.012 if game.storm_left > 0 else 0.0055
 		var stars_vis: bool = moon or daylight < 0.6
 		skydome.visible = stars_vis
 	else:
@@ -2716,6 +2761,8 @@ func _update_camera(delta: float) -> void:
 	cam.position = cp
 	cam.look_at(look, Vector3.UP)
 	skydome.position = cam.position
+	if dust_fx != null:
+		dust_fx.position = cam.position + Vector3(0.0, 1.0, 0.0)
 	if ceiling != null:
 		ceiling.visible = (mode == 1 or mode == 2) and not game.outside
 
