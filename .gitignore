@@ -1,0 +1,4 @@
+.godot/
+*.tmp
+web/
+t_*.gd

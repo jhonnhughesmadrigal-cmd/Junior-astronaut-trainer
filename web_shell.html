@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>$GODOT_PROJECT_NAME</title>
+		<style>
+html, body, #canvas { margin: 0; padding: 0; border: 0; }
+body { color: #e8eefc; background: #0a0e1a; overflow: hidden; touch-action: none; font-family: 'Noto Sans', 'Segoe UI', Arial, sans-serif; }
+#canvas { display: block; }
+#canvas:focus { outline: none; }
+
+/* Pantalla de carga propia (sustituye a la de Godot) */
+#loader { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
+	background: radial-gradient(ellipse at 50% 120%, #1b2a52 0%, #0a0e1a 60%); transition: opacity .6s ease; padding: 0 24px; box-sizing: border-box; text-align: center; }
+#loader.done { opacity: 0; pointer-events: none; }
+#stars, #stars2 { position: absolute; inset: 0; background-repeat: repeat; opacity: .7; }
+#stars { background-image: radial-gradient(1px 1px at 20px 30px, #fff, transparent), radial-gradient(1px 1px at 120px 90px, #cfe3ff, transparent), radial-gradient(1.5px 1.5px at 200px 160px, #fff, transparent), radial-gradient(1px 1px at 70px 190px, #ffe9b8, transparent); background-size: 240px 240px; animation: drift 120s linear infinite; }
+#stars2 { background-image: radial-gradient(1px 1px at 40px 60px, #fff, transparent), radial-gradient(1px 1px at 150px 20px, #bcd4ff, transparent), radial-gradient(2px 2px at 90px 140px, #fff, transparent); background-size: 320px 320px; animation: drift 200s linear infinite; opacity: .45; }
+@keyframes drift { to { background-position: -480px 480px; } }
+#scene { position: relative; width: 150px; height: 150px; margin-bottom: 18px; }
+#moon { position: absolute; inset: 35px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #e7e9ef 0%, #aeb3c0 55%, #6d7385 100%); box-shadow: 0 0 40px rgba(150,180,255,.25); }
+#moon::before, #moon::after { content: ""; position: absolute; border-radius: 50%; background: rgba(70,76,92,.35); box-shadow: inset 2px 2px 3px rgba(0,0,0,.35); }
+#moon::before { width: 16px; height: 16px; left: 14px; top: 18px; }
+#moon::after { width: 10px; height: 10px; right: 16px; bottom: 16px; }
+#orbit { position: absolute; inset: 0; border: 1px dashed rgba(160,190,255,.25); border-radius: 50%; animation: spin 6s linear infinite; }
+#ship { position: absolute; top: -7px; left: calc(50% - 7px); width: 14px; height: 14px; background: #ffd84a; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 0 10px #ffd84a; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#title { position: relative; font-size: clamp(26px, 5vw, 44px); font-weight: 800; letter-spacing: .18em; margin: 0; text-shadow: 0 0 18px rgba(120,160,255,.45); }
+#subtitle { position: relative; margin: 6px 0 26px; color: #9db4e6; font-size: clamp(13px, 2vw, 16px); letter-spacing: .08em; }
+#bar { position: relative; width: min(420px, 80vw); height: 10px; background: rgba(255,255,255,.1); border-radius: 6px; overflow: hidden; }
+#fill { height: 100%; width: 0%; background: linear-gradient(90deg, #4aa8ff, #7fe0ff); border-radius: 6px; transition: width .25s ease; }
+#bar.busy #fill { width: 35% !important; animation: slide 1.2s ease-in-out infinite alternate; }
+@keyframes slide { from { margin-left: 0; } to { margin-left: 65%; } }
+#status { position: relative; margin-top: 12px; font-size: 14px; color: #cfe0ff; min-height: 20px; }
+#tip { position: relative; margin-top: 26px; max-width: 520px; font-size: 13px; color: #8da2cf; min-height: 36px; transition: opacity .4s; }
+#notice { position: relative; display: none; margin-top: 18px; max-width: 560px; background: #5b3943; border: 1px solid #9b3943; border-radius: .5rem; padding: 1rem; color: #f2e4e6; font-size: 14px; line-height: 1.4; }
+		</style>
+		$GODOT_HEAD_INCLUDE
+	</head>
+	<body>
+		<canvas id="canvas">Tu navegador no admite canvas / Your browser does not support the canvas tag.</canvas>
+		<noscript>Activa JavaScript / Please enable JavaScript.</noscript>
+
+		<div id="loader">
+			<div id="stars"></div><div id="stars2"></div>
+			<div id="scene"><div id="orbit"><div id="ship"></div></div><div id="moon"></div></div>
+			<h1 id="title">MISIÓN PERSEO</h1>
+			<div id="subtitle"></div>
+			<div id="bar"><div id="fill"></div></div>
+			<div id="status"></div>
+			<div id="tip"></div>
+			<div id="notice"></div>
+		</div>
+
+		<script src="$GODOT_URL"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const EN = (navigator.language || 'es').toLowerCase().startsWith('en');
+	const T = EN ? {
+		title: 'PERSEO MISSION', sub: 'Junior Astronaut Mission Trainer',
+		download: 'Downloading the game…', prepare: 'Preparing the base…', done: 'Ready!',
+		tips: ['Sleep at night: a rested crew works better.', 'Press Space to jump over pits and rocks (outside the base only).', 'Press F1 at any time to see the controls.', 'Talk to the crew: they warn you when a resource is low.', 'Craft the navigation map to use the Tab key and the minimap.'],
+		missing: 'Your browser is missing features required to run this game:\n'
+	} : {
+		title: 'MISIÓN PERSEO', sub: 'Entrenador de astronautas junior',
+		download: 'Descargando el juego…', prepare: 'Preparando la base…', done: '¡Listo!',
+		tips: ['Duerme de noche: una tripulación descansada rinde más.', 'Pulsa Espacio para saltar huecos y rocas (solo fuera de la base).', 'Pulsa F1 en cualquier momento para ver los controles.', 'Habla con la tripulación: te avisan cuando falta algún recurso.', 'Fabrica el mapa de navegación para usar la tecla Tab y el minimapa.'],
+		missing: 'Tu navegador no tiene funciones necesarias para ejecutar este juego:\n'
+	};
+	document.documentElement.lang = EN ? 'en' : 'es';
+	const $ = (id) => document.getElementById(id);
+	const loader = $('loader'), bar = $('bar'), fill = $('fill'), status = $('status'), tip = $('tip'), notice = $('notice');
+	$('title').textContent = T.title;
+	$('subtitle').textContent = T.sub;
+	status.textContent = T.download;
+
+	let tipIdx = Math.floor(Math.random() * T.tips.length);
+	function showTip() { tip.style.opacity = 0; setTimeout(() => { tip.textContent = T.tips[tipIdx % T.tips.length]; tip.style.opacity = 1; tipIdx++; }, 350); }
+	showTip();
+	const tipTimer = setInterval(showTip, 5000);
+
+	let hidden = false;
+	function hideLoader() {
+		if (hidden) { return; }
+		hidden = true;
+		clearInterval(tipTimer);
+		bar.classList.remove('busy');
+		fill.style.width = '100%';
+		status.textContent = T.done;
+		loader.classList.add('done');
+		setTimeout(() => loader.remove(), 800);
+	}
+	// El juego llama a esta funcion cuando el menu principal ya se ve (ver main.gd: _web_ready).
+	window.perseoReady = hideLoader;
+
+	function fail(err) {
+		console.error(err);
+		clearInterval(tipTimer);
+		bar.style.display = 'none';
+		tip.style.display = 'none';
+		status.style.display = 'none';
+		notice.style.display = 'block';
+		notice.textContent = (err instanceof Error) ? err.message : String(err);
+	}
+
+	const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
+	if (missing.length !== 0) {
+		fail(T.missing + missing.join('\n'));
+		return;
+	}
+	engine.startGame({
+		'onProgress': function (current, total) {
+			if (current > 0 && total > 0) {
+				bar.classList.remove('busy');
+				fill.style.width = Math.min(99, Math.round(100 * current / total)) + '%';
+				if (current >= total) { status.textContent = T.prepare; bar.classList.add('busy'); }
+			} else {
+				bar.classList.add('busy');
+			}
+		},
+	}).then(() => {
+		// El motor ya arranco; seguimos mostrando la pantalla hasta que el menu este listo.
+		status.textContent = T.prepare;
+		bar.classList.add('busy');
+		setTimeout(hideLoader, 90000); // red de seguridad si el juego no avisa
+	}, fail);
+}());
+		</script>
+	</body>
+</html>
