@@ -275,3 +275,6 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 
 ### 0.9.14 Tareas más ágiles (v24.1)
 - `TASK_SPEED` 5 → 20 y `CRAFT_SPEED` 10 → 40 (minutos de juego por segundo real durante una tarea). Una tarea de 30 min pasa de 6 s a 1,5 s; fabricar 90 min, de 9 s a ~2,3 s. El gasto por minuto de juego no cambia, solo se acorta la espera real. Ajustable en las dos constantes de `main.gd`. Sin probar con jugadores: es un ajuste a ojo según tu comentario.
+
+### 0.9.15 Opción de velocidad de tareas (v24.2)
+- Opciones > Velocidad de las tareas: Lenta (x5/x10, la de antes), Normal (x20/x40, por defecto), Rápida (x50/x100), Muy rápida (x120/x240). Es un multiplicador (0,25 / 1 / 2,5 / 6) sobre `TASK_SPEED` y `CRAFT_SPEED`; se guarda en la configuración (`task_speed`). Solo cambia la espera real, no el gasto por minuto de juego. Verificado el cálculo de velocidades por script; la apariencia de la opción no se vio en captura.

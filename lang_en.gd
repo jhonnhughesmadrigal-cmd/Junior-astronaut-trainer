@@ -988,4 +988,9 @@ const EN: Dictionary = {
 	"Fabricar": "Craft",
 	"Mejorar": "Upgrade",
 	"Flechas o [1-8] eligen · [Esc] sale": "Arrows or [1-8] choose · [Esc] exits",
+	"Velocidad de las tareas": "Task speed",
+	"Lenta (x5 / x10)": "Slow (x5 / x10)",
+	"Normal (x20 / x40)": "Normal (x20 / x40)",
+	"Rápida (x50 / x100)": "Fast (x50 / x100)",
+	"Muy rápida (x120 / x240)": "Very fast (x120 / x240)",
 }

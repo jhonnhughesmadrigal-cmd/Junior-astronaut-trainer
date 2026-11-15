@@ -501,6 +501,9 @@ func _build_options() -> void:
 	var r3: HBoxContainer = _opt_row(Lang.t("Tamaño de la interfaz"), [Lang.t("Compacta (85%)"), Lang.t("Normal (100%)")], _on_ui_scale)
 	opt["uiscale"] = r3.get_child(1)
 	t1.add_child(r3)
+	var r4: HBoxContainer = _opt_row(Lang.t("Velocidad de las tareas"), [Lang.t("Lenta (x5 / x10)"), Lang.t("Normal (x20 / x40)"), Lang.t("Rápida (x50 / x100)"), Lang.t("Muy rápida (x120 / x240)")], _on_task_speed)
+	opt["taskspeed"] = r4.get_child(1)
+	t1.add_child(r4)
 	var c1 := CheckButton.new()
 	c1.text = Lang.t("Sincronización vertical (VSync)")
 	c1.toggled.connect(_on_vsync)
@@ -671,6 +674,7 @@ func sync_options() -> void:
 		if md != null and int(md) == game.win_idx:
 			ws.select(i)
 	(opt["uiscale"] as OptionButton).select(game.ui_scale_idx)
+	(opt["taskspeed"] as OptionButton).select(game.task_speed_idx)
 	(opt["vsync"] as CheckButton).set_pressed_no_signal(game.vsync_on)
 	(opt["fps"] as CheckButton).set_pressed_no_signal(game.show_fps)
 	(opt["easy"] as CheckButton).set_pressed_no_signal(game.easy_read)
@@ -717,6 +721,12 @@ func _on_win_size(i: int) -> void:
 func _on_ui_scale(i: int) -> void:
 	if not syncing:
 		game._set_ui_scale(i)
+
+
+func _on_task_speed(i: int) -> void:
+	if not syncing:
+		game.task_speed_idx = i
+		game._save_settings()
 
 
 func _on_vsync(on: bool) -> void:

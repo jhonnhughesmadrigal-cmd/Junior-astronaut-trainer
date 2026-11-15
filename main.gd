@@ -473,6 +473,8 @@ var ending_art: Control
 var ending_active: bool = false
 var show_tutorial: bool = true
 var easy_read: bool = false
+var task_speed_idx: int = 1          # 0 lenta, 1 normal, 2 rapida, 3 muy rapida
+const TASK_SPEED_MULT: Array = [0.25, 1.0, 2.5, 6.0]
 var ach_done: Dictionary = {}
 var tut: Control = null
 var bars: Dictionary = {}
@@ -580,6 +582,7 @@ func _load_settings() -> void:
 	mouse_sens = clampf(float(cfg.get_value("game", "mouse_sens", 1.0)), 0.3, 2.0)
 	show_tutorial = bool(cfg.get_value("game", "tutorial", true))
 	easy_read = bool(cfg.get_value("game", "easy_read", false))
+	task_speed_idx = clampi(int(cfg.get_value("game", "task_speed", 1)), 0, TASK_SPEED_MULT.size() - 1)
 	var ach: Variant = cfg.get_value("game", "achievements", [])
 	if ach is Array:
 		for a in ach:
@@ -620,6 +623,7 @@ func _save_settings() -> void:
 	cfg.set_value("game", "mouse_sens", mouse_sens)
 	cfg.set_value("game", "tutorial", show_tutorial)
 	cfg.set_value("game", "easy_read", easy_read)
+	cfg.set_value("game", "task_speed", task_speed_idx)
 	cfg.set_value("game", "achievements", ach_done.keys())
 	cfg.set_value("game", "lang", Lang.code)
 	cfg.set_value("nasa", "key", nasa_key)
@@ -5037,7 +5041,7 @@ func _start_task(mins: float, speed: float, kind: String = "") -> void:
 		return
 	task_left = mins
 	task_total = mins
-	task_speed = speed
+	task_speed = speed * float(TASK_SPEED_MULT[task_speed_idx])   # opcion de velocidad del jugador
 	task_is_craft = speed >= CRAFT_SPEED
 	task_kind = kind if kind != "" else ("craft" if task_is_craft else "")
 	mode = 5
