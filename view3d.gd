@@ -2539,6 +2539,10 @@ func _update_light() -> void:
 		dust_mat.albedo_color = Color(0.95, 0.65, 0.4, (0.34 if game.storm_left > 0 else 0.15) * daylight)
 	sun.shadow_enabled = sk > 0.02 and game.shadows_on
 	moonlight.light_energy = lerpf(0.5, 0.12, daylight)
+	# gradacion suave por mundo: Marte menos saturado y con mas contraste (menos "naranja plano"), Luna neutra
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 0.86 if game.location == "Marte" else 0.95
+	env.adjustment_contrast = 1.06
 	if game.outside:
 		var amb: Color = Color(0.08, 0.1, 0.22).lerp(Color(0.5, 0.55, 0.7) if moon else Color(0.88, 0.62, 0.42), daylight)
 		env.ambient_light_color = amb

@@ -188,49 +188,61 @@ func _desc(id: String) -> String:
 	return ""
 
 
+const DS = preload("res://design_system.gd")
+const MATERIAL_IDS: Array = ["scrap", "polymer", "circuits"]
+
+
 func _draw() -> void:
 	if not visible or game == null:
 		return
-	var font: Font = ThemeDB.fallback_font
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0, 0, 0, 0.65))
+	var font: Font = DS.font("Regular")
+	var fsb: Font = DS.font("SemiBold")
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.01, 0.02, 0.05, 0.72))
 	var p: Rect2 = _panel()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.06, 0.12, 0.97)
-	sb.set_corner_radius_all(14)
-	sb.set_border_width_all(3)
-	sb.border_color = Color(0.5, 0.7, 1.0)
-	draw_style_box(sb, p)
+	draw_style_box(DS.card(2, DS.R_LG, 0.98), p)
 	var used: int = game._slots_used()
 	var cap: int = game._pack_cap()
-	draw_string(font, p.position + Vector2(30, 44), Lang.t("Mochila  %d / %d casillas") % [used, cap], HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color(1.0, 0.9, 0.5))
+	draw_string(fsb, p.position + Vector2(30, 46), Lang.t("Mochila"), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, DS.C_TEXT)
+	draw_string(font, p.position + Vector2(30 + 120, 46), Lang.t("%d / %d casillas") % [used, cap], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, DS.C_DIM)
 	var dr: Rect2 = _doll_rect()
-	draw_rect(dr.grow(4.0), Color(0.08, 0.1, 0.19))
-	draw_rect(dr.grow(4.0), Color(0.3, 0.4, 0.65), false, 2.0)
-	draw_string(font, Vector2(dr.position.x, dr.end.y + 26.0), "Wilson", HORIZONTAL_ALIGNMENT_CENTER, dr.size.x, 18, Color(0.7, 0.95, 1.0))
-	draw_string(font, Vector2(dr.position.x, dr.end.y + 46.0), Lang.t("Arrastra para girar"), HORIZONTAL_ALIGNMENT_CENTER, dr.size.x, 12, Color(0.6, 0.7, 0.9))
+	draw_style_box(DS.box(DS.C_SURF1, DS.C_LINE, 1, DS.R_MD, 0, 0), dr.grow(4.0))
+	draw_string(fsb, Vector2(dr.position.x, dr.end.y + 28.0), "Wilson", HORIZONTAL_ALIGNMENT_CENTER, dr.size.x, 18, DS.C_TEXT)
+	draw_string(font, Vector2(dr.position.x, dr.end.y + 48.0), Lang.t("Arrastra para girar"), HORIZONTAL_ALIGNMENT_CENTER, dr.size.x, 13, DS.C_DIM)
 	var hover: String = ""
 	for i in cap:
 		var r: Rect2 = _slot_rect(i)
-		draw_rect(r, Color(0.11, 0.14, 0.24))
-		draw_rect(r, Color(0.3, 0.4, 0.65), false, 2.0)
-		if i < slots.size():
+		var filled: bool = i < slots.size()
+		var over: bool = r.has_point(mouse)
+		var sbx: StyleBoxFlat = DS.box(DS.C_SURF3 if (over and filled) else DS.C_SURF2, DS.C_LINE_HI if over else DS.C_LINE, 1, DS.R_MD, 0, 0)
+		if filled and game.held == str(slots[i]["id"]):
+			sbx.border_color = DS.C_ACCENT
+			sbx.set_border_width_all(2)
+			sbx.bg_color = Color(DS.C_ACCENT, 0.12)
+		draw_style_box(sbx, r)
+		if filled:
 			var it: Dictionary = slots[i]
 			var id: String = str(it["id"])
-			var ic := Rect2(r.position + Vector2(SLOT / 2.0 - 16.0, 10.0), Vector2(32.0, 32.0))
+			var ic := Rect2(r.position + Vector2(SLOT / 2.0 - 16.0, 9.0), Vector2(32.0, 32.0))
 			var tx: Texture2D = _tex(id)
 			if tx != null:
 				draw_texture_rect(tx, ic, false)
 			else:
 				_icon(id, ic, 1.0)
-			draw_string(font, r.position + Vector2(0, 62.0), "%s x%d" % [str(LABELS.get(id, id)).left(9), int(it["n"])], HORIZONTAL_ALIGNMENT_CENTER, SLOT, 12, Color(0.9, 0.93, 1.0))
+			draw_string(font, r.position + Vector2(0, 62.0), "%s" % str(LABELS.get(id, id)).left(10), HORIZONTAL_ALIGNMENT_CENTER, SLOT, 12, DS.C_TEXT)
+			# cantidad en una insignia (no depende del color)
+			var cnt: String = "x%d" % int(it["n"])
+			var bw: float = 8.0 + 7.0 * float(cnt.length())
+			var br := Rect2(r.end.x - bw - 4.0, r.position.y + 4.0, bw, 17.0)
+			draw_style_box(DS.box(Color(0.02, 0.04, 0.08, 0.85), DS.C_LINE_HI, 1, 8, 0, 0), br)
+			draw_string(fsb, Vector2(br.position.x, br.position.y + 13.0), cnt, HORIZONTAL_ALIGNMENT_CENTER, bw, 12, DS.C_TEXT)
 			if game.held == id:
-				draw_rect(r.grow(2.0), Color(1.0, 0.85, 0.3), false, 3.0)
-			if r.has_point(mouse):
+				draw_string(fsb, r.position + Vector2(5.0, 15.0), Lang.t("EN MANO"), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, DS.C_ACCENT)
+			if over:
 				hover = id
-	# columna derecha: mejoras
+	# columna derecha: equipo y mejoras
 	var x: float = p.end.x - 300.0
 	var y: float = p.position.y + 80.0
-	draw_string(font, Vector2(x, y), Lang.t("Equipo y mejoras"), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.6, 0.85, 1.0))
+	draw_string(fsb, Vector2(x, y), Lang.t("EQUIPO Y MEJORAS"), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, DS.C_DIM)
 	var lines: Array = [
 		Lang.t("Tanque del traje: nivel %d (%d min)") % [game.suit_lvl_o2, int(game._suit_max())],
 		Lang.t("Aguante del traje: nivel %d") % game.suit_lvl_st,
@@ -240,10 +252,11 @@ func _draw() -> void:
 		lines.append("%s: %s %d" % [game._station_name(k), Lang.t("nivel"), int(game.st_lvl[k])])
 	for l in lines:
 		y += 26.0
-		draw_string(font, Vector2(x, y), str(l), HORIZONTAL_ALIGNMENT_LEFT, 280.0, 16, Color(0.9, 0.93, 1.0))
+		draw_string(font, Vector2(x, y), str(l), HORIZONTAL_ALIGNMENT_LEFT, 285.0, 15, DS.C_TEXT)
 	var hold_txt: String = Lang.t("En mano: %s") % (game._tool_name(game.held) if game.held != "" else Lang.t("nada"))
-	draw_string(font, Vector2(x, y + 36.0), hold_txt, HORIZONTAL_ALIGNMENT_LEFT, 280.0, 17, Color(1.0, 0.9, 0.5))
+	draw_string(fsb, Vector2(x, y + 38.0), hold_txt, HORIZONTAL_ALIGNMENT_LEFT, 285.0, 16, DS.C_ACCENT if game.held != "" else DS.C_DIM)
 	var foot: String = _desc(hover) if hover != "" else Lang.t("Clic en el kit de parche para ponerlo en la mano ([Q] también). [I] o [Esc] cierra.")
-	# el pie ocupa solo la parte izquierda (debajo de las casillas), nunca se cruza con la columna derecha
-	draw_line(p.position + Vector2(24.0 + DOLL_W, p.size.y - 78.0), p.position + Vector2(p.size.x - 320.0, p.size.y - 78.0), Color(0.3, 0.4, 0.65), 1.0)
-	draw_multiline_string(font, p.position + Vector2(30.0 + DOLL_W, p.size.y - 54.0), foot, HORIZONTAL_ALIGNMENT_LEFT, p.size.x - 370.0 - DOLL_W, 15, 3, Color(0.8, 0.88, 1.0))
+	if hover != "":
+		foot = (Lang.t("MATERIAL") if MATERIAL_IDS.has(hover) else Lang.t("HERRAMIENTA")) + "  ·  " + foot
+	draw_line(p.position + Vector2(24.0 + DOLL_W, p.size.y - 78.0), p.position + Vector2(p.size.x - 320.0, p.size.y - 78.0), DS.C_LINE, 1.0)
+	draw_multiline_string(font, p.position + Vector2(30.0 + DOLL_W, p.size.y - 54.0), foot, HORIZONTAL_ALIGNMENT_LEFT, p.size.x - 370.0 - DOLL_W, 15, 3, DS.C_DIM)

@@ -1,6 +1,7 @@
 extends Control
 # Tutorial guiado (se completa jugando, se puede saltar) y logros con insignias visibles.
 # Todo se dibuja por codigo (sin imagenes).
+const DS = preload("res://design_system.gd")
 
 var game: Control = null
 var idx: int = -1            # paso actual del tutorial; -1 = inactivo
@@ -21,12 +22,9 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = 56
 	banner = PanelContainer.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.08, 0.16, 0.92)
-	sb.set_corner_radius_all(10)
-	sb.set_border_width_all(2)
-	sb.border_color = Color(1.0, 0.85, 0.35)
-	sb.set_content_margin_all(10)
+	var sb: StyleBoxFlat = DS.box(Color(0.035, 0.055, 0.10, 0.93), Color(DS.C_ACCENT, 0.7), 1, DS.R_LG, 14, 10)
+	sb.shadow_color = Color(0, 0, 0, 0.3)
+	sb.shadow_size = 6
 	banner.add_theme_stylebox_override("panel", sb)
 	banner.position = Vector2(300, 44)
 	banner.visible = false
@@ -38,7 +36,7 @@ func _ready() -> void:
 	banner_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	banner_lbl.custom_minimum_size = Vector2(430, 0)
 	banner_lbl.add_theme_font_size_override("font_size", 17)
-	banner_lbl.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8))
+	banner_lbl.add_theme_color_override("font_color", DS.C_TEXT)
 	hb.add_child(banner_lbl)
 	skip_btn = Button.new()
 	skip_btn.text = Lang.t("Saltar tutorial [N]")
@@ -294,7 +292,8 @@ func _medal(c: Vector2, r: float, col: Color, shape: String, on: bool) -> void:
 func _draw() -> void:
 	if game == null:
 		return
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = DS.font("Regular")
+	var fsb: Font = DS.font("SemiBold")
 	var vs: Vector2 = get_viewport_rect().size
 	if toast_t > 0.0 and toast_id != "":
 		for a in ach_list():
@@ -302,36 +301,44 @@ func _draw() -> void:
 				var slide: float = clampf(minf(toast_t, 5.0 - toast_t) * 4.0, 0.0, 1.0)
 				var w: float = 330.0
 				var p: Vector2 = Vector2(vs.x - w - 14.0 + (1.0 - slide) * (w + 20.0), 70.0)
-				draw_rect(Rect2(p, Vector2(w, 72)), Color(0.05, 0.08, 0.16, 0.94))
-				draw_rect(Rect2(p, Vector2(w, 72)), Color(1.0, 0.85, 0.35), false, 2.0)
-				_medal(p + Vector2(38, 36), 26.0, a["c"], a["s"], true)
-				draw_string(font, p + Vector2(76, 26), Lang.t("¡Logro desbloqueado!"), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.85, 0.35))
-				draw_string(font, p + Vector2(76, 48), a["n"], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color.WHITE)
-				draw_string(font, p + Vector2(76, 65), a["d"], HORIZONTAL_ALIGNMENT_LEFT, w - 84.0, 12, Color(0.8, 0.85, 0.95))
+				draw_style_box(DS.card(2, DS.R_LG, 0.97), Rect2(p, Vector2(w, 72)))
+				_medal(p + Vector2(38, 36), 24.0, a["c"], a["s"], true)
+				draw_string(fsb, p + Vector2(76, 26), Lang.t("LOGRO DESBLOQUEADO").to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, DS.C_ACCENT)
+				draw_string(fsb, p + Vector2(76, 48), a["n"], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, DS.C_TEXT)
+				draw_string(font, p + Vector2(76, 65), a["d"], HORIZONTAL_ALIGNMENT_LEFT, w - 84.0, 12, DS.C_DIM)
 	if not panel_open:
 		return
-	draw_rect(Rect2(Vector2.ZERO, vs), Color(0, 0, 0, 0.8))
+	draw_rect(Rect2(Vector2.ZERO, vs), Color(0.01, 0.02, 0.05, 0.78))
 	var list: Array = ach_list()
 	var pw: float = 800.0
 	var ph: float = 560.0
 	var o: Vector2 = (vs - Vector2(pw, ph)) / 2.0
-	draw_rect(Rect2(o, Vector2(pw, ph)), Color(0.09, 0.1, 0.17))
-	draw_rect(Rect2(o, Vector2(pw, ph)), Color(0.25, 0.3, 0.5), false, 2.0)
+	draw_style_box(DS.card(2, DS.R_LG, 0.98), Rect2(o, Vector2(pw, ph)))
 	var done_n: int = 0
 	for a in list:
 		if game.ach_done.has(a["id"]):
 			done_n += 1
-	draw_string(font, o + Vector2(24, 38), Lang.t("LOGROS E INSIGNIAS"), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(1.0, 0.9, 0.6))
-	draw_string(font, o + Vector2(pw - 160, 38), "%d / %d" % [done_n, list.size()], HORIZONTAL_ALIGNMENT_RIGHT, 136, 22, Color(0.7, 0.9, 1.0))
+	draw_string(fsb, o + Vector2(28, 44), Lang.t("LOGROS E INSIGNIAS"), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, DS.C_TEXT)
+	draw_string(fsb, o + Vector2(pw - 188, 42), "%d / %d" % [done_n, list.size()], HORIZONTAL_ALIGNMENT_RIGHT, 160, 20, DS.C_ACCENT)
+	var bar := Rect2(o + Vector2(28, 58), Vector2(pw - 56, 5))
+	draw_style_box(DS.box(Color(1, 1, 1, 0.08), Color(0, 0, 0, 0), 0, 3, 0, 0), bar)
+	if done_n > 0:
+		draw_style_box(DS.box(DS.C_ACCENT, Color(0, 0, 0, 0), 0, 3, 0, 0), Rect2(bar.position, Vector2(bar.size.x * float(done_n) / float(list.size()), 5)))
 	var cols: int = 5
 	for i in list.size():
 		var a: Dictionary = list[i]
 		var on: bool = game.ach_done.has(a["id"])
 		var cx: float = o.x + 20.0 + float(i % cols) * 152.0 + 76.0
-		var cy: float = o.y + 105.0 + float(i / cols) * 150.0
-		_medal(Vector2(cx, cy), 34.0, a["c"], a["s"], on)
+		var cy: float = o.y + 125.0 + float(i / cols) * 148.0
+		var cell := Rect2(cx - 70.0, cy - 46.0, 140.0, 136.0)
+		draw_style_box(DS.box(DS.C_SURF2 if on else DS.C_SURF1, DS.C_LINE_HI if on else DS.C_LINE, 1, DS.R_MD, 0, 0), cell)
+		_medal(Vector2(cx, cy), 28.0, a["c"], a["s"], on)
+		if not on:
+			var lk: Texture2D = DS.icon("lock", 16, DS.C_MUTED)
+			if lk != null:
+				draw_texture(lk, Vector2(cell.end.x - 24.0, cell.position.y + 6.0))
 		var nm: String = a["n"] if on else "???"
-		var tw: float = font.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
-		draw_string(font, Vector2(cx - tw / 2.0, cy + 56.0), nm, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color.WHITE if on else Color(0.6, 0.62, 0.7))
-		draw_multiline_string(font, Vector2(cx - 68.0, cy + 72.0), a["d"], HORIZONTAL_ALIGNMENT_CENTER, 136.0, 11, 3, Color(0.7, 0.75, 0.85) if on else Color(0.5, 0.52, 0.6))
-	draw_string(font, o + Vector2(24, ph - 16), Lang.t("[K] o [Esc]: cerrar"), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.7, 0.8, 0.95))
+		var tw: float = fsb.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+		draw_string(fsb, Vector2(cx - tw / 2.0, cy + 46.0), nm, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, DS.C_TEXT if on else DS.C_MUTED)
+		draw_multiline_string(font, Vector2(cx - 64.0, cy + 62.0), a["d"], HORIZONTAL_ALIGNMENT_CENTER, 128.0, 11, 3, DS.C_DIM if on else DS.C_MUTED)
+	draw_string(font, o + Vector2(28, ph - 16), Lang.t("[K] o [Esc]: cerrar"), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, DS.C_MUTED)

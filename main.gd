@@ -508,6 +508,7 @@ var load_ov: Control = null
 var load_title: Label = null
 var load_tip: Label = null
 var load_bar: ProgressBar = null
+var hud_ui: PanelContainer = null
 var loading_busy: bool = false
 var fade_rect: ColorRect = null
 var fading: bool = false
@@ -527,6 +528,7 @@ var tod_label: Label = null
 var tod_tween: Tween = null
 var tod_last: int = -1
 # --- emergencias (v26): el gestor esta en emergency.gd y la pantalla en diag_ui.gd ---
+const DS = preload("res://design_system.gd")
 const EmergencyData = preload("res://emergency_data.gd")
 var emg: RefCounted = null
 var diag_ui: Control = null
@@ -1113,20 +1115,20 @@ func _label(text: String, size: int) -> Label:
 
 
 func _panel_style() -> StyleBoxFlat:
-	var ps := StyleBoxFlat.new()
-	ps.bg_color = Color(0.09, 0.1, 0.17)
-	ps.set_corner_radius_all(10)
-	ps.set_border_width_all(2)
-	ps.border_color = Color(0.25, 0.3, 0.5)
-	ps.set_content_margin_all(12)
-	return ps
+	return DS.card(1, DS.R_LG, 0.97)
+
+
+const SPEAKER_ROLES: Dictionary = {"Wilson": "Ingeniero y botánico", "Dra. YARISBEL": "Médica", "ENOC": "Técnico de sistemas", "PAM": "Comandante", "Control": "Control de misión", "Narración": "Registro de misión"}
+var dlg_avatar: Label = null
+var dlg_role: Label = null
+var dlg_avatar_panel: PanelContainer = null
+var dlg_was_visible: bool = false
 
 
 func _build_dialog() -> void:
 	dlg = PanelContainer.new()
-	var st: StyleBoxFlat = _panel_style()
-	st.bg_color = Color(0.05, 0.06, 0.12, 0.96)
-	st.border_color = Color(0.5, 0.7, 1.0)
+	var st: StyleBoxFlat = DS.card(2, DS.R_LG, 0.97)
+	st.set_content_margin_all(16)
 	dlg.add_theme_stylebox_override("panel", st)
 	dlg.anchor_left = 0.0
 	dlg.anchor_right = 1.0
@@ -1138,12 +1140,41 @@ func _build_dialog() -> void:
 	dlg.offset_bottom = -20.0
 	dlg.visible = false
 	add_child(dlg)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 16)
+	dlg.add_child(h)
+	dlg_avatar_panel = PanelContainer.new()
+	dlg_avatar_panel.custom_minimum_size = Vector2(64, 64)
+	dlg_avatar_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	h.add_child(dlg_avatar_panel)
+	dlg_avatar = Label.new()
+	dlg_avatar.add_theme_font_size_override("font_size", 28)
+	dlg_avatar.add_theme_font_override("font", DS.font("SemiBold"))
+	dlg_avatar.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dlg_avatar.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dlg_avatar_panel.add_child(dlg_avatar)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 6)
-	dlg.add_child(v)
+	v.add_theme_constant_override("separation", 4)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(v)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	v.add_child(head)
 	dlg_name = Label.new()
 	dlg_name.add_theme_font_size_override("font_size", 20)
-	v.add_child(dlg_name)
+	dlg_name.add_theme_font_override("font", DS.font("SemiBold"))
+	head.add_child(dlg_name)
+	dlg_role = Label.new()
+	dlg_role.add_theme_font_size_override("font_size", 13)
+	dlg_role.add_theme_color_override("font_color", DS.C_DIM)
+	dlg_role.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dlg_role.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(dlg_role)
+	head.add_child(DS.icon_rect("signal", 16, DS.C_ACCENT))
+	var live: Label = DS.label(Lang.t("COMUNICACIÓN ACTIVA"), 11, DS.C_ACCENT, "SemiBold")
+	live.autowrap_mode = TextServer.AUTOWRAP_OFF
+	live.size_flags_horizontal = Control.SIZE_SHRINK_END
+	head.add_child(live)
 	dlg_text = RichTextLabel.new()
 	dlg_text.bbcode_enabled = true
 	dlg_text.add_theme_font_size_override("normal_font_size", 18)
@@ -1152,7 +1183,7 @@ func _build_dialog() -> void:
 	v.add_child(dlg_text)
 	dlg_hint = Label.new()
 	dlg_hint.add_theme_font_size_override("font_size", 14)
-	dlg_hint.add_theme_color_override("font_color", Color(0.6, 0.7, 0.9))
+	dlg_hint.add_theme_color_override("font_color", DS.C_DIM)
 	v.add_child(dlg_hint)
 
 
@@ -1382,16 +1413,16 @@ func _top_info(title: String, pages: Array, after: Callable = Callable()) -> voi
 	topinfo.visible = true
 	_ti_show()
 	_sfx("next", -8.0)
-	topinfo.offset_top = -160.0
+	topinfo.position.y = -220.0
 	var tw: Tween = create_tween()
-	tw.tween_property(topinfo, "offset_top", 14.0, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(topinfo, "position:y", 14.0, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _ti_show() -> void:
 	ti_text.text = str(ti_pages[ti_idx])
 	ti_hint.text = Lang.t("[E] / clic: continuar   ·   [Esc]: saltar") + ("      " + Lang.t("%d de %d") % [ti_idx + 1, ti_pages.size()] if ti_pages.size() > 1 else "")
-	topinfo.size.y = 0.0
-	topinfo.call_deferred("set_size", Vector2(topinfo.size.x, 0.0))
+	topinfo.reset_size()
+	topinfo.call_deferred("reset_size")
 
 
 func _ti_next(skip: bool = false) -> void:
@@ -2107,16 +2138,7 @@ func _on_pause_tutorial() -> void:
 
 
 func _hud_style(a: float = 0.62) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.04, 0.06, 0.12, a)
-	sb.border_color = Color(0.3, 0.42, 0.62, 0.55)
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(8)
-	sb.content_margin_left = 10
-	sb.content_margin_right = 10
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 6
-	return sb
+	return DS.box(Color(0.035, 0.055, 0.10, clampf(a + 0.2, 0.0, 0.95)), Color(DS.C_LINE_HI, 0.7), 1, DS.R_LG, 12, 8)
 
 
 func _build_game_ui() -> void:
@@ -2145,49 +2167,20 @@ func _build_game_ui() -> void:
 	root_box.add_child(map_view)
 
 	# --- HUD arriba a la izquierda: dia/hora + recursos principales ---
-	var hud := PanelContainer.new()
-	hud.add_theme_stylebox_override("panel", _hud_style())
-	hud.position = Vector2(10, 10)
-	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_view.add_child(hud)
-	var side := VBoxContainer.new()
-	side.add_theme_constant_override("separation", 3)
-	side.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud.add_child(side)
-	header = _label("", 14)
-	header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	header.custom_minimum_size = Vector2(236, 0)
-	side.add_child(header)
-	var short: Dictionary = {"oxygen": Lang.t("Oxígeno"), "energy": Lang.t("Energía"), "food": Lang.t("Comida"), "water": Lang.t("Agua"), "shield": Lang.t("Escudo"), "morale": Lang.t("Moral")}
-	for k in NAMES:
-		var row := HBoxContainer.new()
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var l := _label(short.get(k, NAMES[k]), 13)
-		l.custom_minimum_size = Vector2(66, 0)
-		row.add_child(l)
-		var b := ProgressBar.new()
-		b.max_value = 100
-		b.show_percentage = false
-		b.custom_minimum_size = Vector2(130, 12)
-		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var fill := StyleBoxFlat.new()
-		fill.bg_color = bar_colors[k]
-		fill.set_corner_radius_all(3)
-		var back := StyleBoxFlat.new()
-		back.bg_color = Color(0.14, 0.15, 0.24, 0.8)
-		back.set_corner_radius_all(3)
-		b.add_theme_stylebox_override("fill", fill)
-		b.add_theme_stylebox_override("background", back)
-		row.add_child(b)
-		side.add_child(row)
-		bars[k] = b
+	hud_ui = (load("res://hud_ui.gd") as GDScript).new() as PanelContainer
+	hud_ui.position = Vector2(10, 10)
+	map_view.add_child(hud_ui)
+	hud_ui.setup(self)
+	bars = hud_ui.bars
+	header = Label.new()   # compatibilidad: el texto de cabecera ahora lo dibuja el HUD
+	header.visible = false
+	map_view.add_child(header)
 	inv_label = _label("", 12)
-	inv_label.visible = false # el texto queda oculto; el HUD usa iconos
-	side.add_child(inv_label)
+	inv_label.visible = false
+	map_view.add_child(inv_label)
 	inv_icons = (load("res://inv_icons.gd") as GDScript).new() as Control
 	inv_icons.set("game", self)
-	side.add_child(inv_icons)
+	hud_ui.inv_holder.add_child(inv_icons)
 
 	# --- Registro de mensajes abajo a la izquierda (translucido) ---
 	log_panel = PanelContainer.new()
@@ -2673,35 +2666,35 @@ func _build_diary_ui() -> void:
 	diary_ui.z_index = 57
 	add_child(diary_ui)
 	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.8)
+	dim.color = Color(0.01, 0.02, 0.05, 0.78)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	diary_ui.add_child(dim)
 	var cc := CenterContainer.new()
 	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
 	diary_ui.add_child(cc)
 	var panel := PanelContainer.new()
-	var ps: StyleBoxFlat = _panel_style()
-	ps.bg_color = Color(0.93, 0.88, 0.74)
-	ps.border_color = Color(0.45, 0.3, 0.15)
-	ps.set_border_width_all(4)
+	var ps: StyleBoxFlat = DS.card(2, DS.R_LG, 0.98)
+	ps.set_content_margin_all(20)
 	panel.add_theme_stylebox_override("panel", ps)
 	cc.add_child(panel)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 6)
 	panel.add_child(vb)
 	var title: Label = _label(Lang.t("DIARIO DE EXPLORACIÓN"), 22)
-	title.add_theme_color_override("font_color", Color(0.3, 0.17, 0.07))
+	title.add_theme_color_override("font_color", DS.C_TEXT)
+	title.add_theme_font_override("font", DS.font("SemiBold"))
 	vb.add_child(title)
+	vb.add_child(DS.caption(Lang.t("Registro de la misión")))
 	diary_text = RichTextLabel.new()
 	diary_text.bbcode_enabled = true
 	diary_text.scroll_active = true
 	diary_text.add_theme_font_size_override("normal_font_size", 15)
 	diary_text.add_theme_font_size_override("bold_font_size", 15)
-	diary_text.add_theme_color_override("default_color", Color(0.18, 0.12, 0.08))
+	diary_text.add_theme_color_override("default_color", DS.C_TEXT)
 	diary_text.custom_minimum_size = Vector2(700, 440)
 	vb.add_child(diary_text)
 	var hint: Label = _label(Lang.t("[J] o [Esc]: cerrar · [↑][↓]: desplazar"), 13)
-	hint.add_theme_color_override("font_color", Color(0.4, 0.28, 0.15))
+	hint.add_theme_color_override("font_color", DS.C_MUTED)
 	vb.add_child(hint)
 
 
@@ -2720,10 +2713,10 @@ func _diary_content() -> String:
 		var z: Dictionary = zs[zi]
 		var e: Dictionary = diary.get(zi, {})
 		if not zones_seen.has(zi):
-			t += "[color=#8a7a66][b]?????[/b] — %s[/color]\n\n" % Lang.t("lugar por descubrir")
+			t += "[color=#6b778c][b]?????[/b] — %s[/color]\n\n" % Lang.t("lugar por descubrir")
 			continue
-		t += "[b]%s[/b]\n" % z["name"]
-		t += "[i]%s[/i]\n" % z["desc"]
+		t += "[b][color=#52c7e8]%s[/color][/b]\n" % z["name"]
+		t += "[color=#9aa6ba][i]%s[/i][/color]\n" % z["desc"]
 		var w: String = _diary_when(e, "seen")
 		if w != "":
 			t += Lang.t("• Llegaste el %s.\n") % w
@@ -2810,10 +2803,14 @@ func _build_world_map_ui() -> void:
 	side.custom_minimum_size = Vector2(270, 0)
 	side.add_theme_constant_override("separation", 8)
 	hb.add_child(side)
-	side.add_child(_label(Lang.t("MAPA DE NAVEGACIÓN"), 20))
+	var mt: Label = _label(Lang.t("MAPA DE NAVEGACIÓN"), 20)
+	mt.add_theme_font_override("font", DS.font("SemiBold"))
+	side.add_child(mt)
 	map_legend = RichTextLabel.new()
 	map_legend.bbcode_enabled = true
-	map_legend.add_theme_font_size_override("normal_font_size", 14)
+	map_legend.add_theme_font_size_override("normal_font_size", 12)
+	map_legend.add_theme_font_size_override("bold_font_size", 14)
+	map_legend.add_theme_color_override("default_color", DS.C_DIM)
 	map_legend.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_legend.custom_minimum_size = Vector2(0, 430)
 	side.add_child(map_legend)
@@ -2866,13 +2863,13 @@ func _draw_world_map() -> void:
 	var sc: float = 6.0
 	var full := Rect2(Vector2.ZERO, Vector2(EXT_W, EXT_H) * sc)
 	map_canvas.draw_texture_rect(mini_tex, full, false)
-	map_canvas.draw_rect(full, Color(0.5, 0.7, 1.0, 0.8), false, 2.0)
+	map_canvas.draw_rect(full, DS.C_LINE_HI, false, 2.0)
 	map_canvas.draw_rect(Rect2(Vector2(BASE_X0 - 3, BASE_Y0 - 1) * sc, Vector2(10, 4) * sc), Color(0.9, 0.95, 1.0), false, 2.0)
 
 
 func _draw_world_labels() -> void:
 	var sc: float = 6.0
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = DS.font("Medium")
 	var zs: Array = _zones()
 	for zi in zs.size():
 		var z: Dictionary = zs[zi]
@@ -2889,15 +2886,15 @@ func _draw_world_labels() -> void:
 		var tp: Vector2 = pos + Vector2(-sz.x / 2.0, -10.0)
 		tp.x = clampf(tp.x, 4.0, float(EXT_W) * sc - sz.x - 4.0)
 		tp.y = clampf(tp.y, 14.0, float(EXT_H) * sc - 6.0)
-		map_labels.draw_string(font, tp + Vector2(1, 1), nm, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0, 0, 0, 0.95))
-		map_labels.draw_string(font, tp, nm, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1))
+		map_labels.draw_style_box(DS.box(Color(0.02, 0.04, 0.08, 0.82), Color(DS.C_LINE_HI, 0.8), 1, 5, 0, 0), Rect2(tp + Vector2(-5, -13), Vector2(sz.x + 10, 19)))
+		map_labels.draw_string(font, tp, nm, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, DS.C_TEXT)
 	var pp: Vector2 = Vector2(float(BASE_X0 + 2), float(BASE_Y0 + 3))
 	if outside:
 		pp = player_px / float(TILE)
 	pp = (pp + Vector2(0.5, 0.5)) * sc
 	var blink: bool = int(t_anim * 3.0) % 2 == 0
-	map_labels.draw_circle(pp, 6.0, Color(1.0, 0.25, 0.2) if blink else Color(1.0, 0.9, 0.2))
-	map_labels.draw_arc(pp, 9.0, 0.0, TAU, 20, Color.WHITE, 2.0)
+	map_labels.draw_circle(pp, 6.0, DS.C_ACCENT if blink else Color.WHITE)
+	map_labels.draw_arc(pp, 10.0, 0.0, TAU, 24, DS.C_ACCENT, 2.0)
 
 
 func _draw_minimap_node(node: Control) -> void:
@@ -4128,6 +4125,15 @@ func _show_text(who: String, text: String) -> void:
 	if speaker_colors.has(who):
 		col = speaker_colors[who]
 	dlg_name.add_theme_color_override("font_color", col)
+	if dlg_avatar != null:
+		var shown: String = Lang.speaker(who)
+		dlg_avatar.text = shown.replace("Dra. ", "").substr(0, 1).to_upper()
+		dlg_avatar.add_theme_color_override("font_color", col)
+		dlg_avatar_panel.add_theme_stylebox_override("panel", DS.box(Color(col, 0.14), Color(col, 0.7), 2, 32, 0, 0))
+		dlg_role.text = Lang.t(SPEAKER_ROLES[who]) if SPEAKER_ROLES.has(who) else ""
+		if not dlg_was_visible:
+			DS.fade_in(dlg, DS.T_BASE, 10.0)
+		dlg_was_visible = true
 	dlg_text.text = text
 	dlg_text.visible_characters = 0
 	type_pos = 0.0
@@ -4158,6 +4164,7 @@ func _next_line() -> void:
 func _end_dialog() -> void:
 	typing = false
 	dlg.visible = false
+	dlg_was_visible = false
 	mode = 5 if task_left > 0.0 else 0
 	if dlg_after.is_valid():
 		var cb: Callable = dlg_after
@@ -5396,29 +5403,8 @@ func _add(k: String, v: float) -> void:
 func _refresh() -> void:
 	if header == null or not is_instance_valid(header):
 		return
-	var tags: String = ""
-	if _is_night():
-		tags += Lang.t("  [NOCHE LUNAR]")
-	if storm_left > 0:
-		tags += Lang.t("  [TORMENTA DE POLVO]")
-	if breach:
-		tags += Lang.t("  [ALERTA ROJA: BRECHA]")
-	if emg != null and emg.has_active():
-		tags += Lang.t("  [EMERGENCIA: pulsa %s]") % key_name("diag")
-	if ill_days > 0:
-		tags += Lang.t("  [ENFERMEDAD]")
-	if _efficiency() < 1.0:
-		tags += Lang.t("  [CANSADO]")
-	if outside:
-		tags += "  [EVA]"
-	header.text = Lang.t("Día %d / %d  |  %s (%s)  |  %s  |  %s%s") % [day, MAX_DAYS, _clock_text(), _phase_name(), Lang.loc(location), DIFFICULTIES[difficulty]["name"], tags]
-	if breach or (emg != null and emg.has_active()):
-		header.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
-	else:
-		header.remove_theme_color_override("font_color")
-	for k in bars:
-		bars[k].value = res[k]
-		bars[k].modulate = Color(1, 0.55, 0.55) if res[k] < 30.0 else Color.WHITE
+	if hud_ui != null and is_instance_valid(hud_ui):
+		hud_ui.refresh()
 	inv_label.text = Lang.t("Materiales: Chatarra %d | Polímero %d | Circuitos %d\nHerramientas: Parche %d | Botiquín %d | Reparador %d | Filtro %d | Mapa: %s") % [inv["scrap"], inv["polymer"], inv["circuits"], tools["patch"], tools["medkit"], tools["repair"], tools["filter"], ("sí" if int(tools["map"]) > 0 else "no")]
 	if held != "" and int(tools.get(held, 0)) <= 0:
 		held = ""

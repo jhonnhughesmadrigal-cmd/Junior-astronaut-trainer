@@ -309,3 +309,20 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Historial persistente (`emerg` dentro de la partida; versión de guardado sigue en 2; las partidas v25 con brecha o enfermedad se migran a incidentes al cargar). Informe educativo de 5 bloques que cambia según tus acciones.
 - Simplificaciones (son de juego, no datos medidos): presión normal 98–103 kPa, CO₂ 0,3 % vs 0,9 %, porcentajes de carga de red, tiempos de aviso de llamarada y tormenta, y la fracción de daño evitado al refugiarse (25 %) o reforzar (60 %). Los ejemplos reales mencionados (agua reciclada en la ISS, tormenta global de 2018 y el rover Opportunity) son conocimiento general que no verifiqué de nuevo contra una fuente en esta versión: conviene revisarlos. La emergencia médica no es una simulación clínica profesional. Textos en inglés sin revisión humana.
 - Límites: con la dificultad Extremo la causa "fallo eléctrico" ofrece 4 hipótesis (solo hay 4 causas definidas, aunque la tabla pide 5). El balance real de dificultad con jugadores no está probado.
+
+
+## v27 — Rediseño visual (sistema de diseño, interfaces, mundo 3D)
+
+**Sistema de diseño** (`design_system.gd`): paleta (azul noche, azul petróleo, grafito, blanco cálido, cian solo como acento, verde/ámbar/rojo para estados), espaciado, radios, tipografía Inter (4 tamaños base), 22 iconos SVG propios dibujados por código (sin dependencias externas), tema central `DS.make_theme()`.
+
+**Módulos nuevos:** `design_system.gd`, `hud_ui.gd` (HUD compacto), `menu_art.gd` (planetas y paisajes procedurales con FastNoiseLite). `main.gd` solo orquesta.
+
+**Pantallas rediseñadas:** menú, selección de misión/dificultad (tarjetas Luna/Marte), HUD, diálogos como comunicación de misión, mochila, banco de trabajo, diario, mapa (etiquetas con fondo, indicador de posición), logros, centro de diagnóstico (datos reales del juego), pausa.
+
+**Mundo 3D:** gradación de color por mundo (Marte menos saturado y con más contraste; Luna neutra) con `Environment.adjustment_*`. La iluminación diferenciada Luna/Marte, materiales, partículas y presets de calidad ya existían y se conservaron.
+
+**Licencias:** fuente Inter (SIL Open Font License 1.1, subconjunto latino en `fonts/`). Arte y audio generados por código; sin logotipos de la NASA.
+
+**Datos de las tarjetas de misión (aproximados, "≈"):** Luna: gravedad 1,62 m/s², temperatura ecuatorial ~95–390 K; Marte: gravedad 3,73 m/s², presión ~6,36 mb (~0,6 % de la terrestre), temperatura media ~−59 °C. Fuentes: https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html y https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html. Verifique en la fuente primaria antes de citar.
+
+**Límites conocidos:** el rendimiento real en GPU/navegador de usuarios no se midió (solo pruebas en renderizador por software); no se hicieron nuevos modelos 3D ni normal maps; el control táctil no se probó; la revisión del texto en inglés es automática de cobertura (0 claves sin traducir), no una revisión humana.

@@ -1379,4 +1379,6 @@ const EN: Dictionary = {
 	"resuelto": "resolved",
 	"resuelto parcialmente": "partially resolved",
 	"¡Diagnóstico correcto!": "Correct diagnosis!",
+	"COMUNICACIÓN ACTIVA": "ACTIVE COMMS",
+	"Registro de la misión": "Mission log",
 }

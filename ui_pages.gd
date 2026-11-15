@@ -2,13 +2,17 @@ extends Node
 # Interfaz del juego: tema visual, menú principal, opciones, controles y estadísticas.
 # No contiene lógica de juego; llama a main.gd (game) para aplicar cambios.
 
-const ACCENT: Color = Color(0.36, 0.76, 1.0)
+const DS = preload("res://design_system.gd")
+const MenuArt = preload("res://menu_art.gd")
+const ACCENT: Color = DS.C_ACCENT
 const VERSION_TXT: String = "ALFA 0.1"
 
 var game = null
 var theme_res: Theme
 var menu_root: Control
 var menu_bg: TextureRect
+var menu_planet: TextureRect
+var dest_cards: Dictionary = {}
 var page_holder: VBoxContainer
 var pages: Dictionary = {}
 var cur_page: String = "main"
@@ -50,51 +54,11 @@ var syncing: bool = false
 # ---------- tema ----------
 
 func _sb(bg: Color, border: Color = Color(0, 0, 0, 0), bw: int = 0, radius: int = 8, mx: int = 14, my: int = 8) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = border
-	s.set_border_width_all(bw)
-	s.set_corner_radius_all(radius)
-	s.content_margin_left = float(mx)
-	s.content_margin_right = float(mx)
-	s.content_margin_top = float(my)
-	s.content_margin_bottom = float(my)
-	return s
+	return DS.box(bg, border, bw, radius, mx, my)
 
 
 func make_theme() -> Theme:
-	var t := Theme.new()
-	t.default_font_size = 16
-	var normal: StyleBoxFlat = _sb(Color(0.12, 0.15, 0.25, 0.95), Color(0.3, 0.4, 0.6, 0.8), 1)
-	var hover: StyleBoxFlat = _sb(Color(0.17, 0.25, 0.42, 0.98), ACCENT, 2)
-	var pressed: StyleBoxFlat = _sb(Color(0.1, 0.36, 0.56, 1.0), ACCENT, 2)
-	var disabled: StyleBoxFlat = _sb(Color(0.1, 0.11, 0.16, 0.7), Color(0.2, 0.22, 0.3, 0.6), 1)
-	var focus: StyleBoxFlat = _sb(Color(0, 0, 0, 0), ACCENT, 2)
-	for cls in ["Button", "OptionButton"]:
-		t.set_stylebox("normal", cls, normal)
-		t.set_stylebox("hover", cls, hover)
-		t.set_stylebox("pressed", cls, pressed)
-		t.set_stylebox("disabled", cls, disabled)
-		t.set_stylebox("focus", cls, focus)
-		t.set_color("font_color", cls, Color(0.92, 0.95, 1.0))
-		t.set_color("font_hover_color", cls, Color.WHITE)
-		t.set_color("font_pressed_color", cls, Color.WHITE)
-		t.set_color("font_hover_pressed_color", cls, Color.WHITE)
-		t.set_color("font_disabled_color", cls, Color(0.5, 0.55, 0.65))
-		t.set_font_size("font_size", cls, 17)
-	t.set_stylebox("panel", "PanelContainer", _sb(Color(0.07, 0.09, 0.16, 0.93), Color(0.25, 0.36, 0.56, 0.9), 2, 12, 16, 12))
-	t.set_stylebox("tab_selected", "TabContainer", _sb(Color(0.14, 0.3, 0.5), ACCENT, 1, 6, 16, 8))
-	t.set_stylebox("tab_unselected", "TabContainer", _sb(Color(0.1, 0.12, 0.2), Color(0.25, 0.3, 0.45), 1, 6, 16, 8))
-	t.set_stylebox("tab_hovered", "TabContainer", _sb(Color(0.15, 0.2, 0.34), ACCENT, 1, 6, 16, 8))
-	t.set_stylebox("panel", "TabContainer", _sb(Color(0.06, 0.08, 0.14, 0.9), Color(0.25, 0.36, 0.56, 0.9), 1, 6, 16, 14))
-	t.set_color("font_selected_color", "TabContainer", Color.WHITE)
-	t.set_color("font_unselected_color", "TabContainer", Color(0.7, 0.78, 0.92))
-	t.set_color("font_hovered_color", "TabContainer", Color.WHITE)
-	t.set_font_size("font_size", "TabContainer", 16)
-	t.set_stylebox("slider", "HSlider", _sb(Color(0.15, 0.19, 0.3), Color(0, 0, 0, 0), 0, 4, 0, 3))
-	t.set_stylebox("grabber_area", "HSlider", _sb(Color(0.3, 0.65, 0.95), Color(0, 0, 0, 0), 0, 4, 0, 3))
-	t.set_stylebox("grabber_area_highlight", "HSlider", _sb(ACCENT, Color(0, 0, 0, 0), 0, 4, 0, 3))
-	return t
+	return DS.make_theme()
 
 
 func build_all() -> void:
@@ -114,6 +78,7 @@ func _lbl(text: String, size: int, col: Color = Color(1, 1, 1)) -> Label:
 	l.text = text
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", col)
+	l.add_theme_font_override("font", DS.font("SemiBold" if size >= 20 else "Regular"))
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return l
@@ -144,10 +109,31 @@ func _hline() -> HSeparator:
 
 # ---------- menú principal ----------
 
-func _menu_btn(text: String, cb: Callable) -> Button:
-	var b := _btn(text, cb, 42.0)
+func _menu_btn(text: String, cb: Callable, icon_name: String = "", primary: bool = false) -> Button:
+	var b := Button.new()
+	b.text = "      " + text if icon_name != "" else text
+	b.custom_minimum_size = Vector2(0, 40)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_font_size_override("font_size", 19)
+	b.add_theme_font_size_override("font_size", 18)
+	b.add_theme_font_override("font", DS.font("Medium"))
+	var n: StyleBoxFlat = DS.box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, DS.R_MD, DS.S4, DS.S2)
+	var h: StyleBoxFlat = DS.box(Color(DS.C_SURF3, 0.85), DS.C_LINE_HI, 1, DS.R_MD, DS.S4, DS.S3)
+	var p: StyleBoxFlat = DS.box(Color(DS.C_ACCENT, 0.18), DS.C_ACCENT, 1, DS.R_MD, DS.S4, DS.S3)
+	if primary:
+		n = DS.box(Color(DS.C_ACCENT, 0.14), Color(DS.C_ACCENT, 0.55), 1, DS.R_MD, DS.S4, DS.S3)
+		h = DS.box(Color(DS.C_ACCENT, 0.24), DS.C_ACCENT, 1, DS.R_MD, DS.S4, DS.S3)
+	b.add_theme_stylebox_override("normal", n)
+	b.add_theme_stylebox_override("hover", h)
+	b.add_theme_stylebox_override("pressed", p)
+	b.add_theme_stylebox_override("focus", DS.box(Color(0, 0, 0, 0), DS.C_ACCENT, 2, DS.R_MD, DS.S4, DS.S3))
+	b.add_theme_color_override("font_color", DS.C_TEXT if primary else DS.C_DIM)
+	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	b.pressed.connect(cb)
+	if icon_name != "":
+		var ic: TextureRect = DS.icon_rect(icon_name, 20, DS.C_ACCENT if primary else DS.C_DIM)
+		ic.position = Vector2(DS.S4, 10)
+		b.add_child(ic)
+	DS.hover_lift(b)
 	return b
 
 
@@ -162,8 +148,8 @@ func _build_menu() -> void:
 	menu_bg.texture = game.vp3d.get_texture()
 	menu_root.add_child(menu_bg)
 	var grad := Gradient.new()
-	grad.offsets = PackedFloat32Array([0.0, 0.45, 1.0])
-	grad.colors = PackedColorArray([Color(0.01, 0.02, 0.06, 0.94), Color(0.01, 0.02, 0.06, 0.6), Color(0.01, 0.02, 0.06, 0.12)])
+	grad.offsets = PackedFloat32Array([0.0, 0.42, 1.0])
+	grad.colors = PackedColorArray([Color(0.02, 0.03, 0.06, 0.96), Color(0.02, 0.03, 0.06, 0.74), Color(0.02, 0.03, 0.06, 0.18)])
 	var gt := GradientTexture2D.new()
 	gt.gradient = grad
 	gt.fill = GradientTexture2D.FILL_LINEAR
@@ -176,6 +162,7 @@ func _build_menu() -> void:
 	shade.texture = gt
 	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	menu_root.add_child(shade)
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -183,41 +170,60 @@ func _build_menu() -> void:
 		margin.add_theme_constant_override("margin_" + side, 34)
 	menu_root.add_child(margin)
 	var hb := HBoxContainer.new()
-	hb.add_theme_constant_override("separation", 48)
+	hb.add_theme_constant_override("separation", 40)
 	margin.add_child(hb)
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(360, 0)
-	left.add_theme_constant_override("separation", 6)
+	left.custom_minimum_size = Vector2(330, 0)
+	left.add_theme_constant_override("separation", 4)
 	hb.add_child(left)
-	left.add_child(_lbl(Lang.t("JUNIOR ASTRONAUT"), 16, Color(0.55, 0.8, 1.0)))
-	left.add_child(_lbl(Lang.t("MISIÓN PERSEO"), 44, Color(1, 1, 1)))
-	left.add_child(_lbl(Lang.t("Entrenador de misión · Luna y Marte"), 16, Color(0.75, 0.85, 1.0)))
+	var brand := HBoxContainer.new()
+	brand.add_theme_constant_override("separation", 10)
+	menu_planet = TextureRect.new()
+	menu_planet.texture = MenuArt.planet("Luna", 256)
+	menu_planet.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	menu_planet.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	menu_planet.custom_minimum_size = Vector2(40, 40)
+	menu_planet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	brand.add_child(menu_planet)
+	var bc: Label = DS.caption(Lang.t("Junior Astronaut · Mission Trainer"))
+	bc.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	brand.add_child(bc)
+	left.add_child(brand)
+	var title: Label = _lbl(Lang.t("MISIÓN PERSEO"), 40, DS.C_TEXT)
+	title.add_theme_font_override("font", DS.font("SemiBold"))
+	left.add_child(title)
+	left.add_child(_lbl(Lang.t("Entrenador de misión · Luna y Marte"), 15, DS.C_DIM))
 	var sp := Control.new()
-	sp.custom_minimum_size = Vector2(0, 6)
+	sp.custom_minimum_size = Vector2(0, 14)
 	left.add_child(sp)
-	btn_continue = _menu_btn(Lang.t("Continuar partida"), _on_continue)
+	btn_continue = _menu_btn(Lang.t("Continuar partida"), _on_continue, "play", true)
 	left.add_child(btn_continue)
-	continue_info = _lbl("", 13, Color(0.6, 0.8, 1.0))
+	continue_info = _lbl("", 13, DS.C_DIM)
 	left.add_child(continue_info)
-	left.add_child(_menu_btn(Lang.t("Nueva misión"), _on_new_mission))
-	left.add_child(_menu_btn(Lang.t("Cómo jugar"), show_page.bind("howto")))
-	left.add_child(_menu_btn(Lang.t("Finales"), show_page.bind("endings")))
-	left.add_child(_menu_btn(Lang.t("Opciones"), open_options))
-	left.add_child(_menu_btn(Lang.t("Créditos"), show_page.bind("credits")))
+	left.add_child(_menu_btn(Lang.t("Nueva misión"), _on_new_mission, "planet"))
+	left.add_child(_menu_btn(Lang.t("Cómo jugar"), show_page.bind("howto"), "book"))
+	left.add_child(_menu_btn(Lang.t("Finales"), show_page.bind("endings"), "trophy"))
+	left.add_child(_menu_btn(Lang.t("Opciones"), open_options, "gear"))
+	left.add_child(_menu_btn(Lang.t("Créditos"), show_page.bind("credits"), "crew"))
 	if not game._is_web():
-		left.add_child(_menu_btn(Lang.t("Salir"), _on_quit))
-	var lang_row := HBoxContainer.new()
-	lang_row.add_theme_constant_override("separation", 6)
-	lang_row.add_child(_lbl("Idioma / Language", 13, Color(0.6, 0.8, 1.0)))
-	for lc in ["es", "en"]:
-		var lb: Button = _btn("Español" if lc == "es" else "English", _set_lang.bind(lc), 30.0)
-		lb.disabled = (Lang.code == lc)
-		lang_row.add_child(lb)
-	left.add_child(lang_row)
+		left.add_child(_menu_btn(Lang.t("Salir"), _on_quit, "lock"))
 	var grow := Control.new()
 	grow.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left.add_child(grow)
-	left.add_child(_lbl(Lang.t("%s · Historia original inspirada en la premisa de The Martian (2015)") % VERSION_TXT, 12, Color(0.55, 0.65, 0.8)))
+	var lang_row := HBoxContainer.new()
+	lang_row.add_theme_constant_override("separation", 6)
+	lang_row.add_child(_lbl("Idioma / Language", 13, DS.C_DIM))
+	for lc in ["es", "en"]:
+		var lb: Button = _btn("ES" if lc == "es" else "EN", _set_lang.bind(lc), 30.0)
+		lb.custom_minimum_size = Vector2(46, 30)
+		if Lang.code == lc:
+			# idioma activo: se marca con el acento (no atenuado como un boton deshabilitado)
+			for sn in ["normal", "hover", "pressed", "focus"]:
+				lb.add_theme_stylebox_override(sn, DS.box(Color(DS.C_ACCENT, 0.18), DS.C_ACCENT, 1, DS.R_MD, 6, 4))
+			lb.add_theme_color_override("font_color", DS.C_ACCENT)
+		lang_row.add_child(lb)
+	left.add_child(lang_row)
+	left.add_child(_lbl(Lang.t("%s · Historia original inspirada en la premisa de The Martian (2015)") % VERSION_TXT, 12, DS.C_MUTED))
 	page_holder = VBoxContainer.new()
 	page_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	page_holder.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -232,13 +238,14 @@ func _build_menu() -> void:
 
 func _page(nm: String, title: String) -> VBoxContainer:
 	var pc := PanelContainer.new()
-	pc.custom_minimum_size = Vector2(560, 0)
+	pc.custom_minimum_size = Vector2(620 if nm == "new" else 560, 0)
 	pc.size_flags_horizontal = Control.SIZE_SHRINK_END
+	pc.add_theme_stylebox_override("panel", DS.card(1, DS.R_LG, 0.93))
 	page_holder.add_child(pc)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	pc.add_child(v)
-	v.add_child(_lbl(title, 26, Color(0.85, 0.95, 1.0)))
+	v.add_child(_lbl(title, 24, DS.C_TEXT))
 	v.add_child(_hline())
 	pages[nm] = pc
 	return v
@@ -248,6 +255,8 @@ func show_page(nm: String) -> void:
 	cur_page = nm
 	for k in pages:
 		pages[k].visible = (k == nm)
+	if pages.has(nm):
+		DS.fade_in(pages[nm], DS.T_BASE, 10.0)
 	if nm == "endings":
 		_fill_endings()
 	elif nm == "howto":
@@ -264,28 +273,98 @@ func _build_page_main() -> void:
 	v.add_child(_lbl(Lang.t("Versión alfa: puede haber errores. Gracias por probarla."), 13, Color(1.0, 0.85, 0.5)))
 
 
+const DEST: Dictionary = {
+	"Luna": {"name": "LUNA", "tag": "Noche de 14 días", "desc": "Sin atmósfera: la radiación y los micrometeoritos llegan directos. La noche lunar dura unos 14 días sin luz solar.", "rows": [["planet", "Gravedad", "≈ 1,6 m/s² (1/6 de la Tierra)"], ["shield", "Atmósfera", "Prácticamente ninguna"], ["temp", "Temperatura", "≈ −180 a +120 °C"], ["alert", "Riesgo", "Noche larga, poca energía"]]},
+	"Marte": {"name": "MARTE", "tag": "Tormentas de polvo", "desc": "Atmósfera muy delgada, frío y polvo. Las tormentas cubren los paneles solares y bajan la energía.", "rows": [["planet", "Gravedad", "≈ 3,7 m/s² (38 % de la Tierra)"], ["shield", "Atmósfera", "≈ 0,6 % de la terrestre"], ["temp", "Temperatura", "Media ≈ −60 °C"], ["alert", "Riesgo", "Tormentas de polvo"]]},
+}
+
+
 func _build_page_new() -> void:
 	var v: VBoxContainer = _page("new", Lang.t("Nueva misión"))
-	v.add_child(_lbl(Lang.t("Destino"), 18, Color(0.6, 0.85, 1.0)))
+	v.add_theme_constant_override("separation", 6)
 	var hb := HBoxContainer.new()
-	hb.add_theme_constant_override("separation", 10)
+	hb.add_theme_constant_override("separation", 12)
 	v.add_child(hb)
 	var grp := ButtonGroup.new()
 	for loc in ["Luna", "Marte"]:
+		var info: Dictionary = DEST[loc]
 		var b := Button.new()
 		b.toggle_mode = true
 		b.button_group = grp
-		b.custom_minimum_size = Vector2(0, 56)
+		b.custom_minimum_size = Vector2(0, 262)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.text = Lang.t("LUNA\nNoche de 14 días") if loc == "Luna" else Lang.t("MARTE\nTormentas de polvo")
+		b.clip_contents = true
+		b.add_theme_stylebox_override("normal", DS.card(1, DS.R_LG, 1.0))
+		var hov: StyleBoxFlat = DS.card(2, DS.R_LG, 1.0)
+		hov.border_color = DS.C_LINE_HI
+		b.add_theme_stylebox_override("hover", hov)
+		var sel: StyleBoxFlat = DS.card(2, DS.R_LG, 1.0)
+		sel.border_color = DS.C_ACCENT
+		sel.set_border_width_all(2)
+		b.add_theme_stylebox_override("pressed", sel)
+		b.add_theme_stylebox_override("hover_pressed", sel)
+		b.add_theme_stylebox_override("focus", sel)
+		var col := VBoxContainer.new()
+		col.set_anchors_preset(Control.PRESET_FULL_RECT)
+		col.add_theme_constant_override("separation", 6)
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(col)
+		var img := TextureRect.new()
+		img.texture = MenuArt.landscape(loc, 520, 200)
+		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		img.custom_minimum_size = Vector2(0, 84)
+		img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.add_child(img)
+		var body := MarginContainer.new()
+		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for side in ["left", "right", "bottom"]:
+			body.add_theme_constant_override("margin_" + side, 12)
+		col.add_child(body)
+		var bv := VBoxContainer.new()
+		bv.add_theme_constant_override("separation", 3)
+		bv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		body.add_child(bv)
+		var head := HBoxContainer.new()
+		head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bv.add_child(head)
+		var nm: Label = DS.label(Lang.t(info["name"]), 20, DS.C_TEXT, "SemiBold")
+		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		head.add_child(nm)
+		var chk: TextureRect = DS.icon_rect("check", 20, DS.C_ACCENT)
+		chk.name = "Check"
+		chk.visible = false
+		head.add_child(chk)
+		var tg: Label = DS.label(Lang.t(info["tag"]), 13, DS.C_ACCENT, "Medium")
+		tg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bv.add_child(tg)
+		for r in info["rows"]:
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 6)
+			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			row.add_child(DS.icon_rect(r[0], 15, DS.C_DIM))
+			var rl: Label = DS.label(Lang.t(r[1]) + ":", 12, DS.C_DIM)
+			rl.autowrap_mode = TextServer.AUTOWRAP_OFF
+			rl.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			rl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			row.add_child(rl)
+			var rv: Label = DS.label(Lang.t(r[2]), 12, DS.C_TEXT)
+			rv.autowrap_mode = TextServer.AUTOWRAP_OFF
+			rv.clip_text = true
+			rv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			row.add_child(rv)
+			bv.add_child(row)
 		b.toggled.connect(_on_loc_toggled.bind(loc))
 		hb.add_child(b)
+		DS.hover_lift(b)
 		loc_buttons[loc] = b
+		dest_cards[loc] = chk
 	dest_text = _rich(0, true)
+	dest_text.add_theme_font_size_override("normal_font_size", 13)
 	v.add_child(dest_text)
-	v.add_child(_lbl(Lang.t("Dificultad"), 18, Color(0.6, 0.85, 1.0)))
+	v.add_child(DS.caption(Lang.t("Dificultad")))
 	var hb2 := HBoxContainer.new()
-	hb2.add_theme_constant_override("separation", 10)
+	hb2.add_theme_constant_override("separation", 6)
 	v.add_child(hb2)
 	var grp2 := ButtonGroup.new()
 	for i in game.DIFFICULTIES.size():
@@ -296,9 +375,12 @@ func _build_page_new() -> void:
 		b2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b2.text = game.DIFFICULTIES[i]["name"]
 		b2.toggled.connect(_on_diff_toggled.bind(i))
+		var psel: StyleBoxFlat = DS.box(Color(DS.C_ACCENT, 0.18), DS.C_ACCENT, 1, DS.R_MD, DS.S3, DS.S2)
+		b2.add_theme_stylebox_override("pressed", psel)
+		b2.add_theme_stylebox_override("hover_pressed", psel)
 		hb2.add_child(b2)
 		diff_buttons.append(b2)
-	diff_text = _lbl("", 14, Color(0.8, 0.88, 1.0))
+	diff_text = _lbl("", 14, DS.C_DIM)
 	v.add_child(diff_text)
 	v.add_child(_hline())
 	var hb3 := HBoxContainer.new()
@@ -307,7 +389,15 @@ func _build_page_new() -> void:
 	hb3.add_child(_btn(Lang.t("Volver"), show_page.bind("main"), 44.0))
 	var go: Button = _btn(Lang.t("COMENZAR MISIÓN"), _on_start, 44.0)
 	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	go.add_theme_font_size_override("font_size", 20)
+	go.add_theme_font_size_override("font_size", 19)
+	var gn: StyleBoxFlat = DS.box(Color(DS.C_ACCENT, 0.9), Color(0, 0, 0, 0), 0, DS.R_MD, DS.S4, DS.S3)
+	var gh: StyleBoxFlat = DS.box(Color(0.42, 0.85, 0.96), Color(0, 0, 0, 0), 0, DS.R_MD, DS.S4, DS.S3)
+	go.add_theme_stylebox_override("normal", gn)
+	go.add_theme_stylebox_override("hover", gh)
+	go.add_theme_stylebox_override("pressed", gn)
+	go.add_theme_color_override("font_color", Color(0.03, 0.07, 0.12))
+	go.add_theme_color_override("font_hover_color", Color(0.03, 0.07, 0.12))
+	go.add_theme_color_override("font_pressed_color", Color(0.03, 0.07, 0.12))
 	hb3.add_child(go)
 
 
@@ -346,7 +436,9 @@ func _fill_endings() -> void:
 func refresh_continue() -> void:
 	var ok: bool = game._save_compatible()
 	btn_continue.disabled = not ok
-	continue_info.text = game._save_summary() if ok else Lang.t("No hay partida guardada.")
+	var sm: String = game._save_summary() if ok else Lang.t("No hay partida guardada.")
+	var ls: PackedStringArray = sm.split("\n")
+	continue_info.text = ls[0] if ls.size() < 2 else ls[0] + "\n" + ls[ls.size() - 1]
 
 
 func open_menu(page: String = "main") -> void:
@@ -373,10 +465,11 @@ func _sync_new_page() -> void:
 
 
 func _update_dest_text() -> void:
-	if sel_loc == "Luna":
-		dest_text.text = Lang.t("[b]Luna[/b]: sin atmósfera, radiación y micrometeoritos.\n[b]•[/b] Una noche lunar de unos 14 días sin luz solar: la energía escasea.\n[b]•[/b] Lugares reales: Mar de la Tranquilidad (Apolo 11), Monte Malapert, cráter Shackleton, cráter Tycho y valle Taurus-Littrow (Apolo 17).")
-	else:
-		dest_text.text = Lang.t("[b]Marte[/b]: atmósfera delgada, polvo y frío.\n[b]•[/b] Tormentas de polvo que cubren los paneles solares.\n[b]•[/b] Lugares reales: cráteres Jezero y Gale, Valles Marineris, Olympus Mons, Hellas Planitia y el casquete polar norte.")
+	dest_text.text = Lang.t(DEST[sel_loc]["desc"])
+	for k in dest_cards:
+		(dest_cards[k] as Control).visible = (k == sel_loc)
+	if menu_planet != null:
+		menu_planet.texture = MenuArt.planet(sel_loc, 256)
 
 
 func _update_diff_text() -> void:

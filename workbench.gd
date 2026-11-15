@@ -170,34 +170,39 @@ func _draw_upg_glyph(id: String, r: Rect2) -> void:
 			draw_arc(c + Vector2(0, -12), 7.0, PI, TAU, 10, Color(0.8, 0.88, 1.0), 3.0)
 
 
+const DS = preload("res://design_system.gd")
+
+
 func _draw() -> void:
 	if not visible or game == null:
 		return
-	var font: Font = ThemeDB.fallback_font
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0, 0, 0, 0.65))
+	var font: Font = DS.font("Regular")
+	var fsb: Font = DS.font("SemiBold")
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.01, 0.02, 0.05, 0.72))
 	var p: Rect2 = _panel()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.06, 0.12, 0.97)
-	sb.set_corner_radius_all(14)
-	sb.set_border_width_all(3)
-	sb.border_color = Color(1.0, 0.8, 0.35)
-	draw_style_box(sb, p)
-	draw_string(font, p.position + Vector2(30, 44), Lang.t("Banco de trabajo"), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color(1.0, 0.9, 0.5))
+	draw_style_box(DS.card(2, DS.R_LG, 0.98), p)
+	draw_string(fsb, p.position + Vector2(30, 46), Lang.t("Banco de trabajo"), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, DS.C_TEXT)
 	# materiales que tienes
 	var mx: float = p.position.x + 30.0
 	var my: float = p.position.y + 62.0
 	for id in MATS:
 		_mat_icon(id, Rect2(mx, my, 26.0, 26.0))
-		draw_string(font, Vector2(mx + 32.0, my + 20.0), "%s: %d" % [str(LABELS[id]), int(game.inv[id])], HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.9, 0.93, 1.0))
+		draw_string(font, Vector2(mx + 32.0, my + 20.0), "%s: %d" % [str(LABELS[id]), int(game.inv[id])], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, DS.C_TEXT)
 		mx += 150.0
-	draw_string(font, p.position + Vector2(30, 116), Lang.t("Fabricar (minijuego)"), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.6, 0.85, 1.0))
-	draw_string(font, p.position + Vector2(30, 286), Lang.t("Mejorar el equipo (solo materiales)"), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.6, 0.85, 1.0))
+	draw_string(fsb, p.position + Vector2(30, 116), Lang.t("FABRICAR (MINIJUEGO)"), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, DS.C_DIM)
+	draw_string(fsb, p.position + Vector2(30, 286), Lang.t("MEJORAR EL EQUIPO (SOLO MATERIALES)"), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, DS.C_DIM)
 	for i in 8:
 		var r: Rect2 = _card_rect(i)
 		var e: Dictionary = _entry(i)
-		var dim: float = 1.0 if bool(e["ok"]) else 0.45
-		draw_rect(r, Color(0.11, 0.14, 0.24))
-		draw_rect(r, Color(0.3, 0.4, 0.65), false, 2.0)
+		var dim: float = 1.0 if bool(e["ok"]) else 0.5
+		var hovr: bool = r.has_point(mouse)
+		var cs: StyleBoxFlat = DS.box(DS.C_SURF3 if (i == sel or hovr) else DS.C_SURF2, DS.C_LINE, 1, DS.R_MD, 0, 0)
+		if i == sel:
+			cs.border_color = DS.C_ACCENT
+			cs.set_border_width_all(2)
+		elif hovr:
+			cs.border_color = DS.C_LINE_HI
+		draw_style_box(cs, r)
 		var ic := Rect2(r.position + Vector2(CARD / 2.0 - 16.0, 12.0), Vector2(32.0, 32.0))
 		if i < 5:
 			var tx: Texture2D = _tex(str(e["id"]))
@@ -206,36 +211,36 @@ func _draw() -> void:
 			else:
 				_icon(str(e["id"]), ic, dim)
 			if int(e["owned"]) > 0:
-				draw_string(font, r.position + Vector2(CARD - 24.0, 18.0), "x%d" % int(e["owned"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1.0, 0.9, 0.5))
+				draw_string(fsb, r.position + Vector2(CARD - 28.0, 17.0), "x%d" % int(e["owned"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, DS.C_ACCENT)
 		else:
 			_draw_upg_glyph(str(e["id"]), ic)
 			for q in game.MAX_UPG:
-				var col: Color = Color(1.0, 0.85, 0.3) if q < int(e["lvl"]) else Color(0.25, 0.3, 0.45)
-				draw_rect(Rect2(r.position + Vector2(CARD / 2.0 - 21.0 + float(q) * 15.0, CARD - 12.0), Vector2(12, 5)), col)
-		draw_multiline_string(font, r.position + Vector2(2, 56.0), str(e["name"]), HORIZONTAL_ALIGNMENT_CENTER, CARD - 4.0, 12, 2, Color(0.9, 0.93, 1.0, dim + 0.2))
-		draw_string(font, r.position + Vector2(4, 14.0), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.6, 0.7, 0.9))
-		if i == sel:
-			draw_rect(r.grow(3.0), Color(1.0, 0.85, 0.3), false, 3.0)
-		elif r.has_point(mouse):
-			draw_rect(r.grow(2.0), Color(0.6, 0.8, 1.0), false, 2.0)
+				var col: Color = DS.C_ACCENT if q < int(e["lvl"]) else Color(1, 1, 1, 0.14)
+				draw_rect(Rect2(r.position + Vector2(CARD / 2.0 - 21.0 + float(q) * 15.0, CARD - 12.0), Vector2(12, 4)), col)
+		draw_multiline_string(font, r.position + Vector2(2, 56.0), str(e["name"]), HORIZONTAL_ALIGNMENT_CENTER, CARD - 4.0, 12, 2, Color(DS.C_TEXT, dim + 0.2))
+		draw_string(font, r.position + Vector2(6, 15.0), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, DS.C_MUTED)
 	# detalle a la derecha
 	var e2: Dictionary = _entry(sel)
 	var rx: float = p.position.x + 30.0 + _left_w(p) + 20.0
 	var rw: float = p.end.x - rx - 30.0
-	draw_line(Vector2(rx - 12.0, p.position.y + 20.0), Vector2(rx - 12.0, p.end.y - 20.0), Color(0.3, 0.4, 0.65), 1.0)
+	draw_line(Vector2(rx - 12.0, p.position.y + 20.0), Vector2(rx - 12.0, p.end.y - 20.0), DS.C_LINE, 1.0)
 	var y: float = p.position.y + 44.0
-	draw_string(font, Vector2(rx, y), str(e2["name"]), HORIZONTAL_ALIGNMENT_LEFT, rw, 22, Color(1.0, 0.9, 0.5))
-	y += 26.0
+	draw_string(fsb, Vector2(rx, y), str(e2["name"]), HORIZONTAL_ALIGNMENT_LEFT, rw, 22, DS.C_TEXT)
+	y += 24.0
+	var okk: bool = bool(e2["ok"])
+	var st_txt: String = (Lang.t("Listo para fabricar") if sel < 5 else Lang.t("Listo para mejorar")) if okk else Lang.t("Faltan materiales o requisitos")
+	draw_string(fsb, Vector2(rx, y), ("●  " if okk else "○  ") + st_txt, HORIZONTAL_ALIGNMENT_LEFT, rw, 13, DS.C_GOOD if okk else DS.C_WARN)
+	y += 24.0
 	var d_txt: String = str(e2["desc"])
 	if sel >= 5 and int(e2["lvl"]) >= 0:
 		d_txt += "  (" + Lang.t("nivel %d de %d") % [int(e2["lvl"]), game.MAX_UPG] + ")"
-	draw_multiline_string(font, Vector2(rx, y), d_txt, HORIZONTAL_ALIGNMENT_LEFT, rw, 15, 3, Color(0.8, 0.88, 1.0))
-	y += 70.0
-	draw_string(font, Vector2(rx, y), Lang.t("Materiales necesarios"), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.6, 0.85, 1.0))
+	draw_multiline_string(font, Vector2(rx, y), d_txt, HORIZONTAL_ALIGNMENT_LEFT, rw, 15, 3, DS.C_DIM)
+	y += 62.0
+	draw_string(fsb, Vector2(rx, y), Lang.t("MATERIALES NECESARIOS"), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, DS.C_DIM)
 	y += 12.0
 	var cost: Dictionary = e2["cost"]
 	if cost.is_empty():
-		draw_string(font, Vector2(rx, y + 24.0), "—", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.7, 0.75, 0.9))
+		draw_string(font, Vector2(rx, y + 24.0), "—", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, DS.C_DIM)
 	for id in MATS:
 		if not cost.has(id):
 			continue
@@ -243,24 +248,24 @@ func _draw() -> void:
 		var have: int = int(game.inv[id])
 		var good: bool = have >= need
 		_mat_icon(id, Rect2(rx, y + 4.0, 26.0, 26.0))
-		draw_string(font, Vector2(rx + 34.0, y + 24.0), "%s" % str(LABELS[id]), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.9, 0.93, 1.0))
-		draw_string(font, Vector2(rx + rw - 120.0, y + 24.0), Lang.t("%d de %d") % [have, need], HORIZONTAL_ALIGNMENT_RIGHT, 120.0, 16, Color(0.5, 1.0, 0.6) if good else Color(1.0, 0.5, 0.4))
+		draw_string(font, Vector2(rx + 34.0, y + 24.0), "%s" % str(LABELS[id]), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, DS.C_TEXT)
+		draw_string(fsb, Vector2(rx + rw - 140.0, y + 24.0), ("✓ " if good else "✗ ") + Lang.t("%d de %d") % [have, need], HORIZONTAL_ALIGNMENT_RIGHT, 140.0, 16, DS.C_GOOD if good else DS.C_BAD)
 		y += 34.0
 	if sel < 5:
-		draw_string(font, Vector2(rx, y + 30.0), Lang.t("Tiempo de trabajo: %s") % game._fmt_dur(int(e2["mins"])), HORIZONTAL_ALIGNMENT_LEFT, rw, 15, Color(0.8, 0.88, 1.0))
+		draw_string(font, Vector2(rx, y + 30.0), Lang.t("Tiempo de trabajo: %s") % game._fmt_dur(int(e2["mins"])), HORIZONTAL_ALIGNMENT_LEFT, rw, 15, DS.C_DIM)
 	# boton
 	var b: Rect2 = _button_rect()
-	var ok: bool = bool(e2["ok"])
 	var hov: bool = b.has_point(mouse)
-	var bc: Color = Color(0.2, 0.55, 0.3) if ok else Color(0.25, 0.27, 0.34)
-	if ok and hov:
-		bc = Color(0.28, 0.7, 0.4)
-	draw_rect(b, bc)
-	draw_rect(b, Color(0.5, 0.9, 0.6) if ok else Color(0.4, 0.42, 0.5), false, 2.0)
+	var bs: StyleBoxFlat
+	if okk:
+		bs = DS.box(Color(0.42, 0.85, 0.96) if hov else DS.C_ACCENT, Color(0, 0, 0, 0), 0, DS.R_MD, 0, 0)
+	else:
+		bs = DS.box(DS.C_GRAPHITE, DS.C_LINE, 1, DS.R_MD, 0, 0)
+	draw_style_box(bs, b)
 	var label: String = ""
-	if ok:
+	if okk:
 		label = (Lang.t("Fabricar") if sel < 5 else Lang.t("Mejorar")) + "  [Enter]"
 	else:
 		label = str(e2["why"])
-	draw_string(font, b.position + Vector2(0, 34.0), label, HORIZONTAL_ALIGNMENT_CENTER, b.size.x, 20, Color(1, 1, 1) if ok else Color(0.8, 0.82, 0.9))
-	draw_string(font, Vector2(rx, p.end.y - 14.0), Lang.t("Flechas o [1-8] eligen · [Esc] sale"), HORIZONTAL_ALIGNMENT_LEFT, rw, 13, Color(0.6, 0.7, 0.9))
+	draw_string(fsb, b.position + Vector2(0, 34.0), label, HORIZONTAL_ALIGNMENT_CENTER, b.size.x, 19, Color(0.03, 0.07, 0.12) if okk else DS.C_DIM)
+	draw_string(font, Vector2(rx, p.end.y - 14.0), Lang.t("Flechas o [1-8] eligen · [Esc] sale"), HORIZONTAL_ALIGNMENT_LEFT, rw, 13, DS.C_MUTED)
