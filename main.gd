@@ -495,7 +495,7 @@ const BIND_DEFS: Array = [
 	["sprint", "Correr", KEY_SHIFT], ["jump", "Saltar", KEY_SPACE], ["interact", "Usar lo que tienes enfrente", KEY_E],
 	["upgrade", "Mejorar la estación frente a ti", KEY_U], ["pack", "Mochila", KEY_I], ["hold", "Cambiar el objeto en la mano", KEY_Q],
 	["map", "Mapa de navegación", KEY_TAB], ["diary", "Diario de exploración", KEY_J], ["ach", "Logros e insignias", KEY_K],
-	["chat", "Mostrar u ocultar el chat", KEY_T], ["cam", "Cambiar de cámara", KEY_C], ["view", "Vista 3D / 2D", KEY_V], ["mute", "Silenciar la música", KEY_M]
+	["diag", "Centro de diagnóstico", KEY_H], ["chat", "Mostrar u ocultar el chat", KEY_T], ["cam", "Cambiar de cámara", KEY_C], ["view", "Vista 3D / 2D", KEY_V], ["mute", "Silenciar la música", KEY_M]
 ]
 const CLICK_ACTIONS: Array = ["interact", "upgrade", "jump", "pack", "hold", "none"]
 const RESERVED_KEYS: Array = [KEY_ESCAPE, KEY_F1, KEY_F2, KEY_F3, KEY_F11, KEY_ENTER, KEY_KP_ENTER, KEY_UNKNOWN]
@@ -526,6 +526,12 @@ var tod_panel: PanelContainer = null
 var tod_label: Label = null
 var tod_tween: Tween = null
 var tod_last: int = -1
+# --- emergencias (v26): el gestor esta en emergency.gd y la pantalla en diag_ui.gd ---
+const EmergencyData = preload("res://emergency_data.gd")
+var emg: RefCounted = null
+var diag_ui: Control = null
+var task_after: Callable = Callable()   # se llama al terminar la tarea en curso (intervenciones y mantenimiento)
+var emg_mg: Dictionary = {}              # intervencion que espera el resultado de un minijuego
 var map_view: Control
 
 
@@ -550,6 +556,7 @@ func _ready() -> void:
 	_build_minigames()
 	_build_pack()
 	_build_bench()
+	_build_diag()
 	_build_fade()
 	_build_loading()
 	_build_pause()
@@ -2022,6 +2029,11 @@ func _new_game(loc: String) -> void:
 	outside = false
 	time_acc = 0.0
 	task_left = 0.0
+	task_after = Callable()
+	emg_mg = {}
+	emg.call("reset")
+	if diag_ui != null:
+		diag_ui.visible = false
 	inv = {"scrap": 0, "polymer": 0, "circuits": 0}
 	tools = {"patch": 0, "medkit": 0, "repair": 0, "filter": 0, "map": 0}
 	st_lvl = {"O": 0, "S": 0, "G": 0, "W": 0, "R": 0, "C": 0}
@@ -2252,7 +2264,9 @@ func _tod_toast(text: String, col: Color) -> void:
 	tod_tween.tween_property(tod_panel, "modulate:a", 1.0, 0.25)
 	tod_tween.tween_interval(1.8)
 	tod_tween.tween_property(tod_panel, "modulate:a", 0.0, 0.6)
-	tod_tween.tween_callback(func() -> void: tod_panel.visible = false)
+	tod_tween.tween_callback(func() -> void:
+		if is_instance_valid(tod_panel):
+			tod_panel.visible = false)
 
 
 func _on_hud_controls() -> void:
@@ -2958,6 +2972,7 @@ func _exit_eva_do() -> void:
 	_fx("ring", "", Color(0.6, 0.85, 1.0))
 	_add("oxygen", -3)
 	_add("shield", -2)
+	emg.on_eva()
 	_log(Lang.t("Regresas por la esclusa (-3 oxígeno por el ciclo de aire, -2 escudo por exposición)."))
 	_refill_suit()
 	_airlock_cycle()
@@ -4101,6 +4116,8 @@ func _start_dialog(lines: Array, after: Callable = Callable()) -> void:
 	dlg_queue = lines.duplicate()
 	dlg_after = after
 	mode = 1
+	if diag_ui != null and diag_ui.visible:
+		diag_ui.visible = false
 	dlg.visible = true
 	_next_line()
 
@@ -4212,6 +4229,12 @@ func _talk(ch: String) -> void:
 	var lines: Array = []
 	var bonus: bool = false
 	stats["talks"] += 1
+	if ch == "a" and emg.has_kind("medical"):
+		# v26: la enfermedad se diagnostica y se trata desde el Centro de diagnostico, con la ayuda de la Dra. YARISBEL
+		lines.append(_l("Dra. YARISBEL", Lang.t("Veamos qué le pasa antes de tratarlo. Abre el Centro de diagnóstico, revisa sus síntomas y dime qué tratamiento aplicar.")))
+		lines.append(_l("Narración", Lang.t("Abre el Centro de diagnóstico con [%s].") % key_name("diag")))
+		_start_dialog(lines, _talk_after.bind(false))
+		return
 	if ch == "a" and ill_days > 0 and tools["medkit"] > 0:
 		tools["medkit"] -= 1
 		ill_days = 0
@@ -4259,7 +4282,9 @@ func _talk_after(bonus: bool) -> void:
 func _radio() -> void:
 	var lines: Array = []
 	var left: int = MAX_DAYS - day
-	if breach:
+	if emg.has_active():
+		lines.append(_l("Control", Lang.t("Perseo, vemos %d alerta(s) activa(s) en su base. Revisen los instrumentos en el Centro de diagnóstico y diagnostiquen antes de reparar.") % emg.active.size()))
+	elif breach:
 		lines.append(_l("Control", Lang.t("Perseo, vemos la brecha en su escudo. Fabriquen un kit de parche en el banco de trabajo y séllenla desde el generador de escudo.")))
 	elif ill_days > 0:
 		lines.append(_l("Control", Lang.t("Perseo, nos reportan enfermos. Un botiquín ayudará: hablen con la Dra. YARISBEL una vez que lo fabriquen.")))
@@ -4329,6 +4354,17 @@ func _craft(i: int) -> void:
 
 
 func _on_mg_done(ok: bool, mistakes: int) -> void:
+	if not emg_mg.is_empty():
+		var ep: Dictionary = emg_mg
+		emg_mg = {}
+		if not ok:
+			mode = 0
+			_open_diag(int(ep["inc"]))
+			return
+		if mistakes == 0:
+			_log("[color=lime]" + Lang.t("Minijuego superado sin errores: ¡perfecto!") + "[/color]")
+		_emg_run_iv(int(ep["inc"]), str(ep["iv"]))
+		return
 	if not upg_pending.is_empty():
 		_upg_done(ok)
 		return
@@ -5008,6 +5044,14 @@ func _input(event: InputEvent) -> void:
 		if in_menu and ui != null and k.keycode == KEY_ESCAPE and not k.echo and ui.cur_page != "main":
 			ui.show_page("main")
 		return
+	if mode == 14:
+		# el centro de diagnostico usa botones (raton, flechas y Enter): solo cerramos con Esc o con su tecla
+		if not k.echo and (k.keycode == KEY_ESCAPE or _is_bind(k, "diag")):
+			diag_ui.call("close")
+			get_viewport().set_input_as_handled()
+		elif not k.echo:
+			diag_ui.call("handle_key", k)
+		return
 	match mode:
 		1:
 			if not k.echo:
@@ -5067,6 +5111,8 @@ func _input_play(k: InputEventKey) -> void:
 		_open_diary()
 	elif _is_bind(k, "ach"):
 		tut.call("open_panel")
+	elif _is_bind(k, "diag"):
+		_open_diag()
 	elif _is_bind(k, "chat"):
 		_toggle_chat()
 
@@ -5128,6 +5174,11 @@ func _use_station(ch: String) -> void:
 	_sfx("interact")
 	_fx("ring", "", Color(0.6, 0.85, 1.0))
 	if ch == "R" and breach:
+		if emg.has_kind("oxygen"):
+			# v26: la brecha ya no se sella a ciegas; primero se investiga y se diagnostica
+			_log(Lang.t("[color=orange]La brecha sigue abierta. Antes de sellarla, investiga la alarma en el Centro de diagnóstico [%s].[/color]") % key_name("diag"))
+			_open_diag(int(_emg_find_kind("oxygen")["id"]))
+			return
 		if tools["patch"] > 0:
 			tools["patch"] -= 1
 			breach = false
@@ -5171,7 +5222,8 @@ func _save_game() -> bool:
 		"st_lvl": st_lvl, "build": build, "pack_lvl": pack_lvl, "suit_lvl_o2": suit_lvl_o2, "suit_lvl_st": suit_lvl_st, "suit_o2": suit_o2, "stamina": stamina, "held": held,
 		"shown_facts": shown_facts.keys(), "talked_today": talked_today.keys(),
 		"story_seen": story_seen.keys(), "depleted": depleted, "stats": stats,
-		"zones_seen": zones_seen.keys(), "studied": studied.keys(), "diary": diary, "learned": learned.keys(), "explored": Marshalls.raw_to_base64(explored), "history": history
+		"zones_seen": zones_seen.keys(), "studied": studied.keys(), "diary": diary, "learned": learned.keys(), "explored": Marshalls.raw_to_base64(explored), "history": history,
+		"emerg": emg.serialize()
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
@@ -5295,6 +5347,17 @@ func _load_game() -> bool:
 	history = []
 	for h in d.get("history", []):
 		history.append({"day": int(h["day"]), "res": h["res"]})
+	task_after = Callable()
+	emg_mg = {}
+	if diag_ui != null:
+		diag_ui.visible = false
+	var ed: Variant = d.get("emerg", {})
+	emg.call("restore", ed if typeof(ed) == TYPE_DICTIONARY else {})
+	# partidas de la v25: una brecha o una enfermedad en curso se convierten en incidentes para poder diagnosticarlas
+	if breach and not emg.has_kind("oxygen"):
+		emg.spawn("oxygen", rng, {"cause": "leak", "sev": 2, "silent": true})
+	if ill_days > 0 and not emg.has_kind("medical"):
+		emg.spawn("medical", rng, {"silent": true})
 	return true
 
 
@@ -5310,6 +5373,9 @@ func _continue_game() -> void:
 	tod_last = -1
 	_play_music(_wanted_music())
 	_log(Lang.t("Partida cargada. Día %d en %s.") % [day, Lang.loc(location)])
+	emg.resume_pending()
+	if emg.has_active():
+		_log(Lang.t("[color=yellow]Hay %d incidente(s) activo(s). Abre el Centro de diagnóstico con [%s].[/color]") % [emg.active.size(), key_name("diag")])
 	_refresh()
 	if not story_seen.has(day):
 		_story_for_day(day)
@@ -5337,6 +5403,8 @@ func _refresh() -> void:
 		tags += Lang.t("  [TORMENTA DE POLVO]")
 	if breach:
 		tags += Lang.t("  [ALERTA ROJA: BRECHA]")
+	if emg != null and emg.has_active():
+		tags += Lang.t("  [EMERGENCIA: pulsa %s]") % key_name("diag")
 	if ill_days > 0:
 		tags += Lang.t("  [ENFERMEDAD]")
 	if _efficiency() < 1.0:
@@ -5344,7 +5412,7 @@ func _refresh() -> void:
 	if outside:
 		tags += "  [EVA]"
 	header.text = Lang.t("Día %d / %d  |  %s (%s)  |  %s  |  %s%s") % [day, MAX_DAYS, _clock_text(), _phase_name(), Lang.loc(location), DIFFICULTIES[difficulty]["name"], tags]
-	if breach:
+	if breach or (emg != null and emg.has_active()):
 		header.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
 	else:
 		header.remove_theme_color_override("font_color")
@@ -5408,6 +5476,11 @@ func _finish_task() -> void:
 		_fx("done", "", Color(0.5, 0.9, 1.0))
 	if mode == 5:
 		mode = 0
+	if playing and task_after.is_valid():
+		var cb: Callable = task_after
+		task_after = Callable()
+		cb.call()
+		return
 	if playing and was_craft and mode == 0:
 		_open_craft()
 
@@ -5519,6 +5592,7 @@ func _do_action(i: int) -> void:
 		if v2 > 0.0:
 			parts.append("+%d %s" % [int(round(v2 * factor * eff * boost)), str(NAMES[k2]).split(" ")[0].to_lower()])
 	_fx("press", " ".join(parts), Color(0.55, 0.95, 0.7))
+	emg.on_station_action(i)
 	_refresh()
 	_start_task(float(a["mins"]), TASK_SPEED, "press")
 
@@ -5533,6 +5607,7 @@ func _advance_time(mins: int, asleep: bool = false) -> void:
 		if clock >= 1440:
 			clock -= 1440
 		_tick(step, asleep)
+		emg.tick(step)
 		_progress_build(step)
 		if _check_loss():
 			return
@@ -5576,6 +5651,9 @@ func _tick(step: int, asleep: bool) -> void:
 		_add("morale", -BREACH_MORALE * f)
 	if ill_days > 0:
 		_add("morale", -ILL_MORALE * f)
+	var exd: Dictionary = emg.extra_drain()
+	for rk in exd:
+		_add(rk, -float(exd[rk]) * f)
 	var hrs: float = float(step) / 60.0
 	if asleep:
 		_add("morale", SLEEP_MORALE_PER_H * hrs)
@@ -5671,6 +5749,9 @@ func _new_day() -> bool:
 	history.append({"day": day, "res": res.duplicate()})
 	if history.size() > 40:
 		history.remove_at(0)
+	emg.daily()
+	if ill_days <= 0 and emg.has_kind("medical"):
+		emg.close(_emg_find_kind("medical"), "failed", {})
 	_random_event()
 	# mas eventos cuanto mas avanza la mision
 	var p2: float = _prog()
@@ -5728,31 +5809,47 @@ func _electric_hit(dmg: float, nm: String) -> void:
 
 
 func _random_event() -> void:
-	if location == "Marte" and rng.randf() < 0.25:
-		_dust_storm()
+	# averias por desgaste: un sistema descuidado puede fallar por si solo (v26)
+	for wf in emg.wear_failures(rng):
+		var winc: Dictionary = emg.spawn(str(wf["kind"]), rng, {"wear": true})
+		if not winc.is_empty():
+			_log(Lang.t("[color=orange]Falla por desgaste: «%s» estaba mal mantenido.[/color]") % Lang.t(str(EmergencyData.SYS_NAMES[wf["sys"]])))
+	# Marte: la tormenta de polvo ahora se anuncia con horas de antelacion (pronostico simplificado del simulador)
+	if location == "Marte" and storm_left <= 0 and not emg.has_kind("storm") and rng.randf() < 0.25:
+		emg.spawn("storm", rng)
 		return
 	if rng.randf() > _events_p():
 		return
+	# la probabilidad de cada averia depende del estado de mantenimiento de su sistema
 	var w: Array = [
-		2.0, 2.0, 2.0, 2.0, 1.0,
-		1.5 if day >= 3 else 0.0,
-		0.8 if (day >= 6 and not breach) else 0.0,
-		1.0 if day >= 4 else 0.0,
-		1.0 if day >= 4 else 0.0,
+		0.0 if emg.has_kind("flare") else 2.0,
+		2.0 * emg.risk("ext"),
+		0.0 if emg.has_kind("power") else 2.0 * emg.risk("power"),
+		2.0,
+		1.0,
+		0.0 if (emg.has_kind("medical") or ill_days > 0 or day < 3) else 1.5 * emg.risk("filters"),
+		0.8 * emg.risk("ext") if (day >= 6 and not breach and not emg.has_kind("oxygen")) else 0.0,
+		0.0 if (emg.has_kind("power") or day < 4) else 1.0 * emg.risk("power"),
+		0.0 if (emg.has_kind("water") or day < 4) else 1.0 * emg.risk("water"),
 		1.0 if day >= 5 else 0.0,
 		1.0
 	]
+	var total: float = 0.0
+	for x in w:
+		total += float(x)
+	if total <= 0.0:
+		return
 	match _weighted(w):
 		0:
-			_add("shield", -15)
-			_sfx("bad")
-			_log(Lang.t("[color=red]Llamarada solar: aumenta la radiación (-15 escudo).[/color]"))
+			emg.spawn("flare", rng)
 		1:
-			_add("oxygen", -12)
+			var loss: float = 12.0 * (0.5 + (1.0 - emg.cond("ext") / 100.0))
+			_add("oxygen", -loss)
+			emg.add_maint("ext", -10.0)
 			_sfx("bad")
-			_log(Lang.t("[color=red]Micrometeorito: pequeña fuga de aire (-12 oxígeno).[/color]"))
+			_log(Lang.t("[color=red]Micrometeorito: pequeña fuga de aire (-%d oxígeno). Los equipos exteriores bien mantenidos sufren menos; revísalos en el Centro de diagnóstico.[/color]") % int(round(loss)))
 		2:
-			_electric_hit(10.0, Lang.t("Falla de equipo"))
+			emg.spawn("power", rng)
 		3:
 			_add("food", 12)
 			_sfx("good")
@@ -5762,12 +5859,11 @@ func _random_event() -> void:
 			_sfx("good")
 			_log(Lang.t("[color=green]Mensaje de la Tierra: sube la moral (+10 moral).[/color]"))
 		5:
-			_add("morale", -25)
-			ill_days = 3
-			flash_t = 0.6
-			_sfx("bad")
-			stats["bad_events"] += 1
-			_log(Lang.t("[color=red]Brote de enfermedad: parte de la tripulación cae enferma (-25 moral y -4 más por día). Un botiquín ayuda: habla con la Dra. YARISBEL.[/color]"))
+			if not emg.spawn("medical", rng).is_empty():
+				_add("morale", -25)
+				ill_days = 3
+				flash_t = 0.6
+				stats["bad_events"] += 1
 		6:
 			_add("shield", -40)
 			breach = true
@@ -5777,14 +5873,13 @@ func _random_event() -> void:
 			_sfx("bad")
 			_sfx("alarm", -8.0)
 			stats["bad_events"] += 1
-			_log(Lang.t("[color=red][b]METEORO DIRECTO:[/b] daño crítico al escudo (-40) y brecha en el casco. ¡ALERTA ROJA! Pierdes oxígeno cada día hasta sellarla con un kit de parche.[/color]"))
+			emg.spawn("oxygen", rng, {"cause": "leak", "sev": 2})
+			_log(Lang.t("[color=red][b]METEORO DIRECTO:[/b] daño crítico al escudo (-40) y brecha en el casco. ¡ALERTA ROJA! Pierdes oxígeno cada día hasta sellarla: investiga en el Centro de diagnóstico.[/color]"))
 		7:
-			_electric_hit(25.0, Lang.t("Cortocircuito"))
+			emg.spawn("power", rng, {"sev": 2})
 		8:
-			_add("water", -20)
-			_sfx("bad")
-			stats["bad_events"] += 1
-			_log(Lang.t("[color=red]Fuga en el sistema de agua (-20 agua).[/color]"))
+			if not emg.spawn("water", rng).is_empty():
+				_add("water", -8)
 		9:
 			_add("food", -25)
 			_sfx("bad")
@@ -5794,6 +5889,169 @@ func _random_event() -> void:
 			inv["scrap"] += 2
 			_sfx("good")
 			_log(Lang.t("[color=green]Un compañero rescata piezas útiles de los desechos (+2 chatarra).[/color]"))
+
+
+# ---------------------------------------------------------------- emergencias (v26)
+
+func _build_diag() -> void:
+	emg = (load("res://emergency.gd") as GDScript).new()
+	emg.set("g", self)
+	emg.call("reset")
+	diag_ui = Control.new()
+	diag_ui.set_script(load("res://diag_ui.gd"))
+	diag_ui.set("game", self)
+	diag_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
+	diag_ui.z_index = 59
+	add_child(diag_ui)
+	diag_ui.connect("closed", _on_diag_closed)
+
+
+func _on_diag_closed() -> void:
+	if mode == 14:
+		mode = 0
+
+
+func _open_diag(inc_id: int = -1) -> void:
+	if not playing or (mode != 0 and mode != 14):
+		return
+	mode = 14
+	dlg.visible = false
+	_sfx("interact", -6.0)
+	diag_ui.call("open", inc_id)
+
+
+func _emg_log(t: String) -> void:
+	_log(t)
+
+
+func _emg_find_kind(kind: String) -> Dictionary:
+	for inc in emg.active:
+		if str(inc["kind"]) == kind:
+			return inc
+	return {}
+
+
+# Avanza el reloj mientras el jugador consulta instrumentos. Si el tiempo cruza el amanecer, la historia del dia cierra el centro.
+func _emg_spend(mins: int) -> void:
+	if mins <= 0 or not playing:
+		return
+	_advance_time(mins)
+	if (not playing or mode != 14) and diag_ui != null and diag_ui.visible:
+		diag_ui.visible = false
+
+
+func _emg_on_spawn(inc: Dictionary) -> void:
+	var kd: Dictionary = EmergencyData.kind_def(str(inc["kind"]))
+	_sfx("alarm", -9.0)
+	flash_t = 0.5
+	stats["bad_events"] += 1
+	_log("[color=red][b]%s[/b][/color]  %s" % [Lang.t(str(kd["alert"])), Lang.t(str(kd["intro"]))])
+	_log(Lang.t("[color=yellow]Abre el Centro de diagnóstico con [%s] para investigar.[/color]") % key_name("diag"))
+	if EmergencyData.COORD.has(str(inc["kind"])):
+		_log(Lang.t("[color=cyan]%s[/color]") % Lang.t(str(EmergencyData.COORD[str(inc["kind"])])))
+	_tod_toast("⚠ " + Lang.t(str(kd["alert"])), Color(1.0, 0.45, 0.4))
+	_refresh()
+
+
+func _emg_on_close(entry: Dictionary) -> void:
+	var res: String = str(entry["result"])
+	_sfx("win" if res != "failed" else "bad", -6.0)
+	var col: String = "lime" if res == "resolved" else ("yellow" if res == "partial" else "orange")
+	var txt: String = {"resolved": Lang.t("resuelto"), "partial": Lang.t("resuelto parcialmente"), "failed": Lang.t("no se resolvió a tiempo")}.get(res, "")
+	_log("[color=%s]Incidente cerrado: %s (%s).[/color]" % [col, str(entry["name"]), txt])
+	_refresh()
+
+
+# Llegada de la tormenta de polvo (ya anunciada). mit < 1 si el jugador se preparo.
+func _emg_storm_hit(mit: float) -> void:
+	var dmg: float = 15.0 * mit * (1.3 - 0.6 * emg.cond("power") / 100.0)
+	storm_left = 1 if mit <= 0.5 else 2
+	_add("energy", -dmg)
+	_sfx("bad")
+	_log(Lang.t("[color=orange]Llega la tormenta de polvo: bloquea la luz y cubre los paneles (-%d energía, solar reducido).[/color]") % int(round(dmg)))
+	emg.add_maint("power", -6.0)
+	_refresh()
+
+
+# Empieza una intervencion elegida en el centro. Devuelve un mensaje de error o "" si salio bien.
+func _emg_start_iv(id: int, iv_id: String) -> String:
+	var inc: Dictionary = emg.find(id)
+	if inc.is_empty():
+		return ""
+	var iv: Dictionary = emg.iv_by_id(inc, iv_id)
+	if iv.is_empty():
+		return ""
+	if outside:
+		return Lang.t("Vuelve a la base para intervenir: desde el exterior solo puedes consultar las lecturas.")
+	var miss: String = emg.needs_text(iv)
+	if miss != "":
+		return Lang.t("No puedes hacerlo todavía. Te falta: %s") % miss
+	var mgid: String = str(iv.get("mg", ""))
+	diag_ui.visible = false
+	if mgid != "":
+		emg_mg = {"inc": id, "iv": iv_id}
+		mode = 7
+		dlg.visible = false
+		mg.call("begin", mgid, Lang.t(str(iv["n"])))
+		return ""
+	_emg_run_iv(id, iv_id)
+	return ""
+
+
+func _emg_run_iv(id: int, iv_id: String) -> void:
+	var inc: Dictionary = emg.find(id)
+	if inc.is_empty():
+		mode = 0
+		return
+	var iv: Dictionary = emg.iv_by_id(inc, iv_id)
+	emg.commit_iv(inc, iv)
+	var mins: int = emg.iv_mins(inc, iv)
+	mode = 0
+	_sfx("craft")
+	_log(Lang.t("Intervención en marcha: %s (%s).") % [Lang.t(str(iv["n"])), _fmt_dur(mins)])
+	task_after = _emg_after_iv.bind(id)
+	if mins > 0:
+		_start_task(float(mins), TASK_SPEED, "repair")
+	else:
+		var cb: Callable = task_after
+		task_after = Callable()
+		cb.call()
+
+
+func _emg_after_iv(id: int) -> void:
+	var inc: Dictionary = emg.find(id)
+	if not inc.is_empty():
+		emg.finish_iv(inc)
+	_refresh()
+	if not playing:
+		return
+	_open_diag(id)
+
+
+# Mantenimiento preventivo desde el centro: 45 min y 1 repuesto. Devuelve un mensaje (vacio si empezo el trabajo).
+func _emg_preventive(sys: String) -> String:
+	if outside:
+		return "[color=#ff6b6b]%s[/color]" % Lang.t("El mantenimiento se hace dentro de la base.")
+	var mat: String = "polymer" if sys == "filters" else "scrap"
+	if int(inv.get(mat, 0)) < 1:
+		return "[color=#ff6b6b]%s[/color]" % (Lang.t("Te falta 1 polímero para este mantenimiento.") if mat == "polymer" else Lang.t("Te falta 1 chatarra para este mantenimiento."))
+	inv[mat] = int(inv[mat]) - 1
+	diag_ui.visible = false
+	mode = 0
+	_sfx("craft")
+	_log(Lang.t("Mantenimiento preventivo: %s (45 min).") % Lang.t(str(EmergencyData.SYS_NAMES[sys])))
+	task_after = _emg_after_maint.bind(sys)
+	_start_task(45.0, TASK_SPEED, "repair")
+	_refresh()
+	return ""
+
+
+func _emg_after_maint(sys: String) -> void:
+	emg.preventive(sys)
+	_log(Lang.t("[color=lime]%s: mantenimiento al %d %%. Menos riesgo de averías.[/color]") % [Lang.t(str(EmergencyData.SYS_NAMES[sys])), int(round(emg.cond(sys)))])
+	_refresh()
+	if playing:
+		_open_diag()
 
 
 func _finish(won: bool, eid: String) -> void:
