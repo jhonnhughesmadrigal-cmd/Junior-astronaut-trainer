@@ -291,6 +291,7 @@ var enoc_dir: Vector2 = Vector2(0, 1)
 var enoc_snd: float = 0.0
 const ENOC_SPEED: float = 110.0
 var pack_ui: Control = null
+var bench_ui: Control = null
 # minijuegos del banco de trabajo y panel de explicaciones (arriba)
 var mg: Control = null
 var craft_pending: int = -1
@@ -502,6 +503,7 @@ func _ready() -> void:
 	_build_topinfo()
 	_build_minigames()
 	_build_pack()
+	_build_bench()
 	_build_pause()
 	_setup_audio()
 	_apply_volumes()
@@ -1026,6 +1028,21 @@ func _build_pack() -> void:
 	pack_ui.z_index = 58
 	add_child(pack_ui)
 	pack_ui.connect("closed", _on_pack_closed)
+
+
+func _build_bench() -> void:
+	bench_ui = Control.new()
+	bench_ui.set_script(load("res://workbench.gd"))
+	bench_ui.set("game", self)
+	bench_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bench_ui.z_index = 58
+	add_child(bench_ui)
+	bench_ui.connect("closed", _on_bench_closed)
+
+
+func _on_bench_closed() -> void:
+	if mode == 4:
+		mode = 0
 
 
 func _open_pack() -> void:
@@ -3951,38 +3968,8 @@ func _can_craft(r: Dictionary) -> bool:
 
 func _open_craft() -> void:
 	mode = 4
-	dlg.offset_top = -440.0
-	dlg.visible = true
-	dlg_name.text = Lang.speaker("Banco de trabajo")
-	dlg_name.add_theme_color_override("font_color", speaker_colors["Banco de trabajo"])
-	dlg_hint.text = Lang.t("[1-5] Fabricar (minijuego)   [6-8] Mejorar equipo   [Esc] o [E] Salir")
-	_craft_text()
-
-
-func _craft_text() -> void:
-	var t: String = Lang.t("Materiales: Chatarra %d | Polímero %d | Circuitos %d        Hora: %s\n") % [inv["scrap"], inv["polymer"], inv["circuits"], _clock_text()]
-	for i in RECIPES.size():
-		var r: Dictionary = RECIPES[i]
-		var parts := PackedStringArray()
-		for k in r["cost"]:
-			var mn: String = MAT_NAMES[k]
-			parts.append("%d %s" % [r["cost"][k], mn.to_lower()])
-		var ok_txt: String = ""
-		if not _can_craft(r):
-			ok_txt = Lang.t("  [faltan materiales]")
-		t += Lang.t("\n[%d] %s (%s) - %s: %s%s  | tienes %d") % [i + 1, r["name"], ", ".join(parts), _fmt_dur(int(r["mins"])), r["desc"], ok_txt, tools[r["id"]]]
-	t += Lang.t("\n\nMejoras del equipo (solo materiales):")
-	var names: Array = [Lang.t("Tanque del traje (+%d min de aire)") % int(SUIT_O2_PER_LVL), Lang.t("Aguante del traje (correr más)"), Lang.t("Mochila (+4 casillas)")]
-	var ids: Array = ["suit_o2", "suit_st", "pack"]
-	for j in 3:
-		var lv: int = _upg_level(ids[j])
-		if lv >= MAX_UPG:
-			t += Lang.t("\n[%d] %s - nivel máximo") % [j + 6, names[j]]
-		else:
-			t += Lang.t("\n[%d] %s - nivel %d → %d: %s") % [j + 6, names[j], lv, lv + 1, _cost_text(_upg_cost(ids[j], lv + 1))]
-	typing = false
-	dlg_text.text = t
-	dlg_text.visible_characters = -1
+	dlg.visible = false
+	bench_ui.call("open")
 
 
 func _craft(i: int) -> void:
@@ -4006,6 +3993,7 @@ func _craft(i: int) -> void:
 	mode = 7
 	dlg.visible = false
 	dlg.offset_top = -190.0
+	bench_ui.visible = false
 	mg.call("begin", r["id"], r["name"])
 
 
@@ -4052,30 +4040,12 @@ func _on_mg_done(ok: bool, mistakes: int) -> void:
 func _close_craft() -> void:
 	dlg.visible = false
 	dlg.offset_top = -190.0
+	bench_ui.visible = false
 	mode = 0
 
 
 func _input_craft(k: InputEventKey) -> void:
-	if k.keycode == KEY_ESCAPE or k.keycode == KEY_E:
-		_close_craft()
-	elif k.keycode == KEY_1:
-		_craft(0)
-	elif k.keycode == KEY_2:
-		_craft(1)
-	elif k.keycode == KEY_3:
-		_craft(2)
-	elif k.keycode == KEY_4:
-		_craft(3)
-	elif k.keycode == KEY_5:
-		_craft(4)
-	elif k.keycode == KEY_6:
-		_craft(5)
-	elif k.keycode == KEY_7:
-		_upgrade_suit(0)
-	elif k.keycode == KEY_8:
-		_upgrade_suit(1)
-	elif k.keycode == KEY_9:
-		_upgrade_suit(2)
+	bench_ui.call("handle_key", k)
 
 
 # ---------- MEJORAS, MOCHILA Y TRAJE (sistema incremental) ----------
@@ -4371,6 +4341,7 @@ func _upgrade_suit(idx: int) -> void:
 		return
 	upg_pending = {"kind": "suit", "id": id}
 	mode = 7
+	bench_ui.visible = false
 	dlg.visible = false
 	dlg.offset_top = -190.0
 	mg.call("begin", "upg_shapes", "")
@@ -4419,6 +4390,7 @@ func _upg_done(ok: bool) -> void:
 
 
 func _close_craft_if_open() -> void:
+	bench_ui.visible = false
 	dlg.visible = false
 	dlg.offset_top = -190.0
 	mode = 0

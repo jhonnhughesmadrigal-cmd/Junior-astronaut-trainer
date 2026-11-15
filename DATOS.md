@@ -267,3 +267,8 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Mochila: el panel ahora es más alto y el texto de ayuda queda a la izquierda, debajo de las casillas, sin cruzarse con la columna de "Equipo y mejoras".
 - Al salir de la nave el jugador mira hacia afuera (de espaldas a la base). La cámara en tercera persona ya no entra en el casco: si lo atraviesa, se coloca a un lado del jugador.
 - Limitación conocida: al salir, el jugador queda bajo el techo de la esclusa y desde ese lado puede taparlo un poste hasta que camine unos pasos.
+
+### 0.9.13 Banco de trabajo (v24)
+- El banco (`T`) se gira 180°: está contra la pared norte y ahora su frente (cajones) mira al jugador; el panel de herramientas queda contra la pared.
+- Nueva interfaz `workbench.gd` (modo 4), parecida a la mochila: tarjetas para las 5 recetas y las 3 mejoras del equipo, panel de detalle con materiales "tienes de necesitas" (verde/rojo), tiempo y botón Fabricar/Mejorar. Teclado: flechas o [1-8], [Enter], [Esc]; ratón: clic elige, doble clic o botón fabrica.
+- Corrige el viejo mapeo de teclas del menú de texto (6 apuntaba a una receta inexistente). Probado solo con capturas por software.

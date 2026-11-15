@@ -1395,6 +1395,8 @@ func _bolts(parent: Node3D, radius: float, y: float, count: int) -> void:
 func _build_prop(ch: String, c: Vector3) -> void:
 	var n := Node3D.new()
 	n.position = c
+	if ch == "T":
+		n.rotation.y = PI      # el banco esta contra la pared norte: su frente (cajones) mira al jugador, al sur
 	interior.add_child(n)
 	var metal: StandardMaterial3D = _m(Color(0.62, 0.64, 0.72), 0.8, 0.3)
 	var dark: StandardMaterial3D = _m(Color(0.2, 0.22, 0.28), 0.5, 0.5)
