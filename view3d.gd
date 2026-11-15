@@ -718,7 +718,7 @@ func _nametag(parent: Node3D, text: String, col: Color) -> void:
 
 
 func _make_astronaut(suit: Color, role: String = "") -> Node3D:
-	# Traje mas detallado. role: "" (sin marca), "wilson", "a" (YARISBEL), "k" (ENOC), "l" (PAM)
+	# Traje mas detallado. role: "" (sin marca), "wilson", "a" (YARISBEL, medica), "k" (ENOC), "l" (PAM, comandante)
 	var n := Node3D.new()
 	var accent: Color = suit
 	match role:
@@ -729,7 +729,7 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 		"k":
 			accent = Color(0.15, 0.5, 0.6)
 		"l":
-			accent = Color(0.9, 0.25, 0.35)
+			accent = Color(0.95, 0.78, 0.2)   # comandante: dorado
 	var white: StandardMaterial3D = _fabric(Color(0.94, 0.95, 0.99), 0.6)
 	var suitm: StandardMaterial3D = _fabric(suit.lerp(Color(0.95, 0.95, 1.0), 0.35), 0.62)
 	var accm: StandardMaterial3D = _sm(accent, 0.1, 0.5)
@@ -755,7 +755,7 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 	_add(body, _box(Vector3(0.22, 0.04, 0.02)), metal, Vector3(0, 1.26, -0.305), Vector3.ZERO, false)
 	# parche de rol en el pecho izquierdo
 	_add(body, _box(Vector3(0.1, 0.1, 0.03)), accm, Vector3(-0.17, 1.5, -0.25), Vector3.ZERO, false)
-	if role == "l":
+	if role == "a":   # medica: cruz blanca en el parche
 		_add(body, _box(Vector3(0.08, 0.025, 0.035)), white, Vector3(-0.17, 1.5, -0.26), Vector3.ZERO, false)
 		_add(body, _box(Vector3(0.025, 0.08, 0.035)), white, Vector3(-0.17, 1.5, -0.26), Vector3.ZERO, false)
 	# mochila de soporte vital con tanques y mangueras

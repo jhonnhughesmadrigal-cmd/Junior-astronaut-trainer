@@ -119,7 +119,7 @@ static func tool_info(id: String) -> Dictionary:
 		"patch":
 			return {"title": Lang.t("Kit de parche"), "pages": [Lang.t("Para qué sirve: sella las brechas que abren los meteoritos en el casco. Si hay ALERTA ROJA, sin parche pierdes oxígeno cada día. Cómo se usa: ve al generador de escudo y pulsa [E] para sellar la brecha."), Lang.t("En la realidad: los módulos de la Estación Espacial Internacional tienen capas protectoras contra micrometeoritos y la tripulación tiene procedimientos para reparar fugas.")]}
 		"medkit":
-			return {"title": Lang.t("Botiquín"), "pages": [Lang.t("Para qué sirve: cura una enfermedad de la tripulación. Cómo se usa: si hay enfermos, habla con PAM y ella lo usa. Cada botiquín cura una vez."), Lang.t("En la realidad: la tripulación entrena primeros auxilios, y en Marte la señal tarda varios minutos en llegar a la Tierra: no se puede esperar a que un médico responda.")]}
+			return {"title": Lang.t("Botiquín"), "pages": [Lang.t("Para qué sirve: cura una enfermedad de la tripulación. Cómo se usa: si hay enfermos, habla con la Dra. YARISBEL y ella lo usa. Cada botiquín cura una vez."), Lang.t("En la realidad: la tripulación entrena primeros auxilios, y en Marte la señal tarda varios minutos en llegar a la Tierra: no se puede esperar a que un médico responda.")]}
 		"repair":
 			return {"title": Lang.t("Reparador de circuitos"), "pages": [Lang.t("Para qué sirve: reduce el daño cuando una falla eléctrica o un cortocircuito golpea la base. Cómo se usa: se gasta solo cuando ocurre la falla; basta con tenerlo en el inventario."), Lang.t("En la realidad: el polvo se pega a los equipos y puede dañar conexiones, por eso las misiones llevan repuestos y herramientas para reparar electrónica.")]}
 		"filter":

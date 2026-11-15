@@ -284,3 +284,7 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Entrar y salir de la esclusa: la pantalla se oscurece y se aclara (≈0,9 s en total), sin animación de trabajo; el ciclo de 10 min de juego se suma de golpe (`_fade_through`, `_airlock_cycle`, modo 13).
 - La salida aparece 2 casillas al sur de la puerta (`ext_spawn` Y0+4): antes caía dentro de la estructura de la esclusa (marquesina y puerta).
 - Probado con script y capturas por software (el fundido se vio en negro; no medí la suavidad con GPU real).
+
+### 0.9.17 Roles de la tripulación (v24.4)
+- Wilson: ingeniero y botánico. Dra. YARISBEL: médica (aplica el botiquín, avisa de comida, agua y moral; cruz blanca en el parche del traje). ENOC: técnico de sistemas (oxígeno, energía, agua; construye las obras). PAM: comandante (avisa de oxígeno, energía, escudo y moral; parche dorado). Las líneas de historia y finales se reasignaron a quien encaja con su rol. El rol se ve al mirar a cada uno ("Hablar con Dra. YARISBEL, médica").
+- Los síntomas de enfermedad en los minijuegos siguen nombrando a PAM como paciente (no es un rol). Verificado solo por carga del juego, no revisé cada diálogo en pantalla.

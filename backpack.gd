@@ -96,7 +96,7 @@ func _desc(id: String) -> String:
 		"patch":
 			return Lang.t("Kit de parche: sella una brecha en el generador de escudo. Se puede sostener.")
 		"medkit":
-			return Lang.t("Botiquín: habla con PAM para curar una enfermedad.")
+			return Lang.t("Botiquín: habla con la Dra. YARISBEL para curar una enfermedad.")
 		"repair":
 			return Lang.t("Reparador: reduce el daño de una falla eléctrica (automático).")
 		"filter":

@@ -55,7 +55,7 @@ var ACTIONS: Array = [
 
 var RECIPES: Array = [
 	{"id": "patch", "name": Lang.t("Kit de parche"), "mins": 90, "cost": {"scrap": 2, "polymer": 1}, "desc": Lang.t("sella brechas de meteoritos")},
-	{"id": "medkit", "name": Lang.t("Botiquín"), "mins": 60, "cost": {"polymer": 1, "circuits": 1}, "desc": Lang.t("cura enfermedades (habla con PAM)")},
+	{"id": "medkit", "name": Lang.t("Botiquín"), "mins": 60, "cost": {"polymer": 1, "circuits": 1}, "desc": Lang.t("cura enfermedades (habla con la Dra. YARISBEL)")},
 	{"id": "repair", "name": Lang.t("Reparador de circuitos"), "mins": 120, "cost": {"scrap": 1, "circuits": 2}, "desc": Lang.t("reduce el daño de fallas eléctricas")},
 	{"id": "filter", "name": Lang.t("Filtro de polvo"), "mins": 90, "cost": {"scrap": 1, "polymer": 2}, "desc": Lang.t("reduce el daño de las tormentas de polvo")},
 	{"id": "map", "name": Lang.t("Mapa de navegación"), "mins": 120, "cost": {"scrap": 1, "polymer": 1, "circuits": 1}, "desc": Lang.t("mapa del mundo (Tab) y minimapa; se fabrica una sola vez")}
@@ -198,17 +198,17 @@ var stations: Dictionary = {
 
 var npcs: Dictionary = {
 	"a": {
-		"who": "Dra. YARISBEL", "suit": Color(1.0, 0.62, 0.3),
-		"domain": ["oxygen", "energy", "food", "water", "shield", "morale"],
-		"warn": Lang.t("Wilson, el nivel de %s está muy bajo. Prioricemos eso antes de que sea una emergencia."),
+		"who": "Dra. YARISBEL", "role": Lang.t("médica"), "suit": Color(1.0, 0.62, 0.3),
+		"domain": ["morale", "food", "water"],
+		"warn": Lang.t("Wilson, me preocupa el nivel de %s. Cuida a la gente antes de que se note."),
 		"flavor": [
-			Lang.t("Tres acciones por día. Úsalas con cabeza fría."),
-			Lang.t("Control confirma que el rescate sigue en camino."),
-			Lang.t("La disciplina es lo que mantiene viva a una tripulación.")
+			Lang.t("Dormir bien también es parte de la misión."),
+			Lang.t("Un invernadero vivo hace más por la moral que cualquier discurso."),
+			Lang.t("Estoy bien. Un poco cansada, pero bien.")
 		]
 	},
 	"k": {
-		"who": "ENOC", "suit": Color(0.3, 0.8, 0.8),
+		"who": "ENOC", "role": Lang.t("técnico de sistemas"), "suit": Color(0.3, 0.8, 0.8),
 		"domain": ["oxygen", "energy", "water"],
 		"warn": Lang.t("Ojo, Wilson: el nivel de %s está peligrosamente bajo. Los sistemas no perdonan."),
 		"flavor": [
@@ -218,13 +218,13 @@ var npcs: Dictionary = {
 		]
 	},
 	"l": {
-		"who": "PAM", "suit": Color(0.85, 0.5, 0.75),
-		"domain": ["morale", "food", "shield"],
-		"warn": Lang.t("Wilson, me preocupa el nivel de %s. Cuida a la gente antes de que se note."),
+		"who": "PAM", "role": Lang.t("comandante"), "suit": Color(0.85, 0.5, 0.75),
+		"domain": ["oxygen", "energy", "shield", "morale"],
+		"warn": Lang.t("Wilson, el nivel de %s está muy bajo. Prioricemos eso antes de que sea una emergencia."),
 		"flavor": [
-			Lang.t("Dormir bien también es parte de la misión."),
-			Lang.t("Un invernadero vivo hace más por la moral que cualquier discurso."),
-			Lang.t("Estoy bien. Un poco cansada, pero bien.")
+			Lang.t("Tres acciones por día. Úsalas con cabeza fría."),
+			Lang.t("Control confirma que el rescate sigue en camino."),
+			Lang.t("La disciplina es lo que mantiene viva a una tripulación.")
 		]
 	}
 }
@@ -1290,7 +1290,7 @@ func _build_pause() -> void:
 
 
 func _help_text() -> String:
-	return Lang.t("[b]Objetivo:[/b] sobrevive %d días hasta que llegue el rescate.\n[b]Reloj:[/b] el tiempo corre solo (1 hora de juego cada 60 s) y se pausa en diálogos y menús. Las tareas aceleran el tiempo: estaciones x20 y fabricar o mejorar x40.\n[b]Noche:[/b] desde las 20:00. Si sigues despierto bajan la energía y la moral, y pueden ocurrir situaciones incómodas. Duerme en la cama desde las 18:00 hasta las 06:00 (a veces hay pesadillas). Si no duermes te desplomas a las 06:00; tras 16 h despierto tus acciones rinden menos.\n[b]Exterior:[/b] la esclusa da a un mundo amplio con zonas reales, sin límite de pasos. Las placas (E) dan datos reales y +3 de moral. Fabrica el Mapa de navegación para usar Tab y el minimapa. El material reaparece tras %d días.\n[b]Herramientas:[/b] banco de trabajo. Parche: sella brechas (generador de escudo). Botiquín: cura enfermedad (habla con PAM). Reparador: reduce fallas eléctricas. Filtro: reduce tormentas de polvo.\n[b]Alerta roja:[/b] una brecha drena oxígeno hasta sellarla.\n[b]Controles:[/b] pulsa F1.") % [MAX_DAYS, NODE_RESPAWN_DAYS]
+	return Lang.t("[b]Objetivo:[/b] sobrevive %d días hasta que llegue el rescate.\n[b]Reloj:[/b] el tiempo corre solo (1 hora de juego cada 60 s) y se pausa en diálogos y menús. Las tareas aceleran el tiempo: estaciones x20 y fabricar o mejorar x40.\n[b]Noche:[/b] desde las 20:00. Si sigues despierto bajan la energía y la moral, y pueden ocurrir situaciones incómodas. Duerme en la cama desde las 18:00 hasta las 06:00 (a veces hay pesadillas). Si no duermes te desplomas a las 06:00; tras 16 h despierto tus acciones rinden menos.\n[b]Exterior:[/b] la esclusa da a un mundo amplio con zonas reales, sin límite de pasos. Las placas (E) dan datos reales y +3 de moral. Fabrica el Mapa de navegación para usar Tab y el minimapa. El material reaparece tras %d días.\n[b]Herramientas:[/b] banco de trabajo. Parche: sella brechas (generador de escudo). Botiquín: cura enfermedad (habla con la Dra. YARISBEL). Reparador: reduce fallas eléctricas. Filtro: reduce tormentas de polvo.\n[b]Alerta roja:[/b] una brecha drena oxígeno hasta sellarla.\n[b]Controles:[/b] pulsa F1.") % [MAX_DAYS, NODE_RESPAWN_DAYS]
 
 
 func _on_cam_selected(i: int) -> void:
@@ -3770,7 +3770,7 @@ func _target_text() -> String:
 			return Lang.t("Cama (puedes dormir desde las 18:00)")
 	if npcs.has(ch):
 		var n: Dictionary = npcs[ch]
-		return Lang.t("[E] Hablar con %s (10 min)") % n["who"]
+		return Lang.t("[E] Hablar con %s (10 min)") % ("%s, %s" % [n["who"], n["role"]])
 	return ""
 
 
@@ -3952,19 +3952,19 @@ func _talk(ch: String) -> void:
 	var lines: Array = []
 	var bonus: bool = false
 	stats["talks"] += 1
-	if ch == "l" and ill_days > 0 and tools["medkit"] > 0:
+	if ch == "a" and ill_days > 0 and tools["medkit"] > 0:
 		tools["medkit"] -= 1
 		ill_days = 0
 		_add("morale", 20)
 		_sfx("good")
-		_log(Lang.t("[color=lime]PAM usa el botiquín: la enfermedad desaparece (+20 moral).[/color]"))
-		lines.append(_l("PAM", Lang.t("Con el botiquín que fabricaste puedo tratarlos ahora mismo. Gracias, Wilson.")))
+		_log(Lang.t("[color=lime]La Dra. YARISBEL usa el botiquín: la enfermedad desaparece (+20 moral).[/color]"))
+		lines.append(_l("Dra. YARISBEL", Lang.t("Con el botiquín que fabricaste puedo tratarlos ahora mismo. Gracias, Wilson.")))
 		lines.append(_l("Narración", Lang.t("El equipo se recupera. Enfermedad curada.")))
 		_refresh()
 		_start_dialog(lines, _talk_after.bind(false))
 		return
-	if ch == "l" and ill_days > 0:
-		lines.append(_l("PAM", Lang.t("Hay enfermos en la base. Necesito un botiquín: polímero y circuitos. Búscalos afuera y fabrícalo en el banco de trabajo.")))
+	if ch == "a" and ill_days > 0:
+		lines.append(_l("Dra. YARISBEL", Lang.t("Hay enfermos en la base. Necesito un botiquín: polímero y circuitos. Búscalos afuera y fabrícalo en el banco de trabajo.")))
 	else:
 		var worst_k: String = ""
 		var worst_v: float = 101.0
@@ -4002,7 +4002,7 @@ func _radio() -> void:
 	if breach:
 		lines.append(_l("Control", Lang.t("Perseo, vemos la brecha en su escudo. Fabriquen un kit de parche en el banco de trabajo y séllenla desde el generador de escudo.")))
 	elif ill_days > 0:
-		lines.append(_l("Control", Lang.t("Perseo, nos reportan enfermos. Un botiquín ayudará: hablen con PAM una vez que lo fabriquen.")))
+		lines.append(_l("Control", Lang.t("Perseo, nos reportan enfermos. Un botiquín ayudará: hablen con la Dra. YARISBEL una vez que lo fabriquen.")))
 	elif _is_night():
 		lines.append(_l("Control", Lang.t("La noche lunar sigue. Los paneles rinden poco: planifiquen la energía. Rescate en %d días.") % left))
 	elif storm_left > 0:
@@ -4550,10 +4550,10 @@ func _story_lines(d: int) -> Array:
 				_l("Narración", Lang.t("Misión Perseo, día 1. Cuatro astronautas viven en una base en %s.") % place),
 				_l("Control", Lang.t("Perseo, aquí Control. Malas noticias: la nave de reabastecimiento sufrió una falla y no llegará.")),
 				_l("Control", Lang.t("La nave de rescate sale de inmediato, pero tardará %d días en alcanzarlos.") % MAX_DAYS),
-				_l("Dra. YARISBEL", Lang.t("Entendido, Control. Wilson, eres nuestro ingeniero y botánico. Necesito que esta base aguante un mes.")),
+				_l("PAM", Lang.t("Entendido, Control. Wilson, eres nuestro ingeniero y botánico. Necesito que esta base aguante un mes.")),
 				_l("Wilson", Lang.t("Treinta días. He cultivado tomates con menos. Dame herramientas y un poco de optimismo.")),
 				_l("ENOC", Lang.t("Yo vigilo el oxígeno, pero tú decides en qué gastamos la energía.")),
-				_l("PAM", Lang.t("Y yo me encargo de que nadie pierda la cabeza. Hablen conmigo, con ENOC, con quien sea: ayuda.")),
+				_l("Dra. YARISBEL", Lang.t("Y yo me encargo de que nadie enferme ni pierda la cabeza. Hablen conmigo, con ENOC, con quien sea: ayuda.")),
 				_l("Narración", Lang.t("Muévete con WASD. Mira una estación y presiona E para usarla. Cada acción consume tiempo: vigila el reloj en la esquina del mapa.")),
 				_l("Narración", Lang.t("A las 20:00 empieza la noche. Si sigues despierto, bajan la energía y la moral. Puedes dormir en la cama desde las 18:00, aunque a veces hay pesadillas. Esc abre la pausa."))
 			]
@@ -4597,8 +4597,8 @@ func _story_lines(d: int) -> Array:
 			]
 		16:
 			return [
-				_l("PAM", Lang.t("Llevamos más de dos semanas encerrados. ENOC está muy callado.")),
-				_l("PAM", Lang.t("Charlar con la tripulación sube la moral. No lo subestimes.")),
+				_l("Dra. YARISBEL", Lang.t("Llevamos más de dos semanas encerrados. ENOC está muy callado.")),
+				_l("Dra. YARISBEL", Lang.t("Charlar con la tripulación sube la moral. No lo subestimes.")),
 				_l("Wilson", Lang.t("Tomo nota: el equipo también es un recurso."))
 			]
 		20:
@@ -4618,7 +4618,7 @@ func _story_lines(d: int) -> Array:
 			]
 		26:
 			return [
-				_l("Dra. YARISBEL", Lang.t("Cuatro días, Wilson. Pase lo que pase, gracias por no rendirte.")),
+				_l("PAM", Lang.t("Cuatro días, Wilson. Pase lo que pase, gracias por no rendirte.")),
 				_l("Wilson", Lang.t("Todavía no se acaba. Nadie baja la guardia."))
 			]
 	return []
@@ -4627,21 +4627,21 @@ func _story_lines(d: int) -> Array:
 func _ending_lines(eid: String) -> Array:
 	var lines: Array = [
 		_l("Control", Lang.t("Perseo, aquí Control. La nave de rescate está en órbita y lista para el acoplamiento.")),
-		_l("Dra. YARISBEL", Lang.t("Lo logramos. Cuatro personas, treinta días y una base que no se rindió.")),
+		_l("PAM", Lang.t("Lo logramos. Cuatro personas, treinta días y una base que no se rindió.")),
 		_l("ENOC", Lang.t("Mis filtros jamás me habían caído tan bien.")),
-		_l("PAM", Lang.t("Wilson, tu invernadero nos mantuvo con ánimo... y con comida."))
+		_l("Dra. YARISBEL", Lang.t("Wilson, tu invernadero nos mantuvo con ánimo... y con comida."))
 	]
 	match eid:
 		"heroes":
 			lines.append(_l("Control", Lang.t("Informe final: sistemas estables, equipo sano y herramientas de sobra. Perseo será estudiada en las academias.")))
 		"hilo":
-			lines.append(_l("Dra. YARISBEL", Lang.t("Estuvimos a un paso del desastre. No lo olvidaremos.")))
+			lines.append(_l("PAM", Lang.t("Estuvimos a un paso del desastre. No lo olvidaremos.")))
 		"ingenio":
 			lines.append(_l("ENOC", Lang.t("Jamás vi a alguien fabricar tanto con tan poco.")))
 		"unidos":
-			lines.append(_l("PAM", Lang.t("Más que una tripulación, somos una familia.")))
+			lines.append(_l("Dra. YARISBEL", Lang.t("Más que una tripulación, somos una familia.")))
 		_:
-			lines.append(_l("Dra. YARISBEL", Lang.t("Sobrevivimos. A veces eso es suficiente.")))
+			lines.append(_l("PAM", Lang.t("Sobrevivimos. A veces eso es suficiente.")))
 	lines.append(_l("Wilson", Lang.t("Para la próxima misión, pedimos más repuestos y menos suspenso.")))
 	lines.append(_l("Narración", Lang.t("Misión Perseo: cumplida.")))
 	return lines
@@ -5502,7 +5502,7 @@ func _random_event() -> void:
 			flash_t = 0.6
 			_sfx("bad")
 			stats["bad_events"] += 1
-			_log(Lang.t("[color=red]Brote de enfermedad: parte de la tripulación cae enferma (-25 moral y -4 más por día). Un botiquín ayuda: habla con PAM.[/color]"))
+			_log(Lang.t("[color=red]Brote de enfermedad: parte de la tripulación cae enferma (-25 moral y -4 más por día). Un botiquín ayuda: habla con la Dra. YARISBEL.[/color]"))
 		6:
 			_add("shield", -40)
 			breach = true
