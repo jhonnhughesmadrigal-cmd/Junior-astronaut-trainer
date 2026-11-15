@@ -1660,7 +1660,30 @@ func _save_summary() -> String:
 		return ""
 	var d: Dictionary = parsed
 	var ck: int = int(d.get("clock", 360))
-	return Lang.t("Día %d/%d · %s · %s · %02d:%02d") % [int(d.get("day", 1)), MAX_DAYS, Lang.loc(str(d.get("location", ""))), DIFFICULTIES[clampi(int(d.get("difficulty", 1)), 0, DIFFICULTIES.size() - 1)]["name"], floori(float(ck) / 60.0), ck % 60]
+	var out: String = Lang.t("Día %d/%d · %s · %s · %02d:%02d") % [int(d.get("day", 1)), MAX_DAYS, Lang.loc(str(d.get("location", ""))), DIFFICULTIES[clampi(int(d.get("difficulty", 1)), 0, DIFFICULTIES.size() - 1)]["name"], floori(float(ck) / 60.0), ck % 60]
+	var ups: int = 0
+	var sl: Variant = d.get("st_lvl", {})
+	if typeof(sl) == TYPE_DICTIONARY:
+		for k in (sl as Dictionary).keys():
+			ups += int((sl as Dictionary)[k])
+	var stt: Variant = d.get("stats", {})
+	var tools_built: int = 0
+	if typeof(stt) == TYPE_DICTIONARY:
+		tools_built = int((stt as Dictionary).get("tools_built", 0))
+	var rs: Variant = d.get("res", {})
+	var vitals: String = ""
+	if typeof(rs) == TYPE_DICTIONARY and (rs as Dictionary).has("oxygen"):
+		vitals = Lang.t("Oxígeno %d%% · Moral %d%%") % [int((rs as Dictionary).get("oxygen", 0)), int((rs as Dictionary).get("morale", 0))]
+	out += Lang.t("\nLugares visitados: %d · estudiados: %d · mejoras: %d · herramientas: %d") % [(d.get("zones_seen", []) as Array).size(), (d.get("studied", []) as Array).size(), ups, tools_built]
+	out += Lang.t("\nEstás %s") % (Lang.t("fuera de la base") if bool(d.get("outside", false)) else Lang.t("dentro de la base"))
+	if vitals != "":
+		out += " · " + vitals
+	var when: String = str(d.get("saved_at", ""))
+	if when != "":
+		out += Lang.t("\nGuardado: %s") % when.replace("T", " ")
+	else:
+		out += Lang.t("\nGuardado: fecha desconocida (partida antigua)")
+	return out
 
 
 func _on_difficulty(i: int) -> void:
@@ -4776,7 +4799,7 @@ func _show_fact(ch: String) -> void:
 
 func _save_game() -> bool:
 	var data: Dictionary = {
-		"version": 2, "location": location, "day": day, "clock": clock, "difficulty": difficulty, "night_acc": night_acc,
+		"version": 2, "saved_at": Time.get_datetime_string_from_system(false, true), "location": location, "day": day, "clock": clock, "difficulty": difficulty, "night_acc": night_acc,
 		"slept": slept_tonight, "night_warned": night_warned, "awake": awake_min, "fatigue_warned": fatigue_warned, "res": res,
 		"player": [player.x, player.y], "facing": [facing.x, facing.y],
 		"outside": outside, "storm_left": storm_left,

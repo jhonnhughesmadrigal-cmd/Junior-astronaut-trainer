@@ -919,4 +919,11 @@ const EN: Dictionary = {
 	"• Herramientas fabricadas: %d\n": "• Tools crafted: %d\n",
 	"• Mejoras terminadas: %d\n": "• Upgrades completed: %d\n",
 	"• Conversaciones: %d\n": "• Conversations: %d\n",
+	"\nLugares visitados: %d · estudiados: %d · mejoras: %d · herramientas: %d": "\nPlaces visited: %d · studied: %d · upgrades: %d · tools: %d",
+	"\nEstás %s": "\nYou are %s",
+	"fuera de la base": "outside the base",
+	"dentro de la base": "inside the base",
+	"Oxígeno %d%% · Moral %d%%": "Oxygen %d%% · Morale %d%%",
+	"\nGuardado: %s": "\nSaved: %s",
+	"\nGuardado: fecha desconocida (partida antigua)": "\nSaved: unknown date (old save)",
 }
