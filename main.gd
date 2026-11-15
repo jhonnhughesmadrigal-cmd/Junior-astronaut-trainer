@@ -357,7 +357,7 @@ var flash_t: float = 0.0
 var shake_t: float = 0.0
 var alarm_t: float = 0.0
 var ext_rows: Array = []
-var ext_spawn: Vector2i = Vector2i(BASE_X0 + 2, BASE_Y0 + 3)
+var ext_spawn: Vector2i = Vector2i(BASE_X0 + 2, BASE_Y0 + 4)   # 2 casillas al sur de la puerta: fuera de la estructura de la esclusa
 var zone_ids: PackedByteArray = PackedByteArray()
 var explored: PackedByteArray = PackedByteArray()
 var zone_ground: Array = []
@@ -473,6 +473,11 @@ var ending_art: Control
 var ending_active: bool = false
 var show_tutorial: bool = true
 var easy_read: bool = false
+var fx_hold: Array = []           # efecto de recogida pendiente: [tipo, texto, color, material, circuitos]
+var fx_hold_node: String = ""     # casilla del material que aun se ve mientras lo recoges
+var fx_hold_at: float = 0.5       # avance de la tarea (0..1) en que se levanta el material
+var fade_rect: ColorRect = null
+var fading: bool = false
 var task_speed_idx: int = 1          # 0 lenta, 1 normal, 2 rapida, 3 muy rapida
 const TASK_SPEED_MULT: Array = [0.25, 1.0, 2.5, 6.0]
 var ach_done: Dictionary = {}
@@ -506,6 +511,7 @@ func _ready() -> void:
 	_build_minigames()
 	_build_pack()
 	_build_bench()
+	_build_fade()
 	_build_pause()
 	_setup_audio()
 	_apply_volumes()
@@ -1047,6 +1053,52 @@ func _build_bench() -> void:
 func _on_bench_closed() -> void:
 	if mode == 4:
 		mode = 0
+
+
+func _build_fade() -> void:
+	fade_rect = ColorRect.new()
+	fade_rect.color = Color(0, 0, 0, 0)
+	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade_rect.z_index = 70
+	fade_rect.visible = false
+	add_child(fade_rect)
+
+
+# Entrada y salida de la esclusa: la pantalla se oscurece (tipo Pokemon), se cambia de lugar y se aclara.
+func _fade_through(change: Callable) -> void:
+	if fading or fade_rect == null or not playing:
+		change.call()
+		return
+	fading = true
+	mode = 13
+	dlg.visible = false
+	fade_rect.visible = true
+	var tw: Tween = create_tween()
+	tw.tween_property(fade_rect, "color:a", 1.0, 0.32)
+	tw.tween_callback(_fade_mid.bind(change))
+	tw.tween_interval(0.18)
+	tw.tween_property(fade_rect, "color:a", 0.0, 0.42)
+	tw.tween_callback(_fade_end)
+
+
+func _fade_mid(change: Callable) -> void:
+	if playing:
+		change.call()
+
+
+func _fade_end() -> void:
+	fading = false
+	fade_rect.visible = false
+	fade_rect.color.a = 0.0
+	if mode == 13:
+		mode = 0
+
+
+func _airlock_cycle() -> void:
+	# el ciclo de la esclusa dura 10 min de juego, sin animacion (la pantalla esta a oscuras)
+	time_acc += 10.0
+	_run_time_acc()
 
 
 func _open_pack() -> void:
@@ -1761,6 +1813,8 @@ func _new_game(loc: String) -> void:
 	night_acc = 0
 	slept_tonight = false
 	night_warned = false
+	fx_hold = []
+	fx_hold_node = ""
 	awake_min = 0
 	fatigue_warned = false
 	pending_nightmare = {}
@@ -2017,6 +2071,8 @@ func _process(delta: float) -> void:
 			var adv: float = minf(task_speed * delta, task_left)
 			task_left -= adv
 			time_acc += adv
+			if not fx_hold.is_empty() and task_total > 0.0 and 1.0 - task_left / task_total >= fx_hold_at:
+				_flush_fx_hold()
 			_run_time_acc()
 			if playing and mode == 5 and task_left <= 0.001:
 				_finish_task()
@@ -2236,7 +2292,7 @@ func _build_exterior() -> void:
 			parts.append(t[y * EXT_W + x])
 		rows.append("".join(parts))
 	ext_rows = rows
-	ext_spawn = Vector2i(BASE_X0 + 2, BASE_Y0 + 3)
+	ext_spawn = Vector2i(BASE_X0 + 2, BASE_Y0 + 4)
 
 
 func _mini_color(x: int, y: int) -> Color:
@@ -2623,6 +2679,10 @@ func _is_depleted(x: int, y: int) -> bool:
 
 
 func _door_inside() -> void:
+	_fade_through(_door_inside_do)
+
+
+func _door_inside_do() -> void:
 	outside = true
 	_set_player_tile(ext_spawn, Vector2i(0, 1))   # al salir se mira hacia afuera (sur), de espaldas a la base
 	stats["expeditions"] += 1
@@ -2639,12 +2699,16 @@ func _door_inside() -> void:
 		learned["suit"] = true
 		_top_info(Lang.t("Tu traje"), [
 			Lang.t("Afuera respiras el aire de tu traje (barra azul arriba). Se gasta mientras estás en la superficie, más rápido en tormentas de polvo. Si se acaba, te desmayas y pierdes 2 horas. Al volver a la esclusa se recarga con un poco del oxígeno de la base."),
-			Lang.t("Con [Shift] corres, pero gastas aguante (barra amarilla). Si te quedas sin aliento, camina un momento. En el banco de trabajo puedes mejorar el tanque, el aguante y la mochila con materiales.")], _start_task.bind(10.0, TASK_SPEED))
+			Lang.t("Con [Shift] corres, pero gastas aguante (barra amarilla). Si te quedas sin aliento, camina un momento. En el banco de trabajo puedes mejorar el tanque, el aguante y la mochila con materiales.")], _airlock_cycle)
 		return
-	_start_task(10.0, TASK_SPEED)
+	_airlock_cycle()
 
 
 func _exit_eva() -> void:
+	_fade_through(_exit_eva_do)
+
+
+func _exit_eva_do() -> void:
 	outside = false
 	_set_player_tile(DOOR_FRONT, Vector2i(0, -1))
 	cur_zone = -1
@@ -2654,7 +2718,7 @@ func _exit_eva() -> void:
 	_add("shield", -2)
 	_log(Lang.t("Regresas por la esclusa (-3 oxígeno por el ciclo de aire, -2 escudo por exposición)."))
 	_refill_suit()
-	_start_task(10.0, TASK_SPEED)
+	_airlock_cycle()
 
 
 func _gather(ch: String, np: Vector2i) -> void:
@@ -2664,6 +2728,7 @@ func _gather(ch: String, np: Vector2i) -> void:
 		_log(Lang.t("[color=orange]Zona ya recogida. Habrá más material en %d día(s).[/color]") % left)
 		return
 	var kind: String = "grab"
+	fx_hold = []
 	# cuanto sale depende de la dificultad y del dia (cada vez menos material)
 	var n_scrap: int = 0
 	var n_pol: int = 0
@@ -2683,7 +2748,7 @@ func _gather(ch: String, np: Vector2i) -> void:
 			inv["scrap"] += n_scrap
 			if n_scrap > 0:
 				_log(Lang.t("Recoges chatarra metálica (+%d chatarra, 30 min).") % n_scrap)
-				_fx("grab", Lang.t("+%d chatarra") % n_scrap, Color(0.78, 0.8, 0.88), "scrap")
+				fx_hold = ["grab", Lang.t("+%d chatarra") % n_scrap, Color(0.78, 0.8, 0.88), "scrap"]
 			else:
 				_log(Lang.t("[color=orange]La veta está casi agotada: no encuentras chatarra útil (30 min).[/color]"))
 		"c":
@@ -2691,17 +2756,19 @@ func _gather(ch: String, np: Vector2i) -> void:
 			inv["circuits"] += n_cir
 			if n_pol + n_cir > 0:
 				_log(Lang.t("Rescatas piezas del cargamento perdido (+%d polímero, +%d circuitos, 30 min).") % [n_pol, n_cir])
-				_fx("grab", Lang.t("+%d polímero  +%d circuitos") % [n_pol, n_cir], Color(1.0, 0.8, 0.4), "polymer")
-				if n_cir > 0:
-					_fly_hud("circuits")
+				fx_hold = ["grab", Lang.t("+%d polímero  +%d circuitos") % [n_pol, n_cir], Color(1.0, 0.8, 0.4), "polymer", n_cir > 0]
 			else:
 				_log(Lang.t("[color=orange]El cargamento está dañado: no rescatas nada útil (30 min).[/color]"))
 		"i":
 			_add("water", 10)
 			_log(Lang.t("Extraes hielo de agua (+10 agua, 30 min)."))
 			kind = "mine"
-			_fx("mine", Lang.t("+10 agua"), Color(0.6, 0.9, 1.0))
+			fx_hold = ["mine", Lang.t("+10 agua"), Color(0.6, 0.9, 1.0), ""]
 	depleted[_node_key(np.x, np.y)] = day
+	fx_hold_node = _node_key(np.x, np.y)   # el material sigue visible hasta que lo levantas (ver _flush_fx_hold)
+	fx_hold_at = 0.5 if kind == "grab" else 0.8
+	if fx_hold.is_empty():
+		fx_hold = ["", "", Color.WHITE, ""]
 	stats["collected"] += 1
 	_sfx("pickup")
 	var lkey: String = {"m": "scrap", "c": "cargo", "i": "ice_" + location}[ch]
@@ -4432,6 +4499,8 @@ func _suit_drain(step: int) -> bool:
 
 func _suit_collapse() -> void:
 	stats["collapses"] = int(stats["collapses"]) + 1
+	fx_hold = []
+	fx_hold_node = ""
 	outside = false
 	_set_player_tile(DOOR_FRONT, Vector2i(0, -1))
 	cur_zone = -1
@@ -5024,6 +5093,20 @@ func _refresh() -> void:
 		inv_icons.call("refresh")
 
 
+func _flush_fx_hold() -> void:
+	if fx_hold.is_empty():
+		return
+	var h: Array = fx_hold
+	fx_hold = []
+	fx_hold_node = ""
+	if str(h[0]) != "" and playing:
+		_fx(str(h[0]), str(h[1]), h[2], str(h[3]))
+		if h.size() > 4 and bool(h[4]):
+			_fly_hud("circuits")
+	if view3d != null and is_instance_valid(view3d) and view3d_on:
+		view3d.refresh_nodes()
+
+
 func _fx(kind: String, text: String, col: Color, mat: String = "") -> void:
 	if view3d != null and is_instance_valid(view3d) and view3d_on:
 		view3d.fx_event(kind, text, col)
@@ -5049,6 +5132,7 @@ func _start_task(mins: float, speed: float, kind: String = "") -> void:
 
 
 func _finish_task() -> void:
+	_flush_fx_hold()
 	var was_craft: bool = task_is_craft
 	var kind_done: String = task_kind
 	task_left = 0.0

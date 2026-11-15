@@ -278,3 +278,9 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 
 ### 0.9.15 Opción de velocidad de tareas (v24.2)
 - Opciones > Velocidad de las tareas: Lenta (x5/x10, la de antes), Normal (x20/x40, por defecto), Rápida (x50/x100), Muy rápida (x120/x240). Es un multiplicador (0,25 / 1 / 2,5 / 6) sobre `TASK_SPEED` y `CRAFT_SPEED`; se guarda en la configuración (`task_speed`). Solo cambia la espera real, no el gasto por minuto de juego. Verificado el cálculo de velocidades por script; la apariencia de la opción no se vio en captura.
+
+### 0.9.16 Recogida, esclusa y fundido (v24.3)
+- Recoger: el material ya no desaparece al empezar; sigue visible hasta que el astronauta lo levanta (50 % de la tarea al recoger, 80 % al picar hielo). En ese momento salen las piezas volando, el texto y el icono del HUD. Antes el material y el efecto se adelantaban y la animación seguía sola hasta el final (`fx_hold`, `_flush_fx_hold`).
+- Entrar y salir de la esclusa: la pantalla se oscurece y se aclara (≈0,9 s en total), sin animación de trabajo; el ciclo de 10 min de juego se suma de golpe (`_fade_through`, `_airlock_cycle`, modo 13).
+- La salida aparece 2 casillas al sur de la puerta (`ext_spawn` Y0+4): antes caía dentro de la estructura de la esclusa (marquesina y puerta).
+- Probado con script y capturas por software (el fundido se vio en negro; no medí la suavidad con GPU real).

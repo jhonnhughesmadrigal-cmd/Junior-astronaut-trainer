@@ -2200,7 +2200,7 @@ func _build_exterior() -> void:
 
 func refresh_nodes() -> void:
 	for nd in node_data:
-		var dep: bool = game._is_depleted(nd["x"], nd["y"])
+		var dep: bool = game._is_depleted(nd["x"], nd["y"]) and game.fx_hold_node != game._node_key(nd["x"], nd["y"])
 		if dep != nd["hidden"]:
 			nd["hidden"] = dep
 			for part in nd["parts"]:
