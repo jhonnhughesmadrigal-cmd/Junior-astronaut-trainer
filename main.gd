@@ -32,8 +32,8 @@ const BASE_X0: int = 57
 const BASE_Y0: int = 66
 const MINI_SCALE: float = 1.5
 const TIME_SCALE: float = 1.0 # minutos de juego por segundo real (1 h de juego = 60 s)
-const TASK_SPEED: float = 5.0 # minutos de juego por segundo real al hacer una tarea (x5)
-const CRAFT_SPEED: float = 10.0 # al fabricar y mejorar (x10)
+const TASK_SPEED: float = 20.0 # minutos de juego por segundo real al hacer una tarea (x20)
+const CRAFT_SPEED: float = 40.0 # al fabricar y mejorar (x40)
 const NODE_RESPAWN_DAYS: int = 5
 const DOOR_FRONT: Vector2i = Vector2i(13, 8)
 
@@ -1234,7 +1234,7 @@ func _build_pause() -> void:
 
 
 func _help_text() -> String:
-	return Lang.t("[b]Objetivo:[/b] sobrevive %d días hasta que llegue el rescate.\n[b]Reloj:[/b] el tiempo corre solo (1 hora de juego cada 60 s) y se pausa en diálogos y menús. Las tareas aceleran el tiempo: estaciones x5 y fabricar o mejorar x10.\n[b]Noche:[/b] desde las 20:00. Si sigues despierto bajan la energía y la moral, y pueden ocurrir situaciones incómodas. Duerme en la cama desde las 18:00 hasta las 06:00 (a veces hay pesadillas). Si no duermes te desplomas a las 06:00; tras 16 h despierto tus acciones rinden menos.\n[b]Exterior:[/b] la esclusa da a un mundo amplio con zonas reales, sin límite de pasos. Las placas (E) dan datos reales y +3 de moral. Fabrica el Mapa de navegación para usar Tab y el minimapa. El material reaparece tras %d días.\n[b]Herramientas:[/b] banco de trabajo. Parche: sella brechas (generador de escudo). Botiquín: cura enfermedad (habla con PAM). Reparador: reduce fallas eléctricas. Filtro: reduce tormentas de polvo.\n[b]Alerta roja:[/b] una brecha drena oxígeno hasta sellarla.\n[b]Controles:[/b] pulsa F1.") % [MAX_DAYS, NODE_RESPAWN_DAYS]
+	return Lang.t("[b]Objetivo:[/b] sobrevive %d días hasta que llegue el rescate.\n[b]Reloj:[/b] el tiempo corre solo (1 hora de juego cada 60 s) y se pausa en diálogos y menús. Las tareas aceleran el tiempo: estaciones x20 y fabricar o mejorar x40.\n[b]Noche:[/b] desde las 20:00. Si sigues despierto bajan la energía y la moral, y pueden ocurrir situaciones incómodas. Duerme en la cama desde las 18:00 hasta las 06:00 (a veces hay pesadillas). Si no duermes te desplomas a las 06:00; tras 16 h despierto tus acciones rinden menos.\n[b]Exterior:[/b] la esclusa da a un mundo amplio con zonas reales, sin límite de pasos. Las placas (E) dan datos reales y +3 de moral. Fabrica el Mapa de navegación para usar Tab y el minimapa. El material reaparece tras %d días.\n[b]Herramientas:[/b] banco de trabajo. Parche: sella brechas (generador de escudo). Botiquín: cura enfermedad (habla con PAM). Reparador: reduce fallas eléctricas. Filtro: reduce tormentas de polvo.\n[b]Alerta roja:[/b] una brecha drena oxígeno hasta sellarla.\n[b]Controles:[/b] pulsa F1.") % [MAX_DAYS, NODE_RESPAWN_DAYS]
 
 
 func _on_cam_selected(i: int) -> void:

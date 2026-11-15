@@ -272,3 +272,6 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - El banco (`T`) se gira 180°: está contra la pared norte y ahora su frente (cajones) mira al jugador; el panel de herramientas queda contra la pared.
 - Nueva interfaz `workbench.gd` (modo 4), parecida a la mochila: tarjetas para las 5 recetas y las 3 mejoras del equipo, panel de detalle con materiales "tienes de necesitas" (verde/rojo), tiempo y botón Fabricar/Mejorar. Teclado: flechas o [1-8], [Enter], [Esc]; ratón: clic elige, doble clic o botón fabrica.
 - Corrige el viejo mapeo de teclas del menú de texto (6 apuntaba a una receta inexistente). Probado solo con capturas por software.
+
+### 0.9.14 Tareas más ágiles (v24.1)
+- `TASK_SPEED` 5 → 20 y `CRAFT_SPEED` 10 → 40 (minutos de juego por segundo real durante una tarea). Una tarea de 30 min pasa de 6 s a 1,5 s; fabricar 90 min, de 9 s a ~2,3 s. El gasto por minuto de juego no cambia, solo se acorta la espera real. Ajustable en las dos constantes de `main.gd`. Sin probar con jugadores: es un ajuste a ojo según tu comentario.
