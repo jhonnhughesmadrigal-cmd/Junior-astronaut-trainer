@@ -14,8 +14,8 @@ extends RefCounted
 #  quiz: [{q, a: [3 opciones], ok: indice correcto, why: explicacion}]
 #  learned: lo que aprendiste (3 frases); sources: [[texto, url]]
 
-const TOPICS: Array = ["Gravedad", "Agua", "Historia", "Energía", "Geología", "Atmósfera"]
-const TOPIC_ICON: Dictionary = {"Gravedad": "planet", "Agua": "water", "Historia": "book", "Energía": "energy", "Geología": "map", "Atmósfera": "oxygen"}
+const TOPICS: Array = ["Gravedad", "Agua", "Historia espacial", "Energía", "Geología", "Atmósfera"]
+const TOPIC_ICON: Dictionary = {"Gravedad": "planet", "Agua": "water", "Historia espacial": "book", "Energía": "energy", "Geología": "map", "Atmósfera": "oxygen"}
 
 const SRC_MOON: Array = ["Ficha de la Luna (NASA NSSDC)", "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"]
 const SRC_MARS: Array = ["Ficha de Marte (NASA NSSDC)", "https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html"]
@@ -39,7 +39,7 @@ const MISSIONS: Array = [
 		"sources": [SRC_MOON],
 	},
 	{
-		"id": "moon_apollo", "loc": "Luna", "topic": "Historia", "mins": 4,
+		"id": "moon_apollo", "loc": "Luna", "topic": "Historia espacial", "mins": 4,
 		"title": "Las huellas del Apolo 11",
 		"card": "Viaja al Mar de la Tranquilidad, donde alunizaron las primeras personas.",
 		"start": "outside",

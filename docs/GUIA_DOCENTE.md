@@ -5,7 +5,7 @@
 ## Cómo se usan
 
 1. En el menú principal, pulsa **Misiones de clase**.
-2. Filtra por **tema** (Gravedad, Agua, Historia, Energía, Geología, Atmósfera) y por **mundo** (Luna o Marte).
+2. Filtra por **tema** (Gravedad, Agua, Historia espacial, Energía, Geología, Atmósfera) y por **mundo** (Luna o Marte).
 3. Pulsa una tarjeta: el alumno empieza junto a la base (o dentro, según la misión) y una tarjeta arriba a la derecha le dice qué hacer. Los lugares lejanos se marcan con una columna de luz.
 4. Al terminar los pasos aparece un cuestionario. Si se equivoca, puede volver a intentarlo (no hay castigo); se cuentan las respuestas correctas **a la primera**.
 5. El resumen muestra *Lo que aprendiste* y las fuentes. Las misiones completadas quedan marcadas como **Hecha** en ese ordenador.
@@ -19,7 +19,7 @@
 | Misión | Mundo | Tema | Duración |
 |---|---|---|---|
 | Saltar en la Luna | Luna | Gravedad | ≈ 3 min |
-| Las huellas del Apolo 11 | Luna | Historia | ≈ 4 min |
+| Las huellas del Apolo 11 | Luna | Historia espacial | ≈ 4 min |
 | Hielo en la sombra | Luna | Agua | ≈ 5 min |
 | El día y la noche lunar | Luna | Energía | ≈ 4 min |
 | Saltar en Marte | Marte | Gravedad | ≈ 3 min |
@@ -67,7 +67,7 @@ Salta y mide cuánto tiempo pasas en el aire con la gravedad lunar.
 
 ## Las huellas del Apolo 11
 
-**Mundo:** Luna · **Tema:** Historia · **Duración:** ≈ 4 min · **Identificador:** `moon_apollo`
+**Mundo:** Luna · **Tema:** Historia espacial · **Duración:** ≈ 4 min · **Identificador:** `moon_apollo`
 
 Viaja al Mar de la Tranquilidad, donde alunizaron las primeras personas.
 

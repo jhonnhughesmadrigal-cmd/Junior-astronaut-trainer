@@ -1626,4 +1626,5 @@ const EN: Dictionary = {
 	"Misiones de clase": "Class missions",
 	"Ficha de la Luna (NASA NSSDC)": "Moon Fact Sheet (NASA NSSDC)",
 	"Ficha de Marte (NASA NSSDC)": "Mars Fact Sheet (NASA NSSDC)",
+	"Historia espacial": "Space history",
 }

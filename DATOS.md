@@ -372,7 +372,7 @@ Solo cambia el **dibujo**: la lógica del juego no se tocó (ver «Verificación
 
 ## v29 — Misiones de clase (modo docente)
 
-Catálogo de **9 lecciones cortas** que el docente elige desde el menú (**Misiones de clase**), filtrando por tema (Gravedad, Agua, Historia, Energía, Geología, Atmósfera) y mundo. Cada una: pasos guiados en el mundo 3D → cuestionario sin castigo → resumen «Lo que aprendiste» con fuentes. Guía para docentes: `docs/GUIA_DOCENTE.md` (generada desde el catálogo con `tools/gen_guia.gd`).
+Catálogo de **9 lecciones cortas** que el docente elige desde el menú (**Misiones de clase**), filtrando por tema (Gravedad, Agua, Historia espacial, Energía, Geología, Atmósfera) y mundo. Cada una: pasos guiados en el mundo 3D → cuestionario sin castigo → resumen «Lo que aprendiste» con fuentes. Guía para docentes: `docs/GUIA_DOCENTE.md` (generada desde el catálogo con `tools/gen_guia.gd`).
 
 **Archivos:** `lesson_data.gd` (catálogo y textos), `lessons.gd` (motor), `lesson_ui.gd` (página del menú), `tests/t_lessons.gd` (prueba). En `main.gd` solo hay 6 ganchos pequeños: `lesson_active()`, tiempo detenido en `_run_time_acc`, sin guardar en `_save_game`, sin historia/tutorial al crear la partida de la lección, cierre al volver al menú y teclado del modo 15 (cuestionario).
 
