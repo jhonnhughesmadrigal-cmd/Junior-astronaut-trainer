@@ -79,6 +79,7 @@ func _process(_d: float) -> bool:
 		main.get("tut").call("skip_silent")
 		main.get("dlg").visible = false
 		main.set("mode", 0)
+		main.set("cam_mode", 0)   # camara fija (controles absolutos); otra prueba puede dejar guardada la 1.ª persona
 		main.set("outside", true)
 		main.call("_set_player_tile", main.get("ext_spawn"), Vector2i(0, 1))
 		mem["x0"] = (main.get("pos_f") as Vector2).x

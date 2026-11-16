@@ -38,11 +38,10 @@ const ERRORS: Dictionary = {
 func _ready() -> void:
 	var e: String = OS.get_environment("FIREBASE_EMULATOR")
 	if e != "":
+		# pruebas: SIEMPRE el proyecto de demostracion del emulador (nunca el proyecto real)
 		emu = e
-		if project == "":
-			project = "demo-mision-perseo"
-		if api_key == "":
-			api_key = "demo-key"
+		project = "demo-mision-perseo"
+		api_key = "demo-key"
 
 
 func configured() -> bool:
