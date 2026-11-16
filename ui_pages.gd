@@ -116,6 +116,12 @@ func build_all() -> void:
 	motion.name = "UiMotion"
 	game.add_child(motion)
 	motion.call("setup", game, [game.get("fade_rect"), game.get("load_ov")])
+	# v37: boton «Atras» de Android y guardado al pasar a segundo plano
+	var mos := Node.new()
+	mos.set_script(load("res://mobile_os.gd"))
+	mos.name = "MobileOS"
+	game.add_child(mos)
+	mos.call("setup", game)
 
 
 # ---------- utilidades de interfaz ----------

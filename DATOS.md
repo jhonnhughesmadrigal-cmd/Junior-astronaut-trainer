@@ -525,3 +525,17 @@ Con los prompts de `docs/PROMPTS_LUDO.md` se generó en Ludo.ai una imagen con l
 **Proyecto real configurado (16 nov 2026):** `mision-perseo` (apiKey y projectId en `firebase_config.gd`). Comprobado contra el proyecto real con cuentas temporales que se borraron al terminar: la clave es válida, el inicio de sesión con correo está activo, las reglas publicadas son las del juego (un usuario guarda su perfil y no puede marcarse docente verificado) y el juego crea una cuenta, sube la partida y la vuelve a leer. Desde el navegador (Chromium) las llamadas a Auth y Firestore llegan sin bloqueo de CORS. Las pruebas con `FIREBASE_EMULATOR` usan siempre el proyecto de demostración del emulador, nunca el real. Falta: crear tu cuenta de administrador (docs/FIREBASE_SETUP.md, paso 5).
 
 **Pendiente:** «Iniciar sesión con Google» (botón de Google) necesita OAuth y en Android un plugin nativo; APK; aviso por correo al administrador (Blaze); revisión de privacidad con la escuela.
+
+## v37 — APK para Android, botón «Atrás», aviso de privacidad
+
+**Archivos nuevos:** `mobile_os.gd` (botón «Atrás» y guardado en segundo plano), `tools/gen_icon.gd` + `art/app/*.png` (icono de la app, hecho por código), `tests/t_mobile.gd`, `docs/ANDROID_APK.md`, `docs/PRIVACIDAD.md` (borrador). Cambios: `export_presets.cfg` (preset «Android»), `project.godot` (icono, orientación horizontal con sensor, compresión ETC2/ASTC necesaria para exportar a Android), `ui_fit.gd` (escala por dp en Android), `profile_ui.gd` (aviso «Comprobando permisos de administrador…» y aviso de privacidad al crear cuenta), `ui_pages.gd` (carga `mobile_os.gd`). `main.gd` sin cambios.
+
+**APK:** paquete `com.misionperseo.juego`, versión 0.37 (code 37), minSdk 21 / targetSdk 34 (los de la plantilla de Godot 4.4.1), arm64-v8a y armeabi-v7a, permisos INTERNET y ACCESS_NETWORK_STATE, pantalla completa, sin copia de seguridad de Android. Firmado con una clave de *release* propia (fuera del repositorio; ver docs/ANDROID_APK.md). Comprobado con `apksigner verify` (esquemas v1, v2 y v3) y `aapt2 dump badging`. Tamaño ≈ 54 MB.
+
+**Hallazgo:** Godot cierra la app con «Atrás» por defecto (`quit_on_go_back`): un niño perdía la partida. Ahora «Atrás» = Esc; en la portada, dos pulsaciones para salir; al pasar a segundo plano se guarda. Al probarlo se vio que el aviso no podía crearse durante la notificación (nodo bloqueado): se procesa diferido.
+
+**Verificación:** `tests/t_mobile.gd` 12/12 (simula las notificaciones de Android en escritorio). Regresión: huella de lógica `9d5ba3a6…` (sin cambios), misiones 75/75 (es y en), táctil 22/22, minijuegos 14/14, perfiles 19/19, Firebase con emulador 26/26 y 14/14.
+
+**No probado:** en ningún dispositivo Android real (aquí no hay emulador: falta KVM). Sin medir: rendimiento, temperatura/batería, teclado en pantalla con los campos de correo, tamaño de texto en móviles pequeños.
+
+**Pendiente:** «Iniciar sesión con Google» (no hecho; pasos en docs/FIREBASE_SETUP.md §9), botón «Borrar mi cuenta», revisión de privacidad con la escuela (docs/PRIVACIDAD.md), AAB para Google Play.

@@ -205,6 +205,9 @@ func _ask_email(type: String, login: bool = false) -> void:
 		body.add_child(UiScreens.hint(Lang.t("Usa el correo que te dio tu escuela.")))
 	if not cloud:
 		body.add_child(UiScreens.hint(Lang.t("Sin conexión a la nube: el perfil se guarda solo en este dispositivo.")))
+	elif not login:
+		# v37: aviso de privacidad (borrador; ver docs/PRIVACIDAD.md, revisarlo con la escuela)
+		body.add_child(UiScreens.hint(Lang.t("Tu correo y tu partida se guardan en servidores de Google (Firebase) para que puedas jugar en otros dispositivos. Pide permiso a tu familia o a tu docente antes de crear la cuenta.")))
 	_msg_line()
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", DS.S2)
@@ -518,8 +521,13 @@ func show_new_class() -> void:
 func _admin_button() -> void:
 	var holder := VBoxContainer.new()
 	body.add_child(holder)
+	var wait: Label = UiScreens.hint(Lang.t("Comprobando permisos de administrador…"))
+	holder.add_child(wait)
 	var ok: bool = await prof.call("is_admin")
-	if ok and is_instance_valid(holder):
+	if not is_instance_valid(holder):
+		return
+	wait.queue_free()
+	if ok:
 		holder.add_child(_btn(Lang.t("Administración: solicitudes de docentes"), show_admin, false, "check"))
 
 

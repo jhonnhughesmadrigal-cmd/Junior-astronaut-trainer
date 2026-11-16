@@ -1786,4 +1786,7 @@ const EN: Dictionary = {
 	"Esta cuenta está desactivada.": "This account is disabled.",
 	"No tienes permiso para hacer eso.": "You don't have permission to do that.",
 	"Sin conexión con el servidor. Revisa internet y vuelve a probar.": "No connection to the server. Check the internet and try again.",
+	"Comprobando permisos de administrador…": "Checking administrator permissions…",
+	"Pulsa «Atrás» otra vez para salir": "Press «Back» again to exit",
+	"Tu correo y tu partida se guardan en servidores de Google (Firebase) para que puedas jugar en otros dispositivos. Pide permiso a tu familia o a tu docente antes de crear la cuenta.": "Your email and your saved game are stored on Google servers (Firebase) so you can play on other devices. Ask your family or your teacher for permission before creating the account.",
 }

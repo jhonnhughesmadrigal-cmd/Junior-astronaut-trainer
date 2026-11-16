@@ -50,3 +50,11 @@ El juego es para niños de 7–12 años. Pedir correos y guardar partidas de men
 cd firebase && npx firebase-tools emulators:start --only auth,firestore --project demo-mision-perseo
 ```
 y en otra terminal, desde la raíz: `FIREBASE_EMULATOR=127.0.0.1 godot --path .` (el juego usará el emulador). Pruebas: `tests/t_firebase.gd` y `tests/t_fbflow.gd`.
+
+## 9. «Iniciar sesión con Google» (v37: NO hecho todavía — qué haría falta)
+No lo he añadido porque no lo puedo probar aquí (hace falta iniciar sesión con una cuenta de Google real en un navegador y en un Android), y un botón a medias confundiría a los niños. Lo necesario, por si se decide hacerlo:
+1. Consola: **Authentication → Método de acceso → Google → Habilitar** (pide un correo de asistencia).
+2. **Web**: obtener un token de Google en la página (biblioteca de Google Identity Services o el SDK JS de Firebase, cargados en `web_shell.html`) y pasarlo al juego con `JavaScriptBridge`; el juego lo cambia por una sesión de Firebase con la API REST `accounts:signInWithIdp` (proveedor `google.com`). El dominio donde se publique el juego debe estar en **Authentication → Configuración → Dominios autorizados**.
+3. **Android (APK)**: Godot no trae inicio con Google; hace falta un plugin de Android (compilación con Gradle) que use el selector de cuentas del sistema, registrar una app Android en Firebase con el paquete `com.misionperseo.juego` y la huella **SHA-1** de la firma (está en `docs/ANDROID_APK.md`), y luego el mismo `accounts:signInWithIdp`.
+4. Privacidad: con Google llegan también el nombre y la foto de la cuenta; decidir con la escuela si se guardan (lo más prudente: no).
+Verifica estos pasos en la documentación actual de Firebase antes de empezar: los nombres de menús y las bibliotecas de Google cambian.

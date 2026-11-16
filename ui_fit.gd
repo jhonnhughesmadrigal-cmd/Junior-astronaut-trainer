@@ -33,6 +33,11 @@ func _short_side_css() -> float:
 		if w != null and h != null:
 			return minf(float(w), float(h))
 	var ws: Vector2i = DisplayServer.window_get_size()
+	if OS.has_feature("android") or OS.has_feature("ios"):
+		# v37: en el movil nativo, pixeles fisicos -> dp (160 ppp = 1 dp), como los px CSS de la web
+		var dpi: float = float(DisplayServer.screen_get_dpi())
+		if dpi > 0.0:
+			return float(mini(ws.x, ws.y)) * 160.0 / dpi
 	var sc: float = maxf(DisplayServer.screen_get_scale(), 1.0)
 	return float(mini(ws.x, ws.y)) / sc
 

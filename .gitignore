@@ -7,3 +7,4 @@ web/
 # firebase emulador
 firebase/*.log
 firebase/.firebase/
+/build/
