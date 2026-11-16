@@ -29,7 +29,8 @@ var diff_text: Label
 var endings_box: VBoxContainer     # v28: lista de finales (ui_screens.gd)
 var howto_box: VBoxContainer       # v28: controles con teclas (ui_screens.gd)
 var lessons_box: VBoxContainer     # v29: misiones de clase (lesson_ui.gd)
-var lesson_filter: Dictionary = {"topic": "", "loc": ""}
+var lesson_filter: Dictionary = {"topic": "", "loc": "", "class": ""}
+var profile_btn: Button = null     # v35: perfil activo en el menu
 var compact: bool = false          # v31: menu compacto para pantallas bajas (movil)
 var mref: Dictionary = {}          # v31: nodos del menu que cambian en modo compacto
 var learn_overlay: Control
@@ -75,6 +76,20 @@ func build_all() -> void:
 	_build_controls()
 	_build_stats()
 	_build_learn()
+	# v35: perfiles (educativo / personal / invitado) y su pantalla
+	var prof := Node.new()
+	prof.set_script(load("res://profiles.gd"))
+	prof.name = "Profiles"
+	game.add_child(prof)
+	prof.call("setup", game)
+	var pui := Control.new()
+	pui.set_script(load("res://profile_ui.gd"))
+	pui.name = "ProfileUI"
+	game.add_child(pui)
+	pui.call("setup", game, prof)
+	refresh_profile()
+	if (prof.get("current") as Dictionary).is_empty():
+		pui.call("show_choose")
 	# v29: motor de las misiones de clase
 	var les := Control.new()
 	les.set_script(load("res://lessons.gd"))
@@ -240,6 +255,8 @@ func _build_menu() -> void:
 	left.add_child(continue_info)
 	left.add_child(_menu_btn(Lang.t("Nueva misión"), _on_new_mission, "planet"))
 	left.add_child(_menu_btn(Lang.t("Misiones de clase"), show_page.bind("lessons"), "map"))
+	profile_btn = _menu_btn(Lang.t("Perfil"), open_profile, "crew")
+	left.add_child(profile_btn)
 	left.add_child(_menu_btn(Lang.t("Cómo jugar"), show_page.bind("howto"), "book"))
 	left.add_child(_menu_btn(Lang.t("Finales"), show_page.bind("endings"), "trophy"))
 	left.add_child(_menu_btn(Lang.t("Opciones"), open_options, "gear"))
@@ -492,6 +509,26 @@ func _build_page_endings() -> void:
 func _build_page_credits() -> void:
 	var v: VBoxContainer = _page("credits", Lang.t("Créditos"))
 	v.add_child(UiScreens.credits())
+
+
+func open_profile() -> void:
+	var pui: Node = game.get_node_or_null("ProfileUI")
+	if pui != null:
+		pui.call("show_account")
+
+
+# v35: el boton del menu muestra el perfil activo; al cambiar de perfil se recarga «Continuar»
+func refresh_profile() -> void:
+	var prof: Node = game.get_node_or_null("Profiles")
+	if prof == null or profile_btn == null:
+		return
+	profile_btn.text = "      " + Lang.t("Perfil") + ": " + str(prof.call("label"))
+	profile_btn.clip_text = true
+	profile_btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	if btn_continue != null:
+		refresh_continue()
+	if cur_page == "lessons":
+		_fill_lessons()
 
 
 func _build_page_lessons() -> void:

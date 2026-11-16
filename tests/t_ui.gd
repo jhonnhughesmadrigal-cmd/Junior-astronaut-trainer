@@ -47,6 +47,38 @@ func _prepare() -> void:
 		main.get_node("UiFit").set("force_k", float(OS.get_environment("UI_SCALE")))
 	main.set("auto_quality", false)
 	main.call("_set_quality", 0 if state.ends_with("_low") else 2)
+	var pui: Control = main.get_node_or_null("ProfileUI")
+	if pui != null and not state.begins_with("prof_"):
+		pui.visible = false   # v35: las demas capturas no muestran la pantalla de perfil
+	if state.begins_with("prof_"):
+		var prof: Node = main.get_node("Profiles")
+		match state:
+			"prof_choose":
+				pui.call("show_choose")
+			"prof_email":
+				pui.call("_ask_email", "edu")
+			"prof_role":
+				pui.set("pending_email", "alumno@escuela.edu")
+				pui.call("_ask_role")
+			"prof_teacher":
+				pui.set("pending_email", "profe@escuela.edu")
+				pui.call("_teacher_form")
+			"prof_student":
+				prof.call("create", "edu", "alumno@escuela.edu", "student")
+				prof.call("join_class", "PER-" + "3")
+				prof.call("join_class", (load("res://profiles.gd") as GDScript).call("make_code", [0, 4, 8]))
+				pui.call("show_account")
+			"prof_newclass":
+				prof.call("create", "edu", "profe@escuela.edu", "teacher", {"name": "Prof", "school": "Escuela"})
+				pui.call("show_new_class")
+			"prof_lessons":
+				prof.call("create", "edu", "alumno@escuela.edu", "student")
+				var code: String = (load("res://profiles.gd") as GDScript).call("make_code", [0, 4, 8])
+				prof.call("join_class", code)
+				pui.visible = false
+				main.get("ui").set("lesson_filter", {"topic": "", "loc": "", "class": code})
+				main.get("ui").call("show_page", "lessons")
+		return
 	if state.begins_with("les_"):
 		# v29: misiones de clase (les_goto, les_jump, les_quiz, les_done)
 		var lid: String = {"les_goto": "moon_apollo", "les_jump": "mars_jump", "les_quiz": "mars_jezero", "les_done": "moon_ice"}[state]
@@ -154,7 +186,7 @@ func _process(_delta: float) -> bool:
 	frame += 1
 	if frame == 5:
 		_prepare()
-	if frame == 12 and state not in ["menu", "new", "opts", "credits", "howto", "endings", "lessons"] and not state.begins_with("les_"):
+	if frame == 12 and state not in ["menu", "new", "opts", "credits", "howto", "endings", "lessons"] and not state.begins_with("les_") and not state.begins_with("prof_"):
 		_after_start()
 	if frame == 20 and state == "les_quiz":
 		main.get("lesson").call("_open_quiz")

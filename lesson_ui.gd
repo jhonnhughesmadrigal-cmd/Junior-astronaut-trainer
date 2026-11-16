@@ -25,6 +25,21 @@ static func fill(holder: VBoxContainer, game, filt: Dictionary, on_filter: Calla
 	holder.add_child(wr)
 	for pair in [["", Lang.t("Luna y Marte")], ["Luna", Lang.t("Luna")], ["Marte", Lang.t("Marte")]]:
 		wr.add_child(_chip_btn(str(pair[1]), str(filt.get("loc", "")) == str(pair[0]), on_filter.bind("loc", str(pair[0]))))
+	# v35: clases del perfil (estudiante: a las que se unio; docente: las que creo)
+	var prof: Node = game.get_node_or_null("Profiles")
+	var classes: Array = []
+	if prof != null:
+		classes = (prof.get("current") as Dictionary).get("classes", [])
+	var allowed: Array = []
+	if str(filt.get("class", "")) != "":
+		allowed = (load("res://profiles.gd") as GDScript).call("read_code", str(filt["class"]))
+	if not classes.is_empty():
+		var cr := HFlowContainer.new()
+		cr.add_theme_constant_override("h_separation", DS.S1)
+		holder.add_child(cr)
+		cr.add_child(_chip_btn(Lang.t("Todas las misiones"), str(filt.get("class", "")) == "", on_filter.bind("class", ""), "map"))
+		for code in classes:
+			cr.add_child(_chip_btn(Lang.t("Clase %s") % str(code), str(filt.get("class", "")) == str(code), on_filter.bind("class", str(code)), "book"))
 	var nd: int = 0
 	for m in LessonData.MISSIONS:
 		if prog.has(str(m["id"])):
@@ -46,7 +61,10 @@ static func fill(holder: VBoxContainer, game, filt: Dictionary, on_filter: Calla
 	grid.add_theme_constant_override("v_separation", DS.S2)
 	sc.add_child(grid)
 	var shown: int = 0
-	for m in LessonData.MISSIONS:
+	for mi in LessonData.MISSIONS.size():
+		var m: Dictionary = LessonData.MISSIONS[mi]
+		if not allowed.is_empty() and not allowed.has(mi):
+			continue
 		if str(filt.get("topic", "")) != "" and str(m["topic"]) != str(filt["topic"]):
 			continue
 		if str(filt.get("loc", "")) != "" and str(m["loc"]) != str(filt["loc"]):

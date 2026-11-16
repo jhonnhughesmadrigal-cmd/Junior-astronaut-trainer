@@ -479,3 +479,26 @@ El invernadero (G), el reciclador de agua (W) y la cama (B) mantienen su modelo 
 Con los prompts de `docs/PROMPTS_LUDO.md` se generó en Ludo.ai una imagen con los 8 iconos. No se importó: los iconos se redibujaron **por código** como SVG en `item_icons.gd` (chatarra, polímero, circuitos, kit de parche, botiquín, reparador, filtro de polvo y mapa) con el mismo estilo plano (grafito, gris claro, ámbar y verde de placa). Se usan en el HUD, la mochila y el banco de trabajo (`inv_icons.gd`); un PNG en `art/icons/<id>.png` sigue teniendo prioridad. La chatarra, el polímero y el soldador se aclararon respecto a la referencia para que se distingan sobre el fondo oscuro del HUD a 22 px.
 
 **Verificación:** lámina de los 8 iconos a 128 px y a 22 px, y capturas del HUD, la mochila y el banco. Huella de lógica sin cambios (`9d5ba3a6…`).
+
+
+## v35 — Perfiles: cuenta educativa (estudiante / docente), cuenta personal e invitado
+
+**Archivos nuevos:** `profiles.gd` (datos y guardado de perfiles), `profile_ui.gd` (pantallas con el sistema de diseño), `tests/t_profiles.gd`. Cambios pequeños: `ui_pages.gd` (botón «Perfil» en el menú), `lesson_ui.gd` (filtro por clase) y `main.gd` (una sola línea: `SAVE_PATH` pasa de constante a variable para que cada perfil use su propio archivo de partida).
+
+**Qué hace (todo en este dispositivo, sin servidor):**
+- Al abrir el juego sin perfil aparece «¿Quién juega?»: perfiles guardados en el dispositivo + **Cuenta educativa**, **Cuenta personal** o **Jugar como invitado**.
+- **Cuenta educativa:** correo → «¿Eres estudiante o docente?».
+  - *Estudiante:* se une a clases escribiendo un código `PER-XXXX`. En «Misiones de clase» aparece un filtro con sus clases que muestra solo las misiones elegidas por el docente.
+  - *Docente:* escribe su nombre y escuela; la cuenta queda **«Pendiente de verificación»**. Puede crear clases (modo de prueba): elige misiones y obtiene un código para compartir.
+- **Cuenta personal:** correo; partida guardada en un archivo propio del perfil (`user://save_<id>.json`). El primer perfil con cuenta adopta la partida que ya hubiera en el dispositivo.
+- **Invitado:** sin correo; usa `user://save_guest.json`, que se **borra al volver a abrir el juego**; el invitado no queda recordado.
+- **Códigos de clase sin servidor:** el código lleva dentro las misiones elegidas (máscara de 9 bits + 5 bits de control contra errores de tecleo, en base 32 sin 0/O ni 1/I). No es secreto ni seguro: cualquiera con el código ve esas misiones (no hay datos personales en él).
+
+**Lo que NO está hecho y por qué (necesita un servidor y decisiones del dueño):**
+- **Verificar el correo:** hoy solo se comprueba el formato; cualquiera puede escribir cualquier dirección. No se puede saber si un correo es «educativo» por su texto (las cuentas de Google para escuelas usan el dominio de cada escuela).
+- **Enviar la solicitud del docente al correo del administrador:** un juego web o APK no puede enviar correos por sí solo sin exponer credenciales; necesita un servidor (o un servicio como Firebase o Supabase) y, para entrar con Google, un registro OAuth. Tampoco se escribió el correo del administrador en el código (el repositorio es visible).
+- **Guardar la partida en la nube / iniciar sesión en varios dispositivos (web y APK):** necesita el mismo servidor. Hoy el guardado es local.
+- **Privacidad:** el juego es para niños de 7–12 años; recoger correos de menores tiene obligaciones legales (p. ej. COPPA en EE. UU. o el RGPD en Europa, según el país). No es asesoría legal: conviene revisarlo con la escuela antes de activar cuentas reales. Hoy los correos se guardan en texto plano solo en el dispositivo (`user://profiles.cfg`).
+- **APK:** no se generó (no hay preset de Android ni plantillas instaladas).
+
+**Verificación:** `tests/t_profiles.gd` 19/19 (primera pantalla, códigos de clase —las 511 combinaciones de ida y vuelta—, códigos inválidos y con errores de tecleo, formato de correo, invitado que no se conserva, guardado propio del perfil personal y recordado al reabrir, estudiante que se une a una clase y filtro de 3 misiones, docente pendiente, cambio de perfil). Capturas de todas las pantallas. Regresión: ver commit.
