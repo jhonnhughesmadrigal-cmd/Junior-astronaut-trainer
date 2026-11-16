@@ -1,5 +1,5 @@
 .godot/
 *.tmp
 web/
-t_*.gd
-t_*.gd.uid
+/t_*.gd
+/t_*.gd.uid
