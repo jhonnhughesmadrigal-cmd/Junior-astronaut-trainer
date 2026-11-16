@@ -17,6 +17,7 @@ Wilson mantiene vivos a 4 tripulantes 30 días en la Luna o Marte. Español/ingl
 - `view3d.gd`: mundo 3D (iluminación, terreno, base, personajes, partículas, presets de calidad Bajo/Medio/Alto). `ext_tex.gd` / `int_tex.gd` / `space_tex.gd`: texturas procedurales. v28: `terrain3d.gd`, `world_look.gd`, `base_look.gd`, `world_fx.gd`, `crew_look.gd`.
 - `ui_screens.gd` (pantallas con DS) y `ui_motion.gd` (microinteracciones).
 - v30 `touch_ui.gd`: controles táctiles; simulan las teclas de `binds` con `Input.parse_input_event` (no tocar `main.gd` para el táctil).
+- v34 `item_icons.gd`: iconos SVG de materiales y herramientas (estilo de la referencia de Ludo.ai); los usa `inv_icons.gd` si no hay PNG en `art/icons/`.
 - v33 `station_art.gd`: estaciones O, S, R, C, T, A, D con el estilo de la referencia de Ludo.ai (por código) y sus animaciones (`animate()`, llamado desde `view3d._update_props`). Un `.glb` en `art/3d/station_X.glb` sigue teniendo prioridad.
 - v32 `mg_new.gd`: minijuegos del banco «Sellar la fuga» (parche), «Capas del filtro» (filtro) y «Rompecabezas orbital» (mapa); `minigames.gd` los delega por `kind`.
 - v31 `ui_fit.gd`: escala automática en móviles, encaje de paneles que no caben, aviso de girar. Ojo: en xvfb la ventana no pasa de 1280×720; para simular un móvil usa `TOUCH=1 UI_SCALE=1.35` a 1280x720 (lienzo 856×481).

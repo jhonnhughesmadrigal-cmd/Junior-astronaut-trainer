@@ -103,6 +103,14 @@ func _after_start() -> void:
 				lv[k] = 3
 			for k in lv:
 				main.get("view3d").call("refresh_station", k)
+		"pack_full":
+			# v34: mochila y HUD con materiales y herramientas (para ver los iconos)
+			(main.get("inv") as Dictionary).merge({"scrap": 4, "polymer": 3, "circuits": 2}, true)
+			(main.get("tools") as Dictionary).merge({"patch": 1, "medkit": 1, "repair": 1, "filter": 1, "map": 1}, true)
+			main.call("_open_pack")
+		"hud_full":
+			(main.get("inv") as Dictionary).merge({"scrap": 4, "polymer": 3, "circuits": 2}, true)
+			(main.get("tools") as Dictionary).merge({"patch": 1, "medkit": 1, "repair": 1, "filter": 1, "map": 1}, true)
 		"pack":
 			main.call("_open_pack")
 		"bench":

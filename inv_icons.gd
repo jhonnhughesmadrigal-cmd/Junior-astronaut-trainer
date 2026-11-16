@@ -62,6 +62,9 @@ func _tex(id: String) -> Texture2D:
 	var path: String = "res://art/icons/%s.png" % id
 	if ResourceLoader.exists(path):
 		t = load(path) as Texture2D
+	if t == null:
+		# v34: iconos con el estilo de la referencia de Ludo.ai, dibujados como SVG por codigo
+		t = (load("res://item_icons.gd") as GDScript).call("texture", id)
 	_tex_cache[id] = t
 	return t
 

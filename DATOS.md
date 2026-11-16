@@ -472,3 +472,10 @@ El invernadero (G), el reciclador de agua (W) y la cama (B) mantienen su modelo 
 **Animaciones discretas:** las agujas de los manómetros oscilan; las pantallas varían levemente su brillo; el panel solar sigue la hora del día (de este a oeste, y vuelve al centro de noche); la antena de la radio gira despacio; el núcleo del escudo «respira»; la puerta de la esclusa se abre cuando Wilson se acerca y al cruzarla. Son decorativas: no cambian la lógica.
 
 **Verificación:** capturas de cada estación con cámara fija (estados `stc_O stc_S stc_R stc_C stc_T stc_A stc_D` en `tests/t_ui.gd`), vista general de Luna y Marte, todas las estaciones al nivel 3 y exterior. Animación de la puerta comprobada por script (0 → 1 al acercarse). Huella de lógica igual (`9d5ba3a6…`), táctil 22/22, minijuegos 14/14, misiones 75/75. No medido: coste en GPU real (hay más piezas por estación que antes).
+
+
+## v34 — Iconos de materiales y herramientas con el estilo de la referencia de Ludo.ai
+
+Con los prompts de `docs/PROMPTS_LUDO.md` se generó en Ludo.ai una imagen con los 8 iconos. No se importó: los iconos se redibujaron **por código** como SVG en `item_icons.gd` (chatarra, polímero, circuitos, kit de parche, botiquín, reparador, filtro de polvo y mapa) con el mismo estilo plano (grafito, gris claro, ámbar y verde de placa). Se usan en el HUD, la mochila y el banco de trabajo (`inv_icons.gd`); un PNG en `art/icons/<id>.png` sigue teniendo prioridad. La chatarra, el polímero y el soldador se aclararon respecto a la referencia para que se distingan sobre el fondo oscuro del HUD a 22 px.
+
+**Verificación:** lámina de los 8 iconos a 128 px y a 22 px, y capturas del HUD, la mochila y el banco. Huella de lógica sin cambios (`9d5ba3a6…`).
