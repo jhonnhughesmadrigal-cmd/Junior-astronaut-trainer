@@ -57,6 +57,17 @@ func _prepare() -> void:
 				pui.call("show_choose")
 			"prof_email":
 				pui.call("_ask_email", "edu")
+			"prof_login":
+				pui.call("_ask_email", "personal", true)
+			"prof_verify":
+				pui.set("pending_email", "profe%d@escuela.edu" % (randi() % 100000))
+				pui.set("pending_password", "clave123")
+				pui.call("_register", "edu", "teacher", {"name": "Prof", "school": "Escuela"})
+			"prof_cloud":
+				pui.set("pending_email", "alumno%d@escuela.edu" % (randi() % 100000))
+				pui.set("pending_password", "clave123")
+				await pui.call("_register", "edu", "student")
+				pui.call("show_account")
 			"prof_role":
 				pui.set("pending_email", "alumno@escuela.edu")
 				pui.call("_ask_role")

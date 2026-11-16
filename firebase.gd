@@ -19,6 +19,7 @@ var id_token: String = ""
 var refresh_token: String = ""
 var expires_at: float = 0.0
 var email_verified: bool = false
+var gen: int = 0              # sube con cada cambio de cuenta: respuestas de una sesion anterior se ignoran
 
 const ERRORS: Dictionary = {
 	"EMAIL_EXISTS": "Ya existe una cuenta con ese correo. Usa «Ya tengo cuenta».",
@@ -123,6 +124,7 @@ func _take_session(d: Dictionary) -> void:
 
 
 func sign_up(mail: String, password: String) -> Dictionary:
+	gen += 1
 	var r: Dictionary = await _req(_auth_url("signUp"), HTTPClient.METHOD_POST, {"email": mail, "password": password, "returnSecureToken": true})
 	if r["ok"]:
 		_take_session(r["data"])
@@ -131,6 +133,7 @@ func sign_up(mail: String, password: String) -> Dictionary:
 
 
 func sign_in(mail: String, password: String) -> Dictionary:
+	gen += 1
 	var r: Dictionary = await _req(_auth_url("signInWithPassword"), HTTPClient.METHOD_POST, {"email": mail, "password": password, "returnSecureToken": true})
 	if r["ok"]:
 		_take_session(r["data"])
@@ -149,7 +152,10 @@ func send_password_reset(mail: String) -> Dictionary:
 # Consulta si el correo ya está verificado. Si lo está, renueva el token (la marca email_verified
 # del token solo se actualiza al renovarlo, y las reglas de Firestore la usan).
 func lookup() -> Dictionary:
+	var g: int = gen
 	var r: Dictionary = await _req(_auth_url("lookup"), HTTPClient.METHOD_POST, {"idToken": id_token})
+	if g != gen:
+		return {"ok": false, "code": 0, "data": null, "error": "STALE"}
 	if r["ok"] and r["data"] is Dictionary and (r["data"] as Dictionary).has("users"):
 		var u: Dictionary = r["data"]["users"][0]
 		var was: bool = email_verified
@@ -162,9 +168,14 @@ func lookup() -> Dictionary:
 # Renueva la sesión con el refresh token guardado (inicio de sesión automático al abrir el juego).
 func refresh(rt: String = "") -> Dictionary:
 	if rt != "":
+		gen += 1          # se reanuda OTRA cuenta (la guardada en el perfil)
 		refresh_token = rt
+		email_verified = false
+	var g: int = gen
 	var body: String = "grant_type=refresh_token&refresh_token=" + refresh_token.uri_encode()
 	var r: Dictionary = await _req(_token_url(), HTTPClient.METHOD_POST, body, false, "application/x-www-form-urlencoded")
+	if g != gen:
+		return {"ok": false, "code": 0, "data": null, "error": "STALE"}
 	if r["ok"]:
 		_take_session(r["data"])
 	return r
@@ -180,6 +191,7 @@ func ensure_token() -> bool:
 
 
 func sign_out() -> void:
+	gen += 1
 	uid = ""
 	email = ""
 	id_token = ""

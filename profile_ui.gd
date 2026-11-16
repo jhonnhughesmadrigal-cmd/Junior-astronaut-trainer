@@ -18,6 +18,8 @@ var card: PanelContainer = null
 var body: VBoxContainer = null
 var pending_type: String = ""
 var pending_email: String = ""
+var pending_password: String = ""   # v36: solo en memoria mientras se crea la cuenta
+var busy: bool = false
 var msg: Label = null
 
 
@@ -166,6 +168,8 @@ func show_choose() -> void:
 	body.add_child(_option("book", Lang.t("Cuenta educativa"), Lang.t("Para clase: estudiante o docente."), _ask_email.bind("edu")))
 	body.add_child(_option("crew", Lang.t("Cuenta personal"), Lang.t("Para jugar en casa con tu propio guardado."), _ask_email.bind("personal")))
 	body.add_child(_option("play", Lang.t("Jugar como invitado"), Lang.t("Sin correo. La partida se borra al cerrar el juego."), _guest))
+	if bool(prof.call("cloud_ready")):
+		body.add_child(_btn(Lang.t("Ya tengo cuenta: iniciar sesión"), _ask_email.bind("personal", true), false, "lock"))
 	body.add_child(UiScreens.hint(Lang.t("Los perfiles se guardan solo en este dispositivo. Pide ayuda a un adulto para usar tu correo.")))
 	_open()
 
@@ -182,40 +186,132 @@ func _guest() -> void:
 
 # ---------- correo ----------
 
-func _ask_email(type: String) -> void:
+func _ask_email(type: String, login: bool = false) -> void:
 	pending_type = type
 	_clear()
-	_title(Lang.t("Cuenta educativa") if type == "edu" else Lang.t("Cuenta personal"), Lang.t("Escribe tu correo"))
+	var cloud: bool = bool(prof.call("cloud_ready"))
+	var head: String = Lang.t("Cuenta educativa") if type == "edu" else Lang.t("Cuenta personal")
+	_title(head, Lang.t("Inicia sesión") if login else (Lang.t("Crea tu cuenta") if cloud else Lang.t("Escribe tu correo")))
 	var e: LineEdit = _input_line(Lang.t("nombre@escuela.edu") if type == "edu" else Lang.t("nombre@gmail.com"))
 	e.name = "Email"
 	body.add_child(e)
-	if type == "edu":
+	var pw: LineEdit = null
+	if cloud:
+		pw = _input_line(Lang.t("Contraseña (mínimo 6 caracteres)"))
+		pw.secret = true
+		pw.name = "Password"
+		body.add_child(pw)
+	if type == "edu" and not login:
 		body.add_child(UiScreens.hint(Lang.t("Usa el correo que te dio tu escuela.")))
+	if not cloud:
+		body.add_child(UiScreens.hint(Lang.t("Sin conexión a la nube: el perfil se guarda solo en este dispositivo.")))
 	_msg_line()
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", DS.S2)
 	body.add_child(row)
-	var back: Button = _btn(Lang.t("Volver"), show_choose)
-	row.add_child(back)
-	var go: Button = _btn(Lang.t("Continuar"), _email_ok.bind(e), true)
+	row.add_child(_btn(Lang.t("Volver"), show_choose))
+	var go: Button = _btn(Lang.t("Entrar") if login else Lang.t("Continuar"), _email_ok.bind(e, pw, login), true)
 	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(go)
-	e.text_submitted.connect(func(_t: String) -> void: _email_ok(e))
+	if cloud:
+		var row2 := HBoxContainer.new()
+		row2.add_theme_constant_override("separation", DS.S2)
+		body.add_child(row2)
+		if login:
+			row2.add_child(_btn(Lang.t("Crear una cuenta nueva"), _ask_email.bind(type, false)))
+			row2.add_child(_btn(Lang.t("Olvidé mi contraseña"), func() -> void:
+				if not Profiles.valid_email(e.text):
+					_say(Lang.t("Escribe tu correo arriba y vuelve a pulsar."))
+					return
+				await prof.fb.call("send_password_reset", e.text.strip_edges().to_lower())
+				_say(Lang.t("Si existe una cuenta con ese correo, te llegará un enlace para cambiar la contraseña."), true)))
+		else:
+			row2.add_child(_btn(Lang.t("Ya tengo cuenta"), _ask_email.bind(type, true)))
+	(pw if pw != null else e).text_submitted.connect(func(_t: String) -> void: _email_ok(e, pw, login))
 	_open()
 	e.grab_focus.call_deferred()
 
 
-func _email_ok(e: LineEdit) -> void:
+func _email_ok(e: LineEdit, pw: LineEdit, login: bool) -> void:
+	if busy:
+		return
 	var t: String = e.text.strip_edges()
 	if not Profiles.valid_email(t):
 		_say(Lang.t("Ese correo no parece válido. Revisa que tenga @ y un dominio (por ejemplo: nombre@gmail.com)."))
 		return
 	pending_email = t
+	if pw == null:
+		# sin nube: como v35
+		if pending_type == "edu":
+			_ask_role()
+		else:
+			prof.call("create", "personal", t)
+			close()
+		return
+	if pw.text.length() < 6:
+		_say(Lang.t("La contraseña es muy corta: usa al menos 6 caracteres."))
+		return
+	pending_password = pw.text
+	if login:
+		busy = true
+		_say(Lang.t("Conectando…"), true)
+		var err: String = await prof.call("cloud_login", t, pending_password)
+		busy = false
+		pending_password = ""
+		if err != "":
+			_say(err)
+			return
+		show_account()
+		return
 	if pending_type == "edu":
 		_ask_role()
 	else:
-		prof.call("create", "personal", t)
-		close()
+		await _register("personal", "")
+
+
+func _register(type: String, role: String, extra: Dictionary = {}) -> void:
+	busy = true
+	_say(Lang.t("Creando la cuenta…"), true)
+	var err: String = await prof.call("cloud_register", type, pending_email, pending_password, role, extra)
+	busy = false
+	if err != "":
+		_say(err)
+		return
+	pending_password = ""
+	show_verify()
+
+
+# ---------- v36: verificar el correo ----------
+
+func show_verify() -> void:
+	_clear()
+	_title(str(prof.current.get("email", "")), Lang.t("Revisa tu correo"))
+	body.add_child(DS.label(Lang.t("Te enviamos un enlace de verificación. Ábrelo (mira también en «Spam») y después pulsa «Ya lo verifiqué»."), 15, DS.C_TEXT))
+	if prof.call("is_teacher"):
+		body.add_child(UiScreens.hint(Lang.t("Docentes: con el correo verificado se envía tu solicitud al administrador del juego, que la revisa a mano.")))
+	_msg_line()
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", DS.S2)
+	body.add_child(row)
+	row.add_child(_btn(Lang.t("Reenviar correo"), func() -> void:
+		var ok: bool = await prof.call("resend_verification")
+		_say(Lang.t("Correo enviado de nuevo.") if ok else Lang.t("No se pudo enviar. Espera un momento y vuelve a probar."), ok)))
+	var go: Button = _btn(Lang.t("Ya lo verifiqué"), func() -> void:
+		var v: bool = await prof.call("check_verified")
+		if not v:
+			_say(Lang.t("Todavía no aparece verificado. Abre el enlace del correo y vuelve a pulsar."))
+			return
+		if prof.call("is_teacher"):
+			var err: String = await prof.call("submit_teacher_request")
+			if err != "":
+				_say(err)
+				return
+		show_account(), true)
+	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(go)
+	if not prof.call("is_teacher"):
+		body.add_child(_btn(Lang.t("Verificar más tarde"), show_account))
+	_open()
 
 
 # ---------- rol (cuenta educativa) ----------
@@ -230,6 +326,9 @@ func _ask_role() -> void:
 
 
 func _student() -> void:
+	if pending_password != "":
+		await _register("edu", "student")
+		return
 	prof.call("create", "edu", pending_email, "student")
 	show_account()
 
@@ -243,7 +342,10 @@ func _teacher_form() -> void:
 	body.add_child(s)
 	var note := PanelContainer.new()
 	note.add_theme_stylebox_override("panel", DS.status_card("warn"))
-	note.add_child(DS.label(Lang.t("Tu cuenta quedará «pendiente de verificación». El envío automático de la solicitud al administrador todavía no está activo: necesita un servidor que aún no existe. Mientras tanto puedes preparar clases en modo de prueba."), 13, DS.C_TEXT))
+	if bool(prof.call("cloud_ready")):
+		note.add_child(DS.label(Lang.t("Tu cuenta quedará «pendiente de verificación». Primero verificarás tu correo; después el administrador del juego revisará tu solicitud. Mientras tanto puedes preparar clases en modo de prueba."), 13, DS.C_TEXT))
+	else:
+		note.add_child(DS.label(Lang.t("Tu cuenta quedará «pendiente de verificación». El envío automático de la solicitud al administrador todavía no está activo: necesita un servidor que aún no existe. Mientras tanto puedes preparar clases en modo de prueba."), 13, DS.C_TEXT))
 	body.add_child(note)
 	_msg_line()
 	var row := HBoxContainer.new()
@@ -254,7 +356,11 @@ func _teacher_form() -> void:
 		if n.text.strip_edges().length() < 2 or s.text.strip_edges().length() < 2:
 			_say(Lang.t("Escribe tu nombre y tu escuela."))
 			return
-		prof.call("create", "edu", pending_email, "teacher", {"name": n.text.strip_edges(), "school": s.text.strip_edges()})
+		var ex: Dictionary = {"name": n.text.strip_edges(), "school": s.text.strip_edges()}
+		if pending_password != "":
+			await _register("edu", "teacher", ex)
+			return
+		prof.call("create", "edu", pending_email, "teacher", ex)
 		show_account(), true)
 	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(go)
@@ -272,12 +378,37 @@ func show_account() -> void:
 	_title(Lang.t("Perfil"), str(prof.call("label")))
 	if prof.call("is_guest"):
 		body.add_child(UiScreens.hint(Lang.t("Modo invitado: tu partida se borra al cerrar el juego. Para guardarla, crea una cuenta personal.")))
+	elif prof.call("is_cloud"):
+		var crow := HFlowContainer.new()
+		crow.add_theme_constant_override("h_separation", DS.S1)
+		body.add_child(crow)
+		crow.add_child(UiScreens.chip(Lang.t("Cuenta en la nube"), "accent"))
+		crow.add_child(UiScreens.chip(Lang.t("Correo verificado") if bool(p.get("verified", false)) else Lang.t("Correo sin verificar"), "good" if bool(p.get("verified", false)) else "warn"))
+		body.add_child(UiScreens.hint(Lang.t("Tu partida se guarda aquí y en la nube: inicia sesión con este correo en otro dispositivo para seguir jugando.")))
+		if str(prof.get("cloud_note")) != "":
+			body.add_child(UiScreens.hint(str(prof.get("cloud_note"))))
+		if not bool(p.get("verified", false)):
+			body.add_child(_btn(Lang.t("Verificar mi correo"), show_verify))
 	elif str(p["type"]) == "personal":
 		body.add_child(UiScreens.hint(Lang.t("Tu partida se guarda en este dispositivo. Continuar en otro dispositivo (web o APK) necesitará un servidor que aún no existe.")))
 	if prof.call("is_teacher"):
 		var st: String = str(p.get("teacher_status", "pending"))
 		var chip: Control = UiScreens.chip(Lang.t("Verificado") if st == "verified" else Lang.t("Pendiente de verificación"), "good" if st == "verified" else "warn")
 		body.add_child(chip)
+		if prof.call("is_cloud") and st != "verified":
+			var trow := HBoxContainer.new()
+			trow.add_theme_constant_override("separation", DS.S2)
+			body.add_child(trow)
+			if not bool(p.get("request_sent", false)):
+				trow.add_child(_btn(Lang.t("Enviar solicitud"), func() -> void:
+					var err: String = await prof.call("submit_teacher_request")
+					if err != "":
+						_say(err)
+					else:
+						show_account()))
+			trow.add_child(_btn(Lang.t("Actualizar estado"), func() -> void:
+				await prof.call("pull_profile")
+				show_account()))
 		body.add_child(DS.caption(Lang.t("Mis clases")))
 		_class_list(p, false)
 		body.add_child(_btn(Lang.t("Crear clase"), show_new_class, true, "map"))
@@ -296,7 +427,11 @@ func show_account() -> void:
 			else:
 				_say(Lang.t("Código no válido. Revisa que esté bien escrito (por ejemplo: PER-3K7M)."))
 			, true))
-		_msg_line()
+	if prof.call("is_teacher") and not prof.call("is_cloud"):
+		pass
+	_msg_line()
+	if prof.call("is_cloud"):
+		_admin_button()
 	var row2 := HBoxContainer.new()
 	row2.add_theme_constant_override("separation", DS.S2)
 	body.add_child(row2)
@@ -375,3 +510,54 @@ func show_new_class() -> void:
 	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(go)
 	_open()
+
+
+# ---------- v36: administrador ----------
+
+# el boton aparece solo si la cuenta es administradora (documento admins/{uid} en Firestore)
+func _admin_button() -> void:
+	var holder := VBoxContainer.new()
+	body.add_child(holder)
+	var ok: bool = await prof.call("is_admin")
+	if ok and is_instance_valid(holder):
+		holder.add_child(_btn(Lang.t("Administración: solicitudes de docentes"), show_admin, false, "check"))
+
+
+func show_admin() -> void:
+	_clear()
+	_title(Lang.t("Administración"), Lang.t("Solicitudes de docentes"))
+	var lst := VBoxContainer.new()
+	lst.add_theme_constant_override("separation", DS.S2)
+	body.add_child(lst)
+	lst.add_child(UiScreens.hint(Lang.t("Cargando…")))
+	_msg_line()
+	body.add_child(_btn(Lang.t("Volver"), show_account))
+	_open()
+	var reqs: Array = await prof.call("pending_teachers")
+	if not is_instance_valid(lst):
+		return
+	for c in lst.get_children():
+		c.queue_free()
+	if reqs.is_empty():
+		lst.add_child(UiScreens.hint(Lang.t("No hay solicitudes pendientes.")))
+		return
+	for r in reqs:
+		var pc := PanelContainer.new()
+		pc.add_theme_stylebox_override("panel", DS.status_card("warn"))
+		var v := VBoxContainer.new()
+		pc.add_child(v)
+		v.add_child(DS.label("%s · %s" % [str(r.get("name", "")), str(r.get("school", ""))], 15, DS.C_TEXT, "SemiBold"))
+		v.add_child(DS.label(str(r.get("email", "")), 13, DS.C_DIM))
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override("separation", DS.S2)
+		v.add_child(h)
+		var tuid: String = str(r["uid"])
+		h.add_child(_btn(Lang.t("Aprobar"), func() -> void:
+			var ok2: bool = await prof.call("review_teacher", tuid, true)
+			_say(Lang.t("Docente aprobado.") if ok2 else Lang.t("No se pudo guardar."), ok2)
+			pc.queue_free(), true))
+		h.add_child(_btn(Lang.t("Rechazar"), func() -> void:
+			var ok3: bool = await prof.call("review_teacher", tuid, false)
+			_say(Lang.t("Solicitud rechazada.") if ok3 else Lang.t("No se pudo guardar."), ok3)
+			pc.queue_free()))
+		lst.add_child(pc)

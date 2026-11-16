@@ -502,3 +502,24 @@ Con los prompts de `docs/PROMPTS_LUDO.md` se generó en Ludo.ai una imagen con l
 - **APK:** no se generó (no hay preset de Android ni plantillas instaladas).
 
 **Verificación:** `tests/t_profiles.gd` 19/19 (primera pantalla, códigos de clase —las 511 combinaciones de ida y vuelta—, códigos inválidos y con errores de tecleo, formato de correo, invitado que no se conserva, guardado propio del perfil personal y recordado al reabrir, estudiante que se une a una clase y filtro de 3 misiones, docente pendiente, cambio de perfil). Capturas de todas las pantallas. Regresión: ver commit.
+
+
+## v36 — Firebase: cuentas en la nube, verificación de correo, docentes aprobados por el administrador
+
+**Archivos nuevos:** `firebase.gd` (cliente REST), `firebase_config.gd` (apiKey y projectId: **vacíos** hasta que se cree el proyecto), `firebase/firestore.rules` (reglas de seguridad), `firebase/firebase.json` (emuladores), `docs/FIREBASE_SETUP.md` (pasos para el dueño), `tests/t_firebase.gd`, `tests/t_fbflow.gd`. Cambios en `profiles.gd`, `profile_ui.gd` y una línea en `main.gd` (`_save_game` avisa a los perfiles para subir la partida).
+
+**Cómo funciona:** se usa la API REST de Firebase con `HTTPRequest` (sin plugins), así sirve igual en web y en Android. Endpoints según la documentación oficial (firebase.google.com/docs/reference/rest/auth): `accounts:signUp`, `accounts:signInWithPassword`, `accounts:sendOobCode` (VERIFY_EMAIL y PASSWORD_RESET), `accounts:lookup` y `securetoken.googleapis.com/v1/token` (renovar la sesión); Firestore por su API REST v1.
+- **Cuenta educativa o personal:** correo + contraseña (mínimo 6). Al crearla, Firebase envía un **correo de verificación**. Botones «Ya lo verifiqué», «Reenviar correo» y «Olvidé mi contraseña».
+- **Docente:** con el correo verificado se crea la solicitud en `teacher_requests/{uid}`. El **administrador** (cuenta con el documento `admins/{uid}`, creado a mano en la consola) ve el panel «Administración: solicitudes de docentes» en el juego y aprueba o rechaza.
+- **Partida en la nube:** cada guardado se copia en `saves/{uid}` (subidas en fila: siempre la versión más reciente). Al iniciar sesión en otro dispositivo, se descarga si es más reciente que la local (compara la hora del dispositivo que la subió; si los relojes de los dispositivos están muy desfasados podría equivocarse).
+- **Sesión recordada:** el refresh token se guarda en `user://profiles.cfg` (texto plano en el dispositivo, como hacen las apps de Firebase); al abrir el juego la sesión se reanuda sola.
+- **Clases:** los códigos `PER-XXXX` (v35) se guardan también en el perfil de la nube.
+- **Invitado y sin configuración:** igual que v35 (local).
+
+**Reglas de seguridad (comprobadas en el emulador):** cada jugador solo lee y escribe lo suyo; un docente no puede marcarse como verificado ni aprobar su solicitud; sin correo verificado no se puede pedir la verificación de docente; nadie puede hacerse administrador desde el juego; el administrador solo puede cambiar el estado de docente; la partida solo admite los campos previstos y < 900.000 caracteres.
+
+**Comprobado:** que Cloud Functions necesita el plan Blaze (firebase.google.com/docs/functions/quotas) → por eso **no** se envía un correo automático al administrador: las solicitudes se revisan en el panel del juego (gratis). Authentication con correo y Firestore funcionan en el plan gratuito Spark (revisar límites actuales en firebase.google.com/pricing).
+
+**Verificación:** con el emulador oficial (firebase-tools 15.36.0): `tests/t_firebase.gd` 26/26 (cliente y reglas) y `tests/t_fbflow.gd` 14/14 (juego real: docente se registra desde la interfaz → verifica el correo → envía la solicitud → el administrador la aprueba; estudiante sube la partida y la recupera en «otro dispositivo»; contraseña incorrecta). Se corrigieron dos carreras encontradas al probar: subidas de partida simultáneas y una sesión anterior que se reanudaba en segundo plano y pisaba la cuenta recién creada. **No probado con un proyecto real de Firebase** (no existe todavía) ni en Android; los correos reales los envía Google (en el emulador no se envían).
+
+**Pendiente:** crear el proyecto (docs/FIREBASE_SETUP.md); «Iniciar sesión con Google» (botón de Google) necesita OAuth y en Android un plugin nativo; APK; aviso por correo al administrador (Blaze); revisión de privacidad con la escuela.

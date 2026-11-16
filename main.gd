@@ -5253,6 +5253,8 @@ func _save_game() -> bool:
 		return false
 	f.store_string(JSON.stringify(data))
 	f.close()
+	if has_node("Profiles"):
+		get_node("Profiles").call("on_saved")   # v36: copia en la nube si hay cuenta
 	return true
 
 
