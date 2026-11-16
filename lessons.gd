@@ -132,7 +132,9 @@ func _target_of(st: Dictionary) -> Vector2:
 	var zs: Array = game.call("_zones")
 	var want: String = Lang.t(z)
 	for zz in zs:
-		if str(zz["name"]) == want and int(zz.get("lx", -1)) >= 0:
+		# el nombre de la zona puede estar en espanol o ya traducido segun cuando se creo la tabla
+		var nm: String = str(zz["name"])
+		if (nm == want or nm == z or nm == str(Lang.EN_SCRIPT.EN.get(z, z))) and int(zz.get("lx", -1)) >= 0:
 			return Vector2(float(zz["lx"]) + 0.5, float(zz["ly"]) + 0.5)
 	return Vector2(-1, -1)
 

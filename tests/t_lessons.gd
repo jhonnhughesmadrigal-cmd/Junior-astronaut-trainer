@@ -48,6 +48,8 @@ func _next_mission() -> void:
 		state = "end"
 		return
 	cur = queue.pop_front()
+	print("MISION: ", cur["id"], " (frame ", frame, ")")
+	Lang.code = "en" if OS.get_environment("LANG_CODE") == "en" else "es"   # los ajustes guardados pueden cambiarlo
 	les = main.get("lesson")
 	les.call("start", str(cur["id"]))
 	res0 = (main.get("res") as Dictionary).duplicate()
