@@ -3,3 +3,7 @@
 web/
 /t_*.gd
 /t_*.gd.uid
+
+# firebase emulador
+firebase/*.log
+firebase/.firebase/

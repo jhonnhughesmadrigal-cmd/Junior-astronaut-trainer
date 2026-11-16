@@ -1,0 +1,54 @@
+rules_version = '2';
+// Misión Perseo (v36) — reglas de seguridad de Firestore.
+// Publicar con:  firebase deploy --only firestore:rules   (o pegarlas en la consola de Firebase).
+// Administrador: crea A MANO en la consola el documento  admins/{TU_UID}  (cualquier campo).
+// Así el correo del administrador no aparece en el código del juego.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function verifiedEmail() { return signedIn() && request.auth.token.email_verified == true; }
+
+    // Solo el propio administrador puede comprobar que lo es; nadie puede crearse como admin desde el juego.
+    match /admins/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // Perfil del jugador. El juego NO puede marcarse como docente verificado.
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid)
+        && request.resource.data.teacher_status in ['none', 'pending'];
+      allow update: if (isOwner(uid)
+          && request.resource.data.teacher_status == resource.data.teacher_status)
+        || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teacher_status']));
+      allow delete: if isOwner(uid);
+    }
+
+    // Solicitud de verificación de docente: la crea el propio docente (con el correo ya verificado)
+    // y solo un administrador puede aprobarla o rechazarla.
+    match /teacher_requests/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && verifiedEmail()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.email == request.auth.token.email;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewed_at']);
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    // Partida guardada en la nube (una por jugador).
+    match /saves/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['data', 'updated', 'version'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 900000;
+    }
+  }
+}
