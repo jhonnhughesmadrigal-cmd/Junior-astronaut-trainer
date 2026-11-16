@@ -64,6 +64,7 @@ const Terrain3D = preload("res://terrain3d.gd")
 const WorldLook = preload("res://world_look.gd")
 const BaseLook = preload("res://base_look.gd")
 const CrewLook = preload("res://crew_look.gd")
+const StationArt = preload("res://station_art.gd")
 var hull_mats: Array = []               # v28: materiales del casco con textura de paneles
 var wfx: Node3D = null                  # v28: particulas del exterior (world_fx.gd)
 var ice_pts: PackedVector3Array = PackedVector3Array()
@@ -450,6 +451,7 @@ func setup() -> void:
 	shield_ring = null
 	beacon_mat = null
 	_build_sky()
+	StationArt.reset()
 	_build_interior()
 	_build_ceiling()
 	_build_exterior()
@@ -1429,6 +1431,11 @@ func _build_prop(ch: String, c: Vector3) -> void:
 		_build_scaffold(ch, n)
 	if STATION_SIZE.has(ch) and _place_glb_prop(n, "station_" + ch, float(STATION_SIZE[ch])):
 		return
+	# v33: estaciones con el estilo de la referencia (station_art.gd), con animaciones discretas
+	if StationArt.build(self, n, ch):
+		if ch == "D":
+			set_meta("door_tile", Vector2(c.x / T3, c.z / T3))
+		return
 	match ch:
 		"O":
 			# tanque de oxigeno: cuerpo pulido que refleja el cielo, bandas, valvula y manometro
@@ -2125,9 +2132,9 @@ func _build_exterior() -> void:
 		var xb: Transform3D = _xf(_tp(p4.x, p4.y, gy4 + 0.5), yaw, Vector3.ONE)
 		var xl: Transform3D = Transform3D(Basis.IDENTITY, _tp(p4.x, p4.y, gy4 + 1.05) + Basis(Vector3.UP, yaw) * Vector3(0.45, 0, 0.45))
 		mm_c.set_xf(i, xc)
-		mm_c.set_col(i, Color(0.82, 0.75, 0.3))
+		mm_c.set_col(i, Color(0.5, 0.54, 0.43))      # v33: verde oliva (referencia de arte)
 		mm_b.set_xf(i, xb)
-		mm_b.set_col(i, Color(0.25, 0.23, 0.12))
+		mm_b.set_col(i, Color(0.24, 0.24, 0.25))
 		mm_l.set_xf(i, xl)
 		mm_l.set_col(i, Color.WHITE)
 		node_data.append({"x": p4.x, "y": p4.y, "hidden": false, "parts": [[mm_c, i, xc], [mm_b, i, xb], [mm_l, i, xl]]})
@@ -2877,9 +2884,10 @@ func _update_props() -> void:
 			var on2: bool = int(t_node * 4.0) % 2 == 0
 			shield_mat.albedo_color = Color(0.85, 0.1, 0.1) if on2 else Color(0.4, 0.06, 0.06)
 		else:
-			shield_mat.albedo_color = Color(0.5, 0.28, 0.75)
+			shield_mat.albedo_color = shield_mat.get_meta("normal") if shield_mat.has_meta("normal") else Color(0.5, 0.28, 0.75)
 	if shield_ring != null:
 		shield_ring.rotation.y += 0.03
+	StationArt.animate(self, t_node, get_process_delta_time())
 	alert_light.visible = game.breach and not game.outside
 	if alert_light.visible:
 		alert_light.light_energy = 2.0 + 2.0 * sin(t_node * 6.0)

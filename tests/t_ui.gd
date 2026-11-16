@@ -59,7 +59,7 @@ func _prepare() -> void:
 			main.get("ui").call("show_page", state)
 		"opts":
 			main.get("ui").call("open_options")
-		"hud_moon", "out_moon", "out_moon_low", "night_moon", "end_win", "end_lose", "far_moon", "crew_moon", "ach":
+		"hud_moon", "out_moon", "out_moon_low", "night_moon", "end_win", "end_lose", "far_moon", "crew_moon", "ach", "hud_lv3":
 			_start("Luna")
 		_:
 			_start("Marte")
@@ -96,6 +96,13 @@ func _after_start() -> void:
 			# primer plano de la tripulacion (zoom de camara)
 			main.get("view3d").set("zoom", 0.5)
 			main.call("_set_player_tile", main.get("player"), Vector2i(0, 1))   # de frente a la camara
+		"hud_lv3":
+			# v33: estaciones al nivel maximo (las mejoras se ven sobre los modelos nuevos)
+			var lv: Dictionary = main.get("st_lvl")
+			for k in lv:
+				lv[k] = 3
+			for k in lv:
+				main.get("view3d").call("refresh_station", k)
 		"pack":
 			main.call("_open_pack")
 		"bench":
@@ -104,6 +111,18 @@ func _after_start() -> void:
 			var t: Dictionary = main.get("tools")
 			t["map"] = 1
 			main.call("_open_world_map")
+		"st_O", "st_S", "st_R", "st_C", "st_T", "st_A", "st_D", "st_G", "st_W":
+			# v33: primer plano de una estacion (el jugador se coloca a 2 casillas, del lado de su frente)
+			var ch: String = state.substr(3, 1)
+			var tp: Vector2i = main.call("_map_find", ch)
+			var off: Vector2i = Vector2i(0, 2)
+			if ch in ["C", "A", "D"]:
+				off = Vector2i(0, -2)
+			main.call("_set_player_tile", tp + off, Vector2i(-off.x, -signi(off.y)))
+			main.get("view3d").set("zoom", 0.55)
+			if ch in ["C", "A", "D"]:
+				main.set("cam_mode", 2)   # camara detras del personaje, mirando hacia la estacion
+			main.get("view3d").call("snap_camera")
 		"mg_patch", "mg_filter", "mg_map":
 			# v32: minijuegos del banco
 			(main.get("inv") as Dictionary).merge({"scrap": 9, "polymer": 9, "circuits": 9}, true)
@@ -136,6 +155,21 @@ func _process(_delta: float) -> bool:
 		main.get("lesson").set("first_try_ok", 1)
 		main.get("lesson").call("_open_quiz")
 		main.get("lesson").call("_show_summary")
+	if state.begins_with("stc_") and frame >= 20:
+		# v33: camara fija delante de una estacion (vista de 3/4), sin la camara del juego
+		var v3: Node3D = main.get("view3d")
+		if frame == 20:
+			v3.set_process(false)
+		var ch2: String = state.substr(4, 1)
+		var tp2: Vector2i = main.call("_map_find", ch2)
+		var pos := Vector3((float(tp2.x) + 0.5) * 2.0, 0.0, (float(tp2.y) + 0.5) * 2.0)
+		var front := Vector3(0, 0, 1) if not (ch2 in ["C", "A", "D"]) else Vector3(0, 0, -1)
+		var cam: Camera3D = v3.get("cam")
+		cam.fov = 50.0
+		cam.position = pos + front * 3.6 + Vector3(1.2, 2.0, 0.0)
+		cam.look_at(pos + Vector3(0, 1.1, 0), Vector3.UP)
+		var vp: SubViewport = main.get("vp3d")
+		vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	if frame == wait_frames - 3 and state == "ach":
 		main.get("tut").set("toast_t", 3.6)   # el render por software es lento: se fija el momento del aviso
 	if frame == wait_frames:

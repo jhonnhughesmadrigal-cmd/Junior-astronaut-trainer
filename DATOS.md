@@ -452,3 +452,23 @@ El Reparador de circuitos, el Botiquín y las mejoras del equipo conservan sus m
 **De juego (no datos reales):** el orden de capas es un principio general de filtrado por etapas (sin cifras de tamaños de partícula); la presión en %, su velocidad de bajada (7 %/s) y el umbral del 55 % son valores de juego.
 
 **Verificación:** `tests/t_minigames.gd` fabrica las tres herramientas por la vía normal resolviendo cada minijuego con clics: 14/14 (incluye un error contado sin castigo y [Esc] sin gastar materiales). Capturas en escritorio (1280×720) y móvil simulado (856×481 con controles táctiles): todo cabe; el panel deja libre la franja del botón «Cerrar». Táctil, misiones y huella de lógica: ver la salida de las pruebas en el commit.
+
+
+## v33 — Estaciones con el estilo de la referencia de Ludo.ai
+
+Se generó con Ludo.ai (a partir de `docs/PROMPTS_LUDO.md`) una **imagen 2D de referencia** con 9 objetos. No se importó ningún archivo de Ludo.ai: la imagen solo se usó como guía y todas las estaciones se rehicieron **por código** (primitivas de Godot) en `station_art.gd`. Antes de usar recursos de Ludo.ai directamente en el juego, conviene revisar sus condiciones de uso (no las verifiqué).
+
+**Estaciones rehechas** (gris cálido metálico, grafito, acentos óxido/ámbar, madera en el banco; sin neón):
+- Soporte vital (O): dos tanques altos con bandas, tubería y consola con pantalla, dos manómetros y botones.
+- Panel solar (S): panel en pie sobre pedestal, batería con asa y cable.
+- Escudo (R): cuerpo cilíndrico con bobina de cobre y núcleo cálido; la banda roja de brecha se conserva.
+- Zona de descanso (C): sofá de dos plazas con cojines abombados, mesita de madera con cajones y lámpara de pie.
+- Banco de trabajo (T): tablero de madera, cajonera, panel perforado con herramientas y tornillo de banco.
+- Radio (A): consola con panel inclinado, pantalla, diales, micrófono y antena parabólica.
+- Esclusa (D): marco robusto con esquinas en chaflán, puerta de dos hojas con franjas ámbar y pilotos.
+- Cajas de cargamento del exterior: verde oliva (como en la referencia).
+El invernadero (G), el reciclador de agua (W) y la cama (B) mantienen su modelo (no aparecían en la referencia). Las mejoras de nivel de cada estación siguen viéndose (comprobado con todo al nivel 3).
+
+**Animaciones discretas:** las agujas de los manómetros oscilan; las pantallas varían levemente su brillo; el panel solar sigue la hora del día (de este a oeste, y vuelve al centro de noche); la antena de la radio gira despacio; el núcleo del escudo «respira»; la puerta de la esclusa se abre cuando Wilson se acerca y al cruzarla. Son decorativas: no cambian la lógica.
+
+**Verificación:** capturas de cada estación con cámara fija (estados `stc_O stc_S stc_R stc_C stc_T stc_A stc_D` en `tests/t_ui.gd`), vista general de Luna y Marte, todas las estaciones al nivel 3 y exterior. Animación de la puerta comprobada por script (0 → 1 al acercarse). Huella de lógica igual (`9d5ba3a6…`), táctil 22/22, minijuegos 14/14, misiones 75/75. No medido: coste en GPU real (hay más piezas por estación que antes).
