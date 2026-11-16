@@ -148,8 +148,17 @@ func _process(_d: float) -> bool:
 		_tap_btn("cam")
 	if frame == 259:
 		_check(int(main.get("cam_mode")) != 0, "el boton Camara cambia de camara (modo %d, cam %d)" % [int(main.get("mode")), int(main.get("cam_mode"))])
-		touch.call("set_mode", 2)
+		main.set("cam_mode", 0)
+		main.set("outside", false)
+		main.set("clock", 19 * 60)
+		main.call("_ask_sleep")
 	if frame == 263:
+		_check(int(main.get("mode")) == 2, "aparece la confirmacion de dormir (modo 2)")
+		_check(_tap_btn("no"), "boton Cancelar visible al confirmar")
+	if frame == 267:
+		_check(int(main.get("mode")) == 0, "Cancelar cierra la confirmacion de dormir")
+		touch.call("set_mode", 2)
+	if frame == 271:
 		_check(not bool(touch.get("visible")), "con «No mostrar» los controles se ocultan")
 		var anyheld: bool = false
 		for k in (touch.get("held") as Dictionary).values():

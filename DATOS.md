@@ -415,3 +415,21 @@ Catálogo de **9 lecciones cortas** que el docente elige desde el menú (**Misio
 - En **móviles** (p. ej. 360 px CSS de alto en horizontal) el texto de la interfaz queda pequeño (≈ 6–7 px CSS), porque el juego está diseñado para 1100×650. Probé un tamaño «Grande» (125 %), pero varias pantallas (menú, nueva misión, pausa) se cortan; no se añadió. Hacer la interfaz adaptable a pantallas tan pequeñas queda pendiente. En **tabletas** el tamaño es razonable.
 - Algunos textos siguen mencionando teclas (p. ej. «[E] continuar» en los diálogos, «[I] o [Esc] cierra» en la mochila).
 - No probado en un móvil o tableta físicos, ni en Safari/iOS real (solo emulación en Chromium). No hay gesto de pellizcar para el zoom de cámara. El movimiento es en 8 direcciones (no analógico).
+
+
+## v31 — Interfaz adaptable a móviles
+
+**Archivo nuevo:** `ui_fit.gd`. Cambios pequeños en `ui_pages.gd` (menú compacto), `lessons.gd` (tarjeta compacta), `touch_ui.gd` y `design_system.gd` (icono «girar»). `main.gd` no cambia.
+
+1. **Escala automática en teléfonos:** si el control táctil está activo y el lado corto de la pantalla mide menos de 450 px CSS (en web se lee `window.innerWidth/innerHeight`), toda la interfaz se agranda ×1,35; con menos de 600 px, ×1,15. Se multiplica por la opción «Tamaño de la interfaz». En un móvil horizontal de 360 px CSS de alto, el texto pasa de ≈ 6–7 px a ≈ 9–12 px CSS (cálculo a partir de la escala, no medido en un móvil físico). Umbrales y factores son elección mía.
+2. **Encaje de paneles:** si un panel abierto (menú, pausa, opciones, mapa, diagnóstico, misiones…) no cabe, se reduce lo justo y se centra. Si cabe, no se toca (en escritorio no cambia nada: comprobado a 1920×1080 y 1024×600). Con controles táctiles se deja libre una franja a la derecha para el botón «Cerrar».
+3. **Menú compacto** en pantallas bajas (márgenes, título y botones más pequeños, sin la línea de versión) para que apenas haya que reducirlo. Los textos con alto automático se recalculan al cambiar de modo (antes se solapaban).
+4. **Aviso «Gira el dispositivo»** si un dispositivo táctil está en vertical.
+5. **Táctil:** botones «Sí» / «Cancelar» para confirmar dormir y encargar obras a ENOC (antes solo con E/Esc); los textos de ayuda del diálogo que nombran teclas se cambian por los botones; «Cerrar» por encima de mochila y banco (z_index); la pausa se coloca en el grupo de botones en pantallas bajas o durante una misión; la etiqueta del salto usa la clave «Salto» (la clave «Saltar» se traducía como «Skip»).
+
+**Verificación:**
+- Capturas simulando un lienzo de 856×481 (1280×720 con ×1,35, más estrecho que un móvil real): menú, nueva misión, misiones de clase, cómo jugar, créditos, finales, opciones, pausa, mapa, mochila, banco, diagnóstico, misión en curso, cuestionario, resumen y final: todo cabe sin cortes.
+- Navegador (Playwright, Chromium emulando Pixel 7): horizontal con la interfaz agrandada y sin solapamientos; vertical con el aviso de girar; sin errores de página.
+- `tests/t_touch.gd` 22/22 (añadido: confirmar/cancelar dormir); misiones 75/75; huella de lógica igual (`9d5ba3a6…`).
+
+**Límites:** el encaje reduce algunos paneles grandes (p. ej. diagnóstico o mapa) en móviles, así que su texto queda algo menor que el del menú. No probado en móviles o tabletas físicos ni en Safari/iOS. Algunos textos de paneles todavía nombran teclas (p. ej. «[I] o [Esc] cierra» en la mochila).

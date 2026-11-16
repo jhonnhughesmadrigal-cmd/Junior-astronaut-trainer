@@ -30,6 +30,8 @@ var endings_box: VBoxContainer     # v28: lista de finales (ui_screens.gd)
 var howto_box: VBoxContainer       # v28: controles con teclas (ui_screens.gd)
 var lessons_box: VBoxContainer     # v29: misiones de clase (lesson_ui.gd)
 var lesson_filter: Dictionary = {"topic": "", "loc": ""}
+var compact: bool = false          # v31: menu compacto para pantallas bajas (movil)
+var mref: Dictionary = {}          # v31: nodos del menu que cambian en modo compacto
 var learn_overlay: Control
 var learn_title: Label
 var learn_meta: Label
@@ -87,6 +89,12 @@ func build_all() -> void:
 	touch.set("game", game)
 	game.add_child(touch)
 	opt["touch_node"] = touch
+	# v31: interfaz adaptable a moviles (escala automatica, encaje de paneles, aviso de girar)
+	var fit := Node.new()
+	fit.set_script(load("res://ui_fit.gd"))
+	fit.name = "UiFit"
+	game.add_child(fit)
+	fit.call("setup", game)
 	# v28: microinteracciones (hover, pulsacion, fundido de paneles)
 	var motion := Node.new()
 	motion.set_script(load("res://ui_motion.gd"))
@@ -153,6 +161,7 @@ func _menu_btn(text: String, cb: Callable, icon_name: String = "", primary: bool
 	b.add_theme_color_override("font_color", DS.C_TEXT if primary else DS.C_DIM)
 	b.add_theme_color_override("font_hover_color", Color.WHITE)
 	b.pressed.connect(cb)
+	b.set_meta("menu_btn", true)
 	if icon_name != "":
 		var ic: TextureRect = DS.icon_rect(icon_name, 20, DS.C_ACCENT if primary else DS.C_DIM)
 		ic.position = Vector2(DS.S4, 10)
@@ -193,8 +202,10 @@ func _build_menu() -> void:
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 34)
 	menu_root.add_child(margin)
+	mref["margin"] = margin
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 40)
+	mref["hb"] = hb
 	margin.add_child(hb)
 	var left := VBoxContainer.new()
 	left.custom_minimum_size = Vector2(330, 0)
@@ -214,11 +225,14 @@ func _build_menu() -> void:
 	brand.add_child(bc)
 	left.add_child(brand)
 	var title: Label = _lbl(Lang.t("MISIÓN PERSEO"), 40, DS.C_TEXT)
+	mref["title"] = title
+	mref["left"] = left
 	title.add_theme_font_override("font", DS.font("SemiBold"))
 	left.add_child(title)
 	left.add_child(_lbl(Lang.t("Entrenador de misión · Luna y Marte"), 15, DS.C_DIM))
 	var sp := Control.new()
 	sp.custom_minimum_size = Vector2(0, 14)
+	mref["sp"] = sp
 	left.add_child(sp)
 	btn_continue = _menu_btn(Lang.t("Continuar partida"), _on_continue, "play", true)
 	left.add_child(btn_continue)
@@ -248,7 +262,9 @@ func _build_menu() -> void:
 			lb.add_theme_color_override("font_color", DS.C_ACCENT)
 		lang_row.add_child(lb)
 	left.add_child(lang_row)
-	left.add_child(_lbl(Lang.t("%s · Historia original inspirada en la premisa de The Martian (2015)") % VERSION_TXT, 12, DS.C_MUTED))
+	var ver: Label = _lbl(Lang.t("%s · Historia original inspirada en la premisa de The Martian (2015)") % VERSION_TXT, 12, DS.C_MUTED)
+	left.add_child(ver)
+	mref["ver"] = ver
 	page_holder = VBoxContainer.new()
 	page_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	page_holder.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -293,9 +309,40 @@ func show_page(nm: String) -> void:
 		game._menu_preview(game.menu_loc)
 
 
+# v31: modo compacto del menu (lo activa ui_fit.gd cuando la pantalla es baja, p. ej. un movil)
+func set_compact(on: bool) -> void:
+	if on == compact or mref.is_empty():
+		return
+	compact = on
+	for side in ["left", "right", "top", "bottom"]:
+		(mref["margin"] as MarginContainer).add_theme_constant_override("margin_" + side, 14 if on else 34)
+	(mref["hb"] as HBoxContainer).add_theme_constant_override("separation", 18 if on else 40)
+	(mref["title"] as Label).add_theme_font_size_override("font_size", 30 if on else 40)
+	(mref["sp"] as Control).custom_minimum_size = Vector2(0, 2 if on else 14)
+	(mref["ver"] as Label).visible = not on
+	(mref["left"] as VBoxContainer).custom_minimum_size = Vector2(280 if on else 330, 0)
+	(mref["left"] as VBoxContainer).add_theme_constant_override("separation", 2 if on else 4)
+	continue_info.visible = not on
+	for c in (mref["left"] as VBoxContainer).get_children():
+		if c is Button and c.has_meta("menu_btn"):
+			(c as Button).custom_minimum_size = Vector2(0, 34 if on else 40)
+	_refresh_rich.call_deferred()
+
+
+# los RichTextLabel con alto automatico no recalculan su alto al cambiar el ancho: se reasigna el texto
+func _refresh_rich() -> void:
+	for n in menu_root.find_children("*", "RichTextLabel", true, false):
+		var r: RichTextLabel = n
+		if r.fit_content:
+			var t: String = r.text
+			r.text = ""
+			r.text = t
+
+
 func _build_page_main() -> void:
 	var v: VBoxContainer = _page("main", Lang.t("La misión"))
 	var r: RichTextLabel = _rich(0, true)
+	mref["main_rich"] = r
 	r.text = Lang.t("La nave de reabastecimiento falló y el rescate tardará [b]30 días[/b] en llegar.\n\nComo [b]Wilson[/b], ingeniero y botánico, mantienes viva a una tripulación de cuatro: oxígeno, energía, comida, agua y protección contra la radiación.\n\n[b]•[/b] Un reloj en tiempo real con día y noche\n[b]•[/b] Fabrica herramientas y explora la superficie\n[b]•[/b] Visita lugares reales: Apolo 11, Shackleton, Jezero, Olympus Mons...\n[b]•[/b] Pesadillas, eventos graves, 11 finales distintos\n[b]•[/b] Vista 3D con cámara en primera persona")
 	v.add_child(r)
 	v.add_child(_lbl(Lang.t("Versión alfa: puede haber errores. Gracias por probarla."), 13, Color(1.0, 0.85, 0.5)))

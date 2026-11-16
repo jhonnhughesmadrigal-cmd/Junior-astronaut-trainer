@@ -1646,4 +1646,14 @@ const EN: Dictionary = {
 	"Para recoger materiales, sal por la esclusa (puerta D) con Usar. Vigila tu aire.": "To collect materials, go out through the airlock (door D) with Use. Watch your air.",
 	"Diario": "Journal",
 	"Seguir": "Next",
+	# v31: movil
+	"Gira el dispositivo": "Rotate your device",
+	"Misión Perseo se juega con la pantalla en horizontal.": "Perseo Mission is played with the screen in landscape.",
+	"Salto": "Jump",
+	"Sí": "Yes",
+	"Cancelar": "Cancel",
+	"Toca «Seguir» para continuar": "Tap «Next» to continue",
+	"Toca 1 o 2 para elegir": "Tap 1 or 2 to choose",
+	"Toca «Sí» para dormir o «Cancelar»": "Tap «Yes» to sleep or «Cancel»",
+	"Toca «Sí» para encargar la obra a ENOC o «Cancelar»": "Tap «Yes» to give ENOC the job or «Cancel»",
 }

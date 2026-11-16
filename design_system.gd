@@ -207,6 +207,7 @@ const ICON_PATHS: Dictionary = {
 	"pause": "<path d='M9 5v14M15 5v14'/>",
 	"camera": "<rect x='3' y='7' width='18' height='13' rx='2'/><circle cx='12' cy='13.5' r='3.5'/><path d='M9 7l1.5-2.5h3L15 7'/>",
 	"close": "<path d='M6 6l12 12M18 6 6 18'/>",
+	"rotate": "<rect x='3' y='7' width='18' height='11' rx='2'/><path d='M8 3h8M17 3l2 2-2 2'/>",
 }
 
 

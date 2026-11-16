@@ -194,6 +194,10 @@ func _process(delta: float) -> void:
 	t_total += delta
 	var md: int = int(game.get("mode"))
 	card.visible = (md == 0 or md == 5)
+	# v31: en pantallas bajas (movil) tarjeta mas estrecha y sin la linea de ayuda
+	var compact: bool = get_viewport_rect().size.y < 600.0
+	card.offset_left = -318.0 if compact else -380.0
+	(card_lbl["hint"] as Label).visible = not compact
 	if md != 0 and md != 5:
 		return          # hay un dialogo, la pausa u otro panel: se espera
 	t_step += delta
@@ -254,6 +258,9 @@ func _build_card() -> void:
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(v)
 	card_lbl["cap"] = DS.caption("")
+	(card_lbl["cap"] as Label).clip_text = true          # v31: no ensancha la tarjeta
+	(card_lbl["cap"] as Label).text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	(card_lbl["cap"] as Label).custom_minimum_size = Vector2(10, 0)
 	card_lbl["title"] = DS.label("", 17, DS.C_TEXT, "SemiBold")
 	card_lbl["step"] = DS.label("", 12, DS.C_WARN, "SemiBold")
 	card_lbl["text"] = DS.label("", 14, DS.C_TEXT)

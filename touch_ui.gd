@@ -33,6 +33,7 @@ var flash: Dictionary = {}     # id de boton -> tiempo de resaltado
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	z_index = 70   # por encima de mochila y banco (z 58), que se dibujan sobre el resto
 	var cfg := ConfigFile.new()
 	if cfg.load(CFG_PATH) == OK:
 		setting = clampi(int(cfg.get_value("touch", "mode", 0)), 0, 2)
@@ -103,13 +104,17 @@ func _layout() -> void:
 		var base := Vector2(vs.x - m - 58.0, vs.y - m - 132.0)   # por encima del reloj del HUD
 		btns.append({"id": "use", "pos": base, "r": 50.0, "icon": "hand", "label": Lang.t("Usar"), "key": _bind("interact")})
 		if bool(game.get("outside")):
-			btns.append({"id": "jump", "pos": base + Vector2(-122.0, 30.0), "r": 40.0, "icon": "jump", "label": Lang.t("Saltar"), "key": _bind("jump")})
+			btns.append({"id": "jump", "pos": base + Vector2(-122.0, 30.0), "r": 40.0, "icon": "jump", "label": Lang.t("Salto"), "key": _bind("jump")})
 		btns.append({"id": "pack", "pos": base + Vector2(-20.0, -112.0), "r": 30.0, "icon": "box", "label": Lang.t("Mochila"), "key": _bind("pack")})
 		btns.append({"id": "map", "pos": base + Vector2(-88.0, -92.0), "r": 30.0, "icon": "map", "label": Lang.t("Mapa"), "key": _bind("map")})
 		btns.append({"id": "diary", "pos": base + Vector2(48.0, -112.0), "r": 26.0, "icon": "book", "label": Lang.t("Diario"), "key": _bind("diary")})
 		if bool(game.get("view3d_on")):
 			btns.append({"id": "cam", "pos": base + Vector2(-160.0, -62.0), "r": 30.0, "icon": "camera", "label": Lang.t("Cámara"), "key": _bind("cam")})
-		btns.append({"id": "pause", "pos": Vector2(vs.x - m - 26.0, 150.0), "r": 26.0, "icon": "pause", "label": "", "key": KEY_ESCAPE})
+		var ppos := Vector2(vs.x * 0.5 + 170.0, 34.0)
+		if vs.y < 600.0 or bool(game.call("lesson_active")):
+			# pantalla baja (movil) o mision de clase (tarjeta arriba a la derecha): pausa en el grupo de botones
+			ppos = base + Vector2(-150.0, -122.0)
+		btns.append({"id": "pause", "pos": ppos, "r": 26.0, "icon": "pause", "label": "", "key": KEY_ESCAPE})
 	elif md == 1 or md == 8:
 		var pos := Vector2(vs.x - m - 58.0, vs.y - m - 132.0)
 		if md == 1 and bool(game.get("choice_active")):
@@ -117,6 +122,11 @@ func _layout() -> void:
 			btns.append({"id": "c2", "pos": pos, "r": 40.0, "icon": "", "label": "2", "key": KEY_2})
 		else:
 			btns.append({"id": "next", "pos": pos, "r": 46.0, "icon": "play", "label": Lang.t("Seguir"), "key": KEY_E})
+	elif md == 2 or md == 9:
+		# confirmar dormir (2) o encargar una mejora a ENOC (9): E = si, Esc = cancelar
+		var cpos := Vector2(vs.x - m - 58.0, vs.y - m - 132.0)
+		btns.append({"id": "yes", "pos": cpos, "r": 46.0, "icon": "check", "label": Lang.t("Sí"), "key": KEY_E})
+		btns.append({"id": "no", "pos": cpos + Vector2(-118.0, 20.0), "r": 38.0, "icon": "close", "label": Lang.t("Cancelar"), "key": KEY_ESCAPE})
 	elif md in [4, 6, 7, 10, 11, 12]:
 		btns.append({"id": "close", "pos": Vector2(vs.x - m - 30.0, m + 30.0), "r": 30.0, "icon": "close", "label": Lang.t("Cerrar"), "key": KEY_ESCAPE})
 
@@ -240,7 +250,30 @@ func _process(delta: float) -> void:
 	visible = vis
 	_place_log(vis)
 	if vis:
+		_touch_hints()
+	# los paneles (mochila, banco...) se ponen delante al abrirse: el boton «Cerrar» debe quedar encima
+	if vis and int(game.get("mode")) in [4, 6, 7, 10, 11, 12]:
+		var par: Node = get_parent()
+		if par.get_child(par.get_child_count() - 1) != self:
+			par.move_child(self, par.get_child_count() - 1)
+	if vis:
 		queue_redraw()
+
+
+# textos de ayuda que nombran teclas: en tactil se cambian por los botones equivalentes
+func _touch_hints() -> void:
+	var h = game.get("dlg_hint")
+	if h == null or not is_instance_valid(h) or not (h as Label).is_visible_in_tree():
+		return
+	var lb: Label = h
+	var rep: Dictionary = {
+		Lang.t("[E] continuar"): Lang.t("Toca «Seguir» para continuar"),
+		Lang.t("Elige con 1 o 2"): Lang.t("Toca 1 o 2 para elegir"),
+		Lang.t("[E] Dormir      [Esc] Cancelar"): Lang.t("Toca «Sí» para dormir o «Cancelar»"),
+		Lang.t("[E] Encargar la obra a ENOC      [Esc] Cancelar"): Lang.t("Toca «Sí» para encargar la obra a ENOC o «Cancelar»"),
+	}
+	if rep.has(lb.text):
+		lb.text = rep[lb.text]
 
 
 # en modo tactil el registro de mensajes se coloca entre el joystick y los botones
