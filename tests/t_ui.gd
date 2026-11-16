@@ -38,7 +38,13 @@ func _prepare() -> void:
 	var lc: String = OS.get_environment("LANG_CODE")
 	Lang.code = lc if lc == "en" else "es"
 	main.set("difficulty", 1)
+	main.set("cam_mode", 0)
 	main.set("show_tutorial", false)
+	if OS.get_environment("TOUCH") == "1":
+		main.get_node("TouchUI").set("setting", 1)   # controles tactiles visibles (sin guardar el ajuste)
+	if OS.get_environment("UI_SCALE") != "":
+		# simula «Tamaño de la interfaz» (p. ej. 1.25 = Grande)
+		root.content_scale_factor = float(OS.get_environment("UI_SCALE"))
 	main.set("auto_quality", false)
 	main.call("_set_quality", 0 if state.ends_with("_low") else 2)
 	if state.begins_with("les_"):

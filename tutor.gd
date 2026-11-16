@@ -47,7 +47,23 @@ func _ready() -> void:
 
 # ---------- tutorial ----------
 
+func _touch_on() -> bool:
+	var t: Node = game.get_node_or_null("TouchUI")
+	return t != null and bool(t.call("enabled"))
+
+
 func steps() -> Array:
+	if _touch_on():
+		# v30: mismos pasos, explicados con los controles tactiles
+		return [
+			Lang.t("Misión: sobrevivir %d días. Primero muévete con el joystick (abajo a la izquierda).") % game.MAX_DAYS,
+			Lang.t("Cambia la cámara con el botón Cámara."),
+			Lang.t("Acércate a un compañero (YARISBEL, ENOC o PAM) y toca Usar para hablar."),
+			Lang.t("Las estaciones de colores mantienen la base viva. Acércate a una y toca Usar."),
+			Lang.t("Abre tu mochila con el botón Mochila."),
+			Lang.t("Abre tu diario de exploración con el botón Diario."),
+			Lang.t("Para recoger materiales, sal por la esclusa (puerta D) con Usar. Vigila tu aire."),
+		]
 	return [
 		Lang.t("Misión: sobrevivir %d días. Primero muévete con W A S D o las flechas.") % game.MAX_DAYS,
 		Lang.t("Cambia la cámara con la tecla C."),

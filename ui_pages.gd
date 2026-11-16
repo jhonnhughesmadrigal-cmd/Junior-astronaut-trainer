@@ -80,6 +80,13 @@ func build_all() -> void:
 	les.set("game", game)
 	game.add_child(les)
 	game.set("lesson", les)
+	# v30: controles tactiles (movil y tableta)
+	var touch := Control.new()
+	touch.set_script(load("res://touch_ui.gd"))
+	touch.name = "TouchUI"
+	touch.set("game", game)
+	game.add_child(touch)
+	opt["touch_node"] = touch
 	# v28: microinteracciones (hover, pulsacion, fundido de paneles)
 	var motion := Node.new()
 	motion.set_script(load("res://ui_motion.gd"))
@@ -773,6 +780,11 @@ func _build_options() -> void:
 	opt["click_right"] = cr.get_child(1)
 	t5.add_child(cr)
 	t5.add_child(_btn(Lang.t("Restablecer controles"), _on_reset_binds))
+	t5.add_child(UiScreens.section("", Lang.t("Pantalla táctil (móvil y tableta)")))
+	var tr: HBoxContainer = _opt_row(Lang.t("Controles táctiles"), [Lang.t("Automático (si la pantalla es táctil)"), Lang.t("Mostrar siempre"), Lang.t("No mostrar")], _on_touch_mode)
+	opt["touch"] = tr.get_child(1)
+	t5.add_child(tr)
+	t5.add_child(UiScreens.hint(Lang.t("Joystick a la izquierda (al borde corres), botones a la derecha. Arrastra en la mitad derecha para mirar en primera persona.")))
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 10)
 	v.add_child(hb)
@@ -782,7 +794,14 @@ func _build_options() -> void:
 	hb.add_child(close)
 
 
+func _on_touch_mode(i: int) -> void:
+	if opt.has("touch_node"):
+		(opt["touch_node"] as Node).call("set_mode", i)
+
+
 func open_options() -> void:
+	if opt.has("touch") and opt.has("touch_node"):
+		(opt["touch"] as OptionButton).select(int((opt["touch_node"] as Node).get("setting")))
 	_populate_win_sizes()
 	sync_options()
 	refresh_binds()

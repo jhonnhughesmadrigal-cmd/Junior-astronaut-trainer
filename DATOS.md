@@ -392,3 +392,26 @@ Catálogo de **9 lecciones cortas** que el docente elige desde el menú (**Misio
 **Verificación:** `tests/t_lessons.gd` recorre las 9 misiones por la vía normal del juego (caminar hasta el lugar, saltar, recoger hielo, salir por la esclusa, responder) y comprueba destino encontrado, pasos completados, cuestionario, resumen, progreso guardado, recursos sin cambios y partida guardada intacta: **75/75 en español y en inglés**. La huella de lógica de la partida normal (`tests/t_logic.gd`) sigue siendo `9d5ba3a6…` (igual que v28). Traducciones nuevas: 185 (sin revisión humana).
 
 **No probado:** con alumnos o docentes reales; en tabletas (aún no hay control táctil); legibilidad de las preguntas para 7–8 años.
+
+
+## v30 — Controles táctiles (móvil y tableta)
+
+**Archivo nuevo:** `touch_ui.gd` (y `tests/t_touch.gd`). `main.gd` no cambia. Iconos nuevos en `design_system.gd` (saltar, usar, pausa, cámara, cerrar). El tutorial (`tutor.gd`) usa textos táctiles cuando el control táctil está activo.
+
+**Cómo funciona:** cada botón **simula la tecla** que el juego ya entiende (`Input.parse_input_event`), leyendo las teclas de `binds` (si se reasignan en Opciones, el táctil las sigue). Así el táctil usa exactamente el mismo camino que el teclado y no se tocó la lógica.
+- Joystick en la mitad izquierda, donde apoyes el pulgar: 8 direcciones (como WASD); empujado hasta el borde, corres.
+- Botones: Usar, Saltar (solo fuera de la base), Mochila, Mapa, Diario, Cámara y Pausa. En diálogos y paneles informativos: «Seguir» (y «1»/«2» si hay que elegir). En mochila, mapa, diario, logros, banco y minijuegos: «Cerrar» (= Esc).
+- Arrastrar en la mitad derecha gira la mirada en primera persona y en la cámara detrás del personaje.
+- En juego, el «ratón simulado» que genera el dedo no dispara acciones (para eso están los botones), salvo que el toque caiga sobre un botón de la interfaz (p. ej. «Saltar tutorial»). En menús, pausa, cuestionarios y paneles los toques funcionan como clics.
+- Se muestra solo en pantallas táctiles (`DisplayServer.is_touchscreen_available()` o al detectar un toque). Opciones → Controles → «Controles táctiles»: Automático / Mostrar siempre / No mostrar (se guarda en `user://touch.cfg`).
+- En modo táctil, el registro de mensajes se coloca entre el joystick y los botones, y los botones quedan por encima del reloj.
+
+**Verificación:**
+- `tests/t_touch.gd` inyecta toques reales (`InputEventScreenTouch/Drag`): joystick mueve y suelta la tecla, saltar, mochila (abrir/cerrar), mapa (abrir/cerrar), pausa, avanzar diálogo y panel informativo, mirar arrastrando, cambiar cámara, ocultar con «No mostrar» y no dejar teclas pulsadas: **19/19**.
+- Navegador (Playwright + Chromium, render por software): móvil «Pixel 7» horizontal y tableta «iPad (gen 7)» horizontal emulados. El control táctil se activa solo; los toques funcionan en el menú y en «Nueva misión»; un arrastre real del joystick (eventos táctiles de Chrome) movió al jugador y el tutorial pasó al paso 2; el botón Mochila la abrió con «Cerrar» visible. Sin errores de página.
+- Huella de lógica igual (`9d5ba3a6…`); misiones de clase 75/75.
+
+**Límites conocidos (no resueltos):**
+- En **móviles** (p. ej. 360 px CSS de alto en horizontal) el texto de la interfaz queda pequeño (≈ 6–7 px CSS), porque el juego está diseñado para 1100×650. Probé un tamaño «Grande» (125 %), pero varias pantallas (menú, nueva misión, pausa) se cortan; no se añadió. Hacer la interfaz adaptable a pantallas tan pequeñas queda pendiente. En **tabletas** el tamaño es razonable.
+- Algunos textos siguen mencionando teclas (p. ej. «[E] continuar» en los diálogos, «[I] o [Esc] cierra» en la mochila).
+- No probado en un móvil o tableta físicos, ni en Safari/iOS real (solo emulación en Chromium). No hay gesto de pellizcar para el zoom de cámara. El movimiento es en 8 direcciones (no analógico).

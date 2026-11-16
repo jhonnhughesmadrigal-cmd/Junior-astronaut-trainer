@@ -201,6 +201,12 @@ const ICON_PATHS: Dictionary = {
 	"gear": "<circle cx='12' cy='12' r='3'/><path d='M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2'/>",
 	"moon": "<path d='M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z'/>",
 	"planet": "<circle cx='12' cy='12' r='6'/><path d='M3 16c3 2 15-3 18-8'/>",
+	# v30: controles tactiles
+	"jump": "<path d='M12 20V6M6 11l6-6 6 6'/><path d='M7 20h10'/>",
+	"hand": "<circle cx='12' cy='12' r='8'/><circle cx='12' cy='12' r='3'/>",
+	"pause": "<path d='M9 5v14M15 5v14'/>",
+	"camera": "<rect x='3' y='7' width='18' height='13' rx='2'/><circle cx='12' cy='13.5' r='3.5'/><path d='M9 7l1.5-2.5h3L15 7'/>",
+	"close": "<path d='M6 6l12 12M18 6 6 18'/>",
 }
 
 
