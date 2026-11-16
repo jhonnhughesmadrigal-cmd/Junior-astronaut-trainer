@@ -368,3 +368,27 @@ Solo cambia el **dibujo**: la lógica del juego no se tocó (ver «Verificación
   - Crear la partida: Luna Alta ~160 → ~270 ms; Marte Alta ~1,0 → ~1,1 s (en este equipo; en el navegador será más lento).
 
 **No medido / pendiente:** rendimiento en GPU real y en PCs escolares o tabletas; control táctil; navegadores distintos de Chromium; revisión humana del inglés; si la calidad automática baja de escalón antes por el coste extra en equipos lentos. La forma de las rocas y la resolución del terreno se aplican al empezar una misión nueva (como antes).
+
+
+## v29 — Misiones de clase (modo docente)
+
+Catálogo de **9 lecciones cortas** que el docente elige desde el menú (**Misiones de clase**), filtrando por tema (Gravedad, Agua, Historia, Energía, Geología, Atmósfera) y mundo. Cada una: pasos guiados en el mundo 3D → cuestionario sin castigo → resumen «Lo que aprendiste» con fuentes. Guía para docentes: `docs/GUIA_DOCENTE.md` (generada desde el catálogo con `tools/gen_guia.gd`).
+
+**Archivos:** `lesson_data.gd` (catálogo y textos), `lessons.gd` (motor), `lesson_ui.gd` (página del menú), `tests/t_lessons.gd` (prueba). En `main.gd` solo hay 6 ganchos pequeños: `lesson_active()`, tiempo detenido en `_run_time_acc`, sin guardar en `_save_game`, sin historia/tutorial al crear la partida de la lección, cierre al volver al menú y teclado del modo 15 (cuestionario).
+
+**Comportamiento:** durante una misión el tiempo del juego no avanza (no se gastan recursos ni hay eventos/emergencias) y no se guarda nada en `user://savegame.json`. El progreso de las misiones se guarda aparte en `user://lessons.cfg` (solo en ese ordenador/navegador). Recoger hielo en «Hielo en la sombra» sí suma +10 de agua (mecánica normal), sin efecto fuera de la lección.
+
+**Datos verificados en esta sesión (16 nov 2026), con «≈» en el juego:**
+- Luna — ficha NSSDC (nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html, actualizada 11 ene 2024): gravedad en superficie 1,62 m/s² (Tierra 9,80; razón 0,165), periodo sinódico 29,53 días, temperatura diurna en el ecuador 95–390 K (≈ −178 a +117 °C), presión nocturna 3·10⁻¹⁵ bar.
+- Marte — ficha NSSDC (nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html, actualizada 19 may 2025): gravedad media 3,73 m/s² (razón 0,380), día de 24,6597 h, presión 6,36 mbar, temperatura media ≈ −59 °C, atmósfera 95,1 % CO₂ y 0,16 % O₂, vientos de 17–30 m/s en tormentas de polvo (landers Viking).
+- Apolo 11: alunizaje el 20 jul 1969 en el Mar de la Tranquilidad; Armstrong y Aldrin, primeras personas en caminar sobre la Luna (nasa.gov: Apollo 11 Mission Overview; «July 20, 1969: One Giant Leap»; «Apollo 11 Crew Trains…»).
+- LCROSS: misión para confirmar hielo de agua en un cráter en sombra permanente del polo sur; impactó en el cráter **Cabeus** el 9 oct 2009 y detectó agua (science.nasa.gov/mission/lcross, astrobiology.nasa.gov, jpl.nasa.gov). Nota: el juego sitúa la misión en el cráter Shackleton (zona del mapa), pero el texto deja claro que el agua se detectó en Cabeus.
+- Jezero y Perseverance: aterrizaje el 18 feb 2021; cráter de 45 km; hace más de 3.500 millones de años ríos formaron un lago con un delta (science.nasa.gov/mission/mars-2020-perseverance).
+- Olympus Mons: el volcán más grande del Sistema Solar; «más de 25 millas (≈ 40 km) de la base a la cima» (science.nasa.gov/mars/facts) y base de casi 550 km (science.nasa.gov/photojournal, «A Traverse Across the Summit of Olympus Mons»). Nota: la placa del juego de versiones anteriores dice «>20 km»; no es contradictorio, pero la cifra de la NASA de la base a la cima es ≈ 40 km.
+- Opportunity: en 2018 una tormenta de polvo global redujo la energía de sus paneles y el rover quedó en silencio; la luz quedó bloqueada unos cuatro meses (science.nasa.gov/mission/mer-opportunity; jpl.nasa.gov/edu «Mars Rover Mission Comes to an End…»).
+
+**Valores de juego (no datos reales):** velocidad de despegue del salto 1,7 m/s; con ella, t = 2v/g da ≈ 2,1 s (Luna), ≈ 0,9 s (Marte) y ≈ 0,35 s (Tierra, con 9,80 m/s²). Las duraciones «≈ 3–5 min» son estimaciones mías, no medidas con alumnos. Las posiciones de los lugares en el mapa siguen estilizadas.
+
+**Verificación:** `tests/t_lessons.gd` recorre las 9 misiones por la vía normal del juego (caminar hasta el lugar, saltar, recoger hielo, salir por la esclusa, responder) y comprueba destino encontrado, pasos completados, cuestionario, resumen, progreso guardado, recursos sin cambios y partida guardada intacta: **75/75 en español y en inglés**. La huella de lógica de la partida normal (`tests/t_logic.gd`) sigue siendo `9d5ba3a6…` (igual que v28). Traducciones nuevas: 185 (sin revisión humana).
+
+**No probado:** con alumnos o docentes reales; en tabletas (aún no hay control táctil); legibilidad de las preguntas para 7–8 años.

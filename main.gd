@@ -516,6 +516,11 @@ var task_speed_idx: int = 1          # 0 lenta, 1 normal, 2 rapida, 3 muy rapida
 const TASK_SPEED_MULT: Array = [0.25, 1.0, 2.5, 6.0]
 var ach_done: Dictionary = {}
 var tut: Control = null
+var lesson: Node = null    # v29: misiones de clase (lessons.gd); con una activa el tiempo no avanza ni se guarda
+
+
+func lesson_active() -> bool:
+	return lesson != null and bool(lesson.get("active"))
 var bars: Dictionary = {}
 var header: Label
 var inv_label: Label
@@ -1938,6 +1943,8 @@ func _clear() -> void:
 
 
 func _show_menu() -> void:
+	if lesson_active():
+		lesson.call("stop")
 	playing = false
 	mode = 0
 	in_menu = true
@@ -2109,6 +2116,9 @@ func _new_game(loc: String) -> void:
 		nasa.call("fetch", false)
 	_refresh()
 	_save_game()
+	if lesson_active():
+		tut.call("skip_silent")
+		return
 	_story_for_day(1)
 	if show_tutorial:
 		tut.call("start")
@@ -5051,6 +5061,10 @@ func _input(event: InputEvent) -> void:
 		if in_menu and ui != null and k.keycode == KEY_ESCAPE and not k.echo and ui.cur_page != "main":
 			ui.show_page("main")
 		return
+	if mode == 15:
+		# v29: cuestionario/resumen de una mision de clase (botones: el teclado sigue a la interfaz)
+		lesson.call("handle_key", k)
+		return
 	if mode == 14:
 		# el centro de diagnostico usa botones (raton, flechas y Enter): solo cerramos con Esc o con su tecla
 		if not k.echo and (k.keycode == KEY_ESCAPE or _is_bind(k, "diag")):
@@ -5220,6 +5234,8 @@ func _show_fact(ch: String) -> void:
 # ---------- GUARDADO ----------
 
 func _save_game() -> bool:
+	if lesson_active():
+		return false     # v29: una mision de clase no toca la partida guardada
 	var data: Dictionary = {
 		"version": 2, "saved_at": Time.get_datetime_string_from_system(false, true), "location": location, "day": day, "clock": clock, "difficulty": difficulty, "night_acc": night_acc,
 		"slept": slept_tonight, "night_warned": night_warned, "awake": awake_min, "fatigue_warned": fatigue_warned, "res": res,
@@ -5472,6 +5488,9 @@ func _finish_task() -> void:
 
 
 func _run_time_acc() -> void:
+	if lesson_active():
+		time_acc = 0.0   # v29: en una mision de clase el tiempo esta detenido
+		return
 	var guard: int = 0
 	while time_acc >= 1.0 and playing and guard < 400:
 		time_acc -= 1.0

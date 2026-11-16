@@ -5,6 +5,7 @@ extends Node
 const DS = preload("res://design_system.gd")
 const MenuArt = preload("res://menu_art.gd")
 const UiScreens = preload("res://ui_screens.gd")
+const LessonUi = preload("res://lesson_ui.gd")
 const ACCENT: Color = DS.C_ACCENT
 const VERSION_TXT: String = "ALFA 0.1"
 
@@ -27,6 +28,8 @@ var dest_text: RichTextLabel
 var diff_text: Label
 var endings_box: VBoxContainer     # v28: lista de finales (ui_screens.gd)
 var howto_box: VBoxContainer       # v28: controles con teclas (ui_screens.gd)
+var lessons_box: VBoxContainer     # v29: misiones de clase (lesson_ui.gd)
+var lesson_filter: Dictionary = {"topic": "", "loc": ""}
 var learn_overlay: Control
 var learn_title: Label
 var learn_meta: Label
@@ -70,6 +73,13 @@ func build_all() -> void:
 	_build_controls()
 	_build_stats()
 	_build_learn()
+	# v29: motor de las misiones de clase
+	var les := Control.new()
+	les.set_script(load("res://lessons.gd"))
+	les.name = "Lessons"
+	les.set("game", game)
+	game.add_child(les)
+	game.set("lesson", les)
 	# v28: microinteracciones (hover, pulsacion, fundido de paneles)
 	var motion := Node.new()
 	motion.set_script(load("res://ui_motion.gd"))
@@ -208,6 +218,7 @@ func _build_menu() -> void:
 	continue_info = _lbl("", 13, DS.C_DIM)
 	left.add_child(continue_info)
 	left.add_child(_menu_btn(Lang.t("Nueva misión"), _on_new_mission, "planet"))
+	left.add_child(_menu_btn(Lang.t("Misiones de clase"), show_page.bind("lessons"), "map"))
 	left.add_child(_menu_btn(Lang.t("Cómo jugar"), show_page.bind("howto"), "book"))
 	left.add_child(_menu_btn(Lang.t("Finales"), show_page.bind("endings"), "trophy"))
 	left.add_child(_menu_btn(Lang.t("Opciones"), open_options, "gear"))
@@ -240,12 +251,13 @@ func _build_menu() -> void:
 	_build_page_howto()
 	_build_page_endings()
 	_build_page_credits()
+	_build_page_lessons()
 	show_page("main")
 
 
 func _page(nm: String, title: String) -> VBoxContainer:
 	var pc := PanelContainer.new()
-	pc.custom_minimum_size = Vector2({"new": 620, "howto": 720, "credits": 620}.get(nm, 580), 0)
+	pc.custom_minimum_size = Vector2({"new": 620, "howto": 720, "credits": 620, "lessons": 720}.get(nm, 580), 0)
 	pc.size_flags_horizontal = Control.SIZE_SHRINK_END
 	pc.add_theme_stylebox_override("panel", DS.card(1, DS.R_LG, 0.93))
 	page_holder.add_child(pc)
@@ -268,6 +280,8 @@ func show_page(nm: String) -> void:
 		_fill_endings()
 	elif nm == "howto":
 		_fill_howto()
+	elif nm == "lessons":
+		_fill_lessons()
 	if game != null and nm != "new" and game.in_menu:
 		game._menu_preview(game.menu_loc)
 
@@ -424,6 +438,22 @@ func _build_page_endings() -> void:
 func _build_page_credits() -> void:
 	var v: VBoxContainer = _page("credits", Lang.t("Créditos"))
 	v.add_child(UiScreens.credits())
+
+
+func _build_page_lessons() -> void:
+	var v: VBoxContainer = _page("lessons", Lang.t("Misiones de clase"))
+	lessons_box = VBoxContainer.new()
+	lessons_box.add_theme_constant_override("separation", DS.S2)
+	v.add_child(lessons_box)
+
+
+func _fill_lessons() -> void:
+	LessonUi.fill(lessons_box, game, lesson_filter, _on_lesson_filter)
+
+
+func _on_lesson_filter(key: String, val: String) -> void:
+	lesson_filter[key] = val
+	_fill_lessons()
 
 
 func _fill_endings() -> void:
