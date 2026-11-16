@@ -86,5 +86,22 @@ func _run() -> void:
 	var d = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else {}
 	_check(d is Dictionary and int(d.get("day", 0)) == 7, "la partida guardada es la actual (día 7)")
 	_check(Lang.t("Pulsa «Atrás» otra vez para salir") != "", "texto del aviso traducible")
+	# v38: teclado en pantalla (alto simulado: media ventana)
+	main.call("_close_pause")
+	pui.call("_ask_email", "personal")
+	await _frames(3)
+	var ed: LineEdit = pui.find_child("Email", true, false)
+	ed.grab_focus()
+	await _frames(2)
+	var y0: float = (pui as Control).position.y
+	print("   campo antes: ", ed.get_global_rect().end.y)
+	var win_h: int = DisplayServer.window_get_size().y
+	mos.call("kb_fit", int(win_h * 0.7))
+	await _frames(1)
+	var vis_h: float = root.get_visible_rect().size.y
+	_check(ed.get_global_rect().end.y <= vis_h * 0.3 + 1.0, "con el teclado abierto el campo de correo queda visible (%.0f ≤ %.0f)" % [ed.get_global_rect().end.y, vis_h * 0.3])
+	mos.call("kb_fit", 0)
+	await _frames(1)
+	_check(is_equal_approx((pui as Control).position.y, y0), "al cerrar el teclado el panel vuelve a su sitio")
 	print("MÓVIL: %d OK, %d fallos" % [ok_n, fail_n])
 	quit()

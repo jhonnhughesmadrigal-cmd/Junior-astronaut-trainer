@@ -539,3 +539,15 @@ Con los prompts de `docs/PROMPTS_LUDO.md` se generó en Ludo.ai una imagen con l
 **No probado:** en ningún dispositivo Android real (aquí no hay emulador: falta KVM). Sin medir: rendimiento, temperatura/batería, teclado en pantalla con los campos de correo, tamaño de texto en móviles pequeños.
 
 **Pendiente:** «Iniciar sesión con Google» (no hecho; pasos en docs/FIREBASE_SETUP.md §9), botón «Borrar mi cuenta», revisión de privacidad con la escuela (docs/PRIVACIDAD.md), AAB para Google Play.
+
+## v38 — Interior de la base y mejoras del APK
+
+**Archivos:** nuevo `interior_look.gd`; cambios pequeños en `view3d.gd` (llamadas al módulo, color del suelo, luz y reflejo del interior), `int_tex.gd` (suelo más oscuro), `mobile_os.gd` (teclado en pantalla), `main.gd` (una condición: calidad Media en la primera ejecución también en móvil), `tests/t_mobile.gd`, `tests/t_perf.gd` (opción `INSIDE=1`), `export_presets.cfg` (versión 0.38, code 38).
+
+**Interior:** remates de muro oscuros (antes casi blancos vistos desde arriba); suelo menos claro; costillas estructurales, tuberías con abrazaderas, zócalo con tira de luz tenue; armarios, botiquín (cruz verde genérica, no la cruz roja, que es un emblema protegido), pantalla de estado y estantería con cajas, todo pegado a la pared; rejillas planas en el suelo. Luz: 4 apliques cálidos + 1 luz central suave (solo con efectos Medio/Alto), menos luz plana (ambiente 0,42→0,32, relleno 0,75→0,55, sol ×0,35 dentro). **Causa principal del aspecto plano:** los metales del interior reflejaban un «cielo» falso casi blanco; ahora reflejan un tono de techo oscuro. Con las cámaras cercanas aparece la parte alta de los muros bajos (antes se veía el vacío detrás de los personajes).
+
+**Rendimiento (relativo, render por software en escritorio; no es una medida de GPU):** las piezas fijas se fusionan por material (`InteriorLook.merge_static`). Dentro de la base, Luna, llamadas de dibujo Baja/Media/Alta: v37 480/991/1033 → v38 419/846/877 (≈ 13–15 % menos) con más detalle. Primitivas visibles +2,5 %.
+
+**APK:** calidad Media la primera vez en móvil (`OS.has_feature("mobile")`); el teclado en pantalla ya no tapa el campo activo (el panel sube lo justo). Firmado con la misma clave que v37 (se instala encima).
+
+**Verificación:** `t_mobile` 14/14 (incluye teclado simulado), huella de lógica `9d5ba3a6…` (sin cambios), misiones 75/75 (es y en), táctil 22/22, minijuegos 14/14, perfiles 19/19. **No probado en un dispositivo real**; no medido el coste real de las 5 luces en GPU móviles.

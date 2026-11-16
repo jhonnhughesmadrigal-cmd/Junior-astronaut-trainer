@@ -1,6 +1,6 @@
 extends SceneTree
 # Mide (v28): tiempo de crear la partida y primitivas/llamadas de dibujo por fotograma en el exterior.
-# Uso: cp tests/t_perf.gd . && LOC=Luna Q=2 xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_perf.gd
+# Uso: cp tests/t_perf.gd . && LOC=Luna Q=2 [INSIDE=1: dentro de la base] xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_perf.gd
 # Cifras RELATIVAS (render por software en el equipo de desarrollo), no una medida de GPU real.
 var main: Node = null
 var frame: int = 0
@@ -22,7 +22,7 @@ func _process(_d: float) -> bool:
 		main.call("_new_game", OS.get_environment("LOC"))
 		print("crear_partida_ms: ", (Time.get_ticks_usec() - t0) / 1000)
 	if frame == 8:
-		main.set("outside", true)
+		main.set("outside", OS.get_environment("INSIDE") != "1")
 		main.call("_set_player_tile", main.get("ext_spawn"), Vector2i(0, 1))
 		main.get("dlg").visible = false
 		main.set("mode", 0)

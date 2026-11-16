@@ -677,8 +677,8 @@ func _load_settings() -> void:
 	_default_binds()
 	var cfg := ConfigFile.new()
 	if cfg.load(SETTINGS_PATH) != OK:
-		# primera ejecucion en el navegador: calidad Media (WebGL y equipos escolares suelen ir justos)
-		if _is_web():
+		# primera ejecucion en el navegador o en movil (v38): calidad Media (equipos escolares suelen ir justos)
+		if _is_web() or OS.has_feature("mobile"):
 			quality = 1
 			for k in PRESETS[1]:
 				set(k, PRESETS[1][k])

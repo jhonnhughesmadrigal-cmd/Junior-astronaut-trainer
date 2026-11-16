@@ -58,7 +58,7 @@ static func make(kind: String, moon: bool, size: int, with_normal: bool) -> Arra
 
 
 static func _floor(a: Image, h: Image, size: int, moon: bool) -> void:
-	var base: Color = Color(0.47, 0.49, 0.54) if moon else Color(0.58, 0.41, 0.35)
+	var base: Color = Color(0.37, 0.39, 0.43) if moon else Color(0.47, 0.34, 0.3)   # v38: más oscuro (antes 0.47 / 0.58)
 	var stain: Image = _noise(7, 0.03, 4)
 	var grain: Image = _noise(19, 0.4, 2)
 	var T: float = float(size) * 0.5          # una placa = una casilla (2 m)

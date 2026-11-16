@@ -65,6 +65,7 @@ const WorldLook = preload("res://world_look.gd")
 const BaseLook = preload("res://base_look.gd")
 const CrewLook = preload("res://crew_look.gd")
 const StationArt = preload("res://station_art.gd")
+const InteriorLook = preload("res://interior_look.gd")
 var hull_mats: Array = []               # v28: materiales del casco con textura de paneles
 var wfx: Node3D = null                  # v28: particulas del exterior (world_fx.gd)
 var ice_pts: PackedVector3Array = PackedVector3Array()
@@ -265,6 +266,7 @@ func apply_gfx() -> void:
 	env.glow_bloom = 0.12
 	env.glow_hdr_threshold = 0.9
 	env.tonemap_exposure = 0.9 * float(game.bright)
+	InteriorLook.apply_gfx(int(game.fx_idx))
 	if skydome != null:
 		var st: Node = skydome.get_node_or_null("Estrellas")
 		if st != null:
@@ -1308,10 +1310,12 @@ func _build_interior() -> void:
 	add_child(interior)
 	var moon: bool = game.location == "Luna"
 	int_mats.clear()
-	var floor_mat: StandardMaterial3D = _int_mat("floor", Color(0.46, 0.48, 0.56) if moon else Color(0.56, 0.37, 0.31), 0.42, 0.25)
+	# v38: suelo menos claro (antes deslumbraba visto desde arriba)
+	var floor_mat: StandardMaterial3D = _int_mat("floor", Color(0.36, 0.38, 0.43) if moon else Color(0.45, 0.32, 0.28), 0.5, 0.25)
 	_add(interior, _box(Vector3(16.0 * T3, 0.2, 10.0 * T3)), floor_mat, Vector3(8.0 * T3, -0.1, 5.0 * T3))
 	var wall: StandardMaterial3D = _int_mat("wall", Color(0.26, 0.29, 0.38), 0.55, 0.35)
 	var trim: StandardMaterial3D = _m(Color(0.5, 0.56, 0.68), 0.6, 0.35)
+	var cap: StandardMaterial3D = InteriorLook.cap_mat(self)
 	var map: Array = game.MAP
 	for y in map.size():
 		var row: String = map[y]
@@ -1328,7 +1332,7 @@ func _build_interior() -> void:
 				elif y == 3:
 					h = 1.7
 				_add(interior, _box(Vector3(T3, h, T3)), wall, c + Vector3(0, h / 2.0, 0))
-				_add(interior, _box(Vector3(T3 + 0.06, 0.1, T3 + 0.06)), trim, c + Vector3(0, h + 0.05, 0), Vector3.ZERO, false)
+				_add(interior, _box(Vector3(T3 + 0.06, 0.1, T3 + 0.06)), cap, c + Vector3(0, h + 0.05, 0), Vector3.ZERO, false)
 			elif ch != "." and ch != "P":
 				if game.npcs.has(ch):
 					var n: Dictionary = game.npcs[ch]
@@ -1339,6 +1343,10 @@ func _build_interior() -> void:
 					npc_nodes[ch] = a
 				else:
 					_build_prop(ch, c)
+	# v38: estructura, tuberías, equipo de pared y luces (interior_look.gd)
+	InteriorLook.build(self, interior, moon)
+	InteriorLook.apply_gfx(int(game.fx_idx))
+	InteriorLook.merge_static(interior)
 
 
 func _build_ceiling() -> void:
@@ -1350,12 +1358,15 @@ func _build_ceiling() -> void:
 	for lx in [5.0, 13.0, 21.0, 29.0]:
 		for lz in [6.0, 14.0]:
 			_add(ceiling, _box(Vector3(2.6, 0.06, 0.5)), lm, Vector3(lx, 3.27, lz), Vector3.ZERO, false)
+	InteriorLook.build_upper(self, ceiling, game.MAP)   # v38
+	InteriorLook.merge_static(ceiling)
 
 
 func _build_window(x: int, y: int, moon: bool, wall: Material, trim: Material) -> void:
 	var c: Vector3 = _tp(x, y)
 	_add(interior, _box(Vector3(T3, 0.9, T3)), wall, c + Vector3(0, 0.45, 0))
 	_add(interior, _box(Vector3(T3, 0.7, T3)), wall, c + Vector3(0, 2.85, 0))
+	_add(interior, _box(Vector3(T3 + 0.06, 0.1, T3 + 0.06)), InteriorLook.cap_mat(self), c + Vector3(0, 3.25, 0), Vector3.ZERO, false)   # v38
 	var q := QuadMesh.new()
 	q.size = Vector2(T3 - 0.5, 1.6)
 	var wm := StandardMaterial3D.new()
@@ -2608,8 +2619,13 @@ func _update_light() -> void:
 		_set_reflection("in")
 		env.fog_enabled = false
 		env.ambient_light_color = Color(0.55, 0.6, 0.78)
-		env.ambient_light_energy = 0.42 * dim
-		fill.light_energy = 0.75 * dim
+		# v38: menos luz plana dentro; las luces de pared (interior_look.gd) dan zonas de luz.
+		# Sin esas luces (efectos en Bajo) se mantiene el nivel anterior para no oscurecer.
+		var lit: bool = int(game.fx_idx) >= 1
+		env.ambient_light_energy = (0.32 if lit else 0.42) * dim
+		fill.light_energy = (0.55 if lit else 0.75) * dim
+		if lit:
+			sun.light_energy *= 0.35   # v38: dentro de la base el sol solo entra por las ventanas (antes aplanaba el suelo)
 		fill.shadow_enabled = game.shadows_on
 
 
@@ -2622,10 +2638,12 @@ func _set_reflection(kind: String) -> void:
 		return
 	refl_kind = kind
 	if kind == "in":
-		sky_mat.sky_top_color = Color(0.55, 0.62, 0.8)
-		sky_mat.sky_horizon_color = Color(0.85, 0.88, 0.95)
-		sky_mat.ground_horizon_color = Color(0.5, 0.52, 0.6)
-		sky_mat.ground_bottom_color = Color(0.25, 0.27, 0.35)
+		# v38: dentro, los metales reflejan un «techo» oscuro, no un cielo casi blanco
+		# (ese reflejo aclaraba y aplanaba el suelo entero)
+		sky_mat.sky_top_color = Color(0.2, 0.22, 0.28)
+		sky_mat.sky_horizon_color = Color(0.36, 0.38, 0.44)
+		sky_mat.ground_horizon_color = Color(0.3, 0.31, 0.36)
+		sky_mat.ground_bottom_color = Color(0.16, 0.17, 0.21)
 	elif kind == "moon":
 		sky_mat.sky_top_color = Color(0.02, 0.03, 0.08)
 		sky_mat.sky_horizon_color = Color(0.3, 0.32, 0.4)

@@ -17,6 +17,7 @@ Wilson mantiene vivos a 4 tripulantes 30 días en la Luna o Marte. Español/ingl
 - `view3d.gd`: mundo 3D (iluminación, terreno, base, personajes, partículas, presets de calidad Bajo/Medio/Alto). `ext_tex.gd` / `int_tex.gd` / `space_tex.gd`: texturas procedurales. v28: `terrain3d.gd`, `world_look.gd`, `base_look.gd`, `world_fx.gd`, `crew_look.gd`.
 - `ui_screens.gd` (pantallas con DS) y `ui_motion.gd` (microinteracciones).
 - v30 `touch_ui.gd`: controles táctiles; simulan las teclas de `binds` con `Input.parse_input_event` (no tocar `main.gd` para el táctil).
+- v38 `interior_look.gd`: estructura, tuberías, equipo de pared, luces del interior y `merge_static` (fusiona piezas fijas por material: menos llamadas de dibujo). Parte alta de los muros bajos solo en cámaras cercanas (nodo del techo).
 - v37 Android: preset «Android» en `export_presets.cfg` (paquete `com.misionperseo.juego`), `mobile_os.gd` (botón «Atrás» = Esc, guardar en segundo plano), icono `art/app/` (`tools/gen_icon.gd`). Guía: `docs/ANDROID_APK.md`. La clave de firma de release NO está en el repo (se pasa con `GODOT_ANDROID_KEYSTORE_RELEASE_PATH/USER/PASSWORD`). Privacidad: `docs/PRIVACIDAD.md` (borrador para la escuela).
 - v36 Firebase: `firebase.gd` (REST: Auth + Firestore), `firebase_config.gd` (API_KEY/PROJECT_ID vacíos = modo local), `firebase/firestore.rules`. Guía: `docs/FIREBASE_SETUP.md`. Admin = documento `admins/{uid}` creado a mano. Emulador: `cd firebase && npx firebase-tools emulators:start --only auth,firestore --project demo-mision-perseo` y `FIREBASE_EMULATOR=127.0.0.1`.
 - v35 perfiles: `profiles.gd` (educativa estudiante/docente, personal, invitado; guardado por perfil vía `main.SAVE_PATH`; clases con código `PER-XXXX` sin servidor) y `profile_ui.gd`. Verificar correos, avisar al admin y sincronizar entre dispositivos NECESITA servidor (no hecho; ver DATOS.md v35).
@@ -35,11 +36,11 @@ Wilson mantiene vivos a 4 tripulantes 30 días en la Luna o Marte. Español/ingl
 - Capturas: copia `tests/t_ui.gd` a la raíz y usa `tools/shot.sh 1280x720 menu new hud_mars out_moon out_mars pack bench map pause diag` (salida en /tmp/shots), o en paralelo `JOBS=3 tools/shots_all.sh <carpeta> 1920x1080 <estados...>`. Estados extra: stc_O stc_S stc_R stc_C stc_T stc_A stc_D (estaciones con cámara fija), hud_lv3, opts credits howto endings end_win end_lose hud_moon crew_moon far_moon far_mars out_moon_low out_mars_low night_moon storm_mars ach.
 - Misiones de clase (debe dar 75/75): copia `tests/t_lessons.gd` a la raíz y ejecuta `xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_lessons.gd` (también con `LANG_CODE=en`). Al añadir una misión, regenera la guía docente.
 - Táctil (debe dar 22/22): `tests/t_touch.gd`.
-- Móvil/Android (debe dar 12/12): `tests/t_mobile.gd`. APK: `godot --headless --path . --export-debug Android build/x.apk` y `apksigner verify` (SDK en `~/android-sdk`).
+- Móvil/Android (debe dar 14/14): `tests/t_mobile.gd`. APK: `godot --headless --path . --export-debug Android build/x.apk` y `apksigner verify` (SDK en `~/android-sdk`).
 - Firebase con emulador (deben dar 26/26 y 14/14): `FIREBASE_EMULATOR=127.0.0.1` + `tests/t_firebase.gd` (headless) y `tests/t_fbflow.gd` (xvfb).
 - Perfiles (debe dar 19/19): `tests/t_profiles.gd` (borra `user://profiles.cfg`). Capturas: `prof_choose prof_email prof_role prof_teacher prof_student prof_newclass prof_lessons`.
 - Minijuegos del banco (debe dar 14/14): `tests/t_minigames.gd`. Capturas: estados `mg_patch mg_filter mg_map`. Capturas con controles táctiles: `TOUCH=1` en `tools/shots_all.sh`; escala de interfaz simulada: `UI_SCALE=1.25`.
-- Coste relativo: `tests/t_perf.gd` (primitivas y llamadas de dibujo; `LOC=Luna Q=2`).
+- Coste relativo: `tests/t_perf.gd` (primitivas y llamadas de dibujo; `LOC=Luna Q=2`, `INSIDE=1` dentro de la base; v38 Luna dentro: 419/846/877 llamadas en Q=0/1/2).
 - Web: `godot --headless --import`, luego `--export-release Web web/index.html`, servir con HTTP y revisar con Playwright (verificar fuentes e iconos SVG).
 - El viewport del proyecto es 1100×650 (canvas_items, aspect expand): comprobar 1920×1080, 1600×900, 1366×768, 1280×720 y 1024×600.
 
@@ -50,7 +51,7 @@ Hecho en v29: Misiones de clase (9 lecciones, menú docente, cuestionario, resum
 Pendiente:
 0. Hecho en v30–v31: control táctil e interfaz adaptable a móviles. Pendiente: textos de paneles que nombran teclas, prueba en dispositivos reales, más misiones y pruebas con alumnos.
 1. Verificar táctil, rendimiento real en GPU/navegador y revisión humana del inglés (nada de esto está medido).
-2. Interior de la base: mismo nivel de materiales que el exterior (solo se retocaron remaches y color del suelo).
+2. Hecho en v38: interior de la base (ver DATOS.md v38). Pendiente: medir en tabletas reales el coste de sus 5 luces.
 3. Personajes: siguen hechos con primitivas; un modelo por piezas más orgánico mejoraría los primeros planos.
 4. Recuperar `tests/t_emg.gd` (94 pruebas).
 Criterio: menos ruido visual, mejores materiales, más profundidad, identidad consistente; sin neón ni efectos recargados.

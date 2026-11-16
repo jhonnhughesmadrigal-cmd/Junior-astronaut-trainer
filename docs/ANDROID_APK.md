@@ -1,7 +1,7 @@
-# Misión Perseo — APK para Android (v37)
+# Misión Perseo — APK para Android (v37, actualizado en v38)
 
 ## Instalar el APK en una tableta o un móvil
-1. Copia `MisionPerseo-v37.apk` al dispositivo (cable USB, Google Drive, correo…).
+1. Copia `MisionPerseo_v38.apk` (o la versión más reciente de `releases/`) al dispositivo (cable USB, Google Drive, correo…).
 2. Ábrelo desde el gestor de archivos. Android pedirá permitir «instalar apps de origen desconocido» para esa app (el nombre exacto del ajuste cambia según la marca y la versión de Android).
 3. Instalar → Abrir. El juego va en horizontal y a pantalla completa.
 
@@ -16,6 +16,9 @@ Como el juego usa el renderizador Compatibility (OpenGL ES 3.0), un dispositivo 
 - **Escala de la interfaz** (`ui_fit.gd`): en Android se calcula con los dp reales de la pantalla (`screen_get_dpi`), igual que en el navegador del móvil.
 - **Controles táctiles**: se activan solos si hay pantalla táctil (como en v30).
 - **Internet**: permisos `INTERNET` y `ACCESS_NETWORK_STATE`, necesarios para las cuentas en la nube (Firebase).
+- **v38 — Calidad «Media» la primera vez** (como en el navegador): la «Alta» (MSAA 4×, sombras 4096, resolución completa) es probablemente demasiado para una tablet escolar. Se puede cambiar en Opciones.
+- **v38 — Teclado en pantalla**: si tapa el campo de texto activo (correo, contraseña), el panel sube lo justo y vuelve a su sitio al cerrarlo.
+- **v38 — Menos llamadas de dibujo dentro de la base**: las piezas fijas del interior se fusionan por material (≈ 13–15 % menos llamadas que en v37, medido en escritorio; no medido en un móvil).
 - **Copia de seguridad de Android desactivada** (`user_data_backup/allow=false`): las partidas locales no se suben a la copia de Google; la sincronización entre dispositivos va por la cuenta del juego.
 
 ## Datos del paquete
@@ -23,12 +26,12 @@ Como el juego usa el renderizador Compatibility (OpenGL ES 3.0), un dispositivo 
 |---|---|
 | Paquete | `com.misionperseo.juego` (no se puede cambiar después de publicar sin perder las actualizaciones) |
 | Nombre | Misión Perseo |
-| Versión | `version/code=37`, `version/name=0.37` (sube `version/code` en cada APK nuevo) |
+| Versión | `version/code=38`, `version/name=0.38` (sube `version/code` en cada APK nuevo) |
 | Orientación | horizontal con sensor (`display/window/handheld/orientation=4`) |
 | Icono | `art/app/*.png`, generado por código con `tools/gen_icon.gd` |
 
 ## La firma (muy importante)
-- `MisionPerseo-v37.apk` está firmado con una clave de *release* creada en esta sesión (`perseo-release.keystore`, alias `perseo`). **No está en el repositorio** (es secreta).
+- Los APK (desde v37) están firmados con una clave de *release* creada en esta sesión (`perseo-release.keystore`, alias `perseo`). **No está en el repositorio** (es secreta).
 - Guárdala con su contraseña en un lugar seguro (y una copia de respaldo). Si se pierde, los APK futuros llevarán otra firma y Android no dejará actualizar: habrá que desinstalar, y se pierden las partidas que solo estén en el dispositivo.
 - Huellas del certificado (no son secretas; Firebase las pide para el inicio con Google en Android):
   - SHA-1: `E0:7D:14:63:0A:F9:91:6A:B2:74:C4:F6:2A:6B:55:3A:9C:9E:B5:43`

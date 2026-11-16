@@ -5,6 +5,8 @@ extends Node
 #   hay que pulsarlo dos veces para salir.
 # - Al pasar la app a segundo plano (NOTIFICATION_APPLICATION_PAUSED) se guarda la partida,
 #   porque Android puede cerrar la app sin avisar mientras está en segundo plano.
+# - v38: teclado en pantalla: si tapa el campo de texto activo, el panel sube lo justo
+#   (en horizontal el teclado de un móvil ocupa casi media pantalla).
 # No está probado en un dispositivo real (solo en escritorio simulando las notificaciones).
 
 const DS = preload("res://design_system.gd")
@@ -14,11 +16,49 @@ var game: Node = null
 var _exit_until: float = -1.0
 var _toast: Label = null
 var _toast_tw: Tween = null
+var _kb_node: Control = null     # panel desplazado por el teclado
+var _kb_base_y: float = 0.0
 
 
 func setup(g: Node) -> void:
 	game = g
 	get_tree().quit_on_go_back = false
+	set_process(OS.has_feature("mobile"))
+
+
+func _process(_delta: float) -> void:
+	kb_fit(DisplayServer.virtual_keyboard_get_height())
+
+
+# kb_px: alto del teclado en píxeles de la ventana (0 = cerrado)
+func kb_fit(kb_px: int) -> void:
+	var vp: Viewport = get_viewport()
+	var focus: Control = vp.gui_get_focus_owner()
+	if kb_px <= 0 or not (focus is LineEdit or focus is TextEdit):
+		_kb_restore()
+		return
+	# panel que se mueve: el antecesor del campo que cuelga directamente del juego
+	var n: Node = focus
+	while n.get_parent() != null and n.get_parent() != game:
+		n = n.get_parent()
+	var root: Control = n as Control
+	if root == null or n.get_parent() != game:
+		return
+	if _kb_node != root:
+		_kb_restore()
+		_kb_node = root
+		_kb_base_y = root.position.y
+	var vis: Vector2 = vp.get_visible_rect().size
+	var win_h: float = maxf(1.0, float(DisplayServer.window_get_size().y))
+	var limit: float = vis.y - float(kb_px) * vis.y / win_h - 12.0
+	var bottom: float = focus.get_global_rect().end.y - (root.position.y - _kb_base_y)
+	root.position.y = _kb_base_y - maxf(0.0, bottom - limit)
+
+
+func _kb_restore() -> void:
+	if _kb_node != null and is_instance_valid(_kb_node):
+		_kb_node.position.y = _kb_base_y
+	_kb_node = null
 
 
 func _notification(what: int) -> void:
