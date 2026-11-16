@@ -433,3 +433,22 @@ Catálogo de **9 lecciones cortas** que el docente elige desde el menú (**Misio
 - `tests/t_touch.gd` 22/22 (añadido: confirmar/cancelar dormir); misiones 75/75; huella de lógica igual (`9d5ba3a6…`).
 
 **Límites:** el encaje reduce algunos paneles grandes (p. ej. diagnóstico o mapa) en móviles, así que su texto queda algo menor que el del menú. No probado en móviles o tabletas físicos ni en Safari/iOS. Algunos textos de paneles todavía nombran teclas (p. ej. «[I] o [Esc] cierra» en la mochila).
+
+
+## v32 — Minijuegos nuevos del banco de trabajo
+
+**Archivo nuevo:** `mg_new.gd` (lo usa `minigames.gd`; prueba en `tests/t_minigames.gd`). La lógica de fabricar no cambia: como antes, los materiales solo se gastan si superas el minijuego, los errores solo se cuentan y [Esc] cancela sin gastar nada.
+
+| Herramienta | Antes | Ahora |
+|---|---|---|
+| Kit de parche | Conectar 4 cables | **Sellar la fuga:** aparecen 5 grietas en el casco; tócalas antes de que la presión baje del 55 % (si baja, cuenta un error y el sistema repone aire: no se pierde). También con E / Espacio. |
+| Filtro de polvo | Memoria de luces | **Capas del filtro:** ordenar 4 capas de la más gruesa a la más fina (malla gruesa → malla media → tela fina → membrana muy fina). Explica por qué lo grueso va primero. |
+| Mapa de navegación | Memoria de luces | **Rompecabezas orbital:** recomponer en 3×3 una «foto desde órbita» de un cráter, volcán o montaña del mapa, generada con el terreno 3D real de la partida (color y sombreado del relieve). |
+
+El Reparador de circuitos, el Botiquín y las mejoras del equipo conservan sus minijuegos. La intervención de emergencia «Sellar la fuga con el kit de parche» usa ahora el minijuego de la fuga (texto actualizado).
+
+**Datos reales en el rompecabezas (verificados en esta sesión):** LRO ha cartografiado la superficie de la Luna (science.nasa.gov/mission/lro) y un mosaico de la Luna llena se hizo con 1.231 fotos de su cámara de ángulo estrecho (svs.gsfc.nasa.gov, galería LRO/LROC NAC); la cámara HiRISE de MRO distingue detalles de ≈ 1 m (science.nasa.gov/mission/mars-reconnaissance-orbiter/science-instruments).
+
+**De juego (no datos reales):** el orden de capas es un principio general de filtrado por etapas (sin cifras de tamaños de partícula); la presión en %, su velocidad de bajada (7 %/s) y el umbral del 55 % son valores de juego.
+
+**Verificación:** `tests/t_minigames.gd` fabrica las tres herramientas por la vía normal resolviendo cada minijuego con clics: 14/14 (incluye un error contado sin castigo y [Esc] sin gastar materiales). Capturas en escritorio (1280×720) y móvil simulado (856×481 con controles táctiles): todo cabe; el panel deja libre la franja del botón «Cerrar». Táctil, misiones y huella de lógica: ver la salida de las pruebas en el commit.

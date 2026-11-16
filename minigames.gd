@@ -3,6 +3,8 @@ extends Control
 # Se abre con begin(); al terminar emite done(ok, errores). Todo se dibuja por codigo.
 
 const Data = preload("res://minigame_data.gd")
+const MgNew = preload("res://mg_new.gd")   # v32: capas del filtro, rompecabezas orbital, sellar la fuga
+var ext: RefCounted = MgNew.new()
 signal done(ok: bool, mistakes: int)
 
 const COLS: Array = [Color(0.95, 0.27, 0.27), Color(0.3, 0.62, 1.0), Color(0.3, 0.85, 0.42), Color(1.0, 0.85, 0.2), Color(0.8, 0.42, 0.95)]
@@ -72,10 +74,9 @@ func begin(id: String, name_txt: String) -> void:
 	note = ""
 	match id:
 		"patch":
-			kind = "wires"
-			n = 4
-			head = Lang.t("Kit de parche: conecta los cables")
-			_setup_wires(false)
+			kind = "leak"
+			head = Lang.t("Kit de parche: sella la fuga")
+			ext.call("setup", self, kind)
 		"repair":
 			kind = "wires"
 			n = 5
@@ -96,11 +97,13 @@ func begin(id: String, name_txt: String) -> void:
 			head = Lang.t("Botiquín: diagnóstico")
 			_setup_case()
 		"filter":
-			kind = "pattern"
-			pads = 4
-			total = 5
-			head = Lang.t("Memoria del filtro: recuerda el patrón")
-			_setup_pattern()
+			kind = "layers"
+			head = Lang.t("Filtro de polvo: ordena las capas")
+			ext.call("setup", self, kind)
+		"map":
+			kind = "puzzle"
+			head = Lang.t("Mapa: recompón la foto desde órbita")
+			ext.call("setup", self, kind)
 		_:
 			kind = "pattern"
 			pads = 5
@@ -112,9 +115,12 @@ func begin(id: String, name_txt: String) -> void:
 
 
 func _panel() -> Rect2:
-	var w: float = minf(size.x - 40.0, 960.0)
+	# v32: con controles tactiles se deja libre la franja derecha del boton «Cerrar»
+	var t: Node = game.get_node_or_null("TouchUI") if game != null else null
+	var right: float = 70.0 if (t != null and bool(t.call("enabled"))) else 0.0
+	var w: float = minf(size.x - 40.0 - right, 960.0)
 	var h: float = minf(size.y - 40.0, 600.0)
-	return Rect2((size.x - w) / 2.0, (size.y - h) / 2.0, w, h)
+	return Rect2((size.x - right - w) / 2.0, (size.y - h) / 2.0, w, h)
 
 
 # ---------- cables ----------
@@ -318,6 +324,10 @@ func handle_key(k: InputEventKey) -> void:
 		return
 	if finished:
 		return
+	if MgNew.is_new(kind):
+		ext.call("key", self, k, _panel())
+		queue_redraw()
+		return
 	if kind == "diagnosis":
 		if k.keycode >= KEY_1 and k.keycode <= KEY_4:
 			_pick(int(k.keycode - KEY_1))
@@ -341,6 +351,11 @@ func _gui_input(ev: InputEvent) -> void:
 	if mb == null or mb.button_index != MOUSE_BUTTON_LEFT or finished:
 		return
 	mouse = mb.position
+	if MgNew.is_new(kind):
+		if mb.pressed:
+			ext.call("click", self, mb.position, _panel())
+		queue_redraw()
+		return
 	if kind == "wires":
 		if mb.pressed:
 			var l: int = _hit_slot(0, mb.position)
@@ -387,6 +402,8 @@ func _process(delta: float) -> void:
 			done.emit(true, mistakes)
 		queue_redraw()
 		return
+	if MgNew.is_new(kind):
+		ext.call("process", self, delta)
 	if kind == "pattern":
 		if lit_t > 0.0:
 			lit_t -= delta
@@ -490,8 +507,13 @@ func _draw() -> void:
 			_draw_pattern(p)
 		"diagnosis":
 			_draw_diag(p)
+		_:
+			if MgNew.is_new(kind):
+				ext.call("draw", self, p)
 	if finished:
 		var msg: String = Lang.t("¡Listo!") if kind != "wires" else Lang.t("¡Conectado!")
+		if kind == "leak":
+			msg = Lang.t("¡Fuga sellada!")
 		draw_rect(Rect2(p.position + Vector2(0, p.size.y / 2.0 - 50.0), Vector2(p.size.x, 100.0)), Color(0.02, 0.1, 0.05, 0.9))
 		draw_string(ThemeDB.fallback_font, p.position + Vector2(0, p.size.y / 2.0 + 14.0), msg, HORIZONTAL_ALIGNMENT_CENTER, p.size.x, 52, Color(0.5, 1.0, 0.6))
 

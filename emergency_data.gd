@@ -68,7 +68,7 @@ const KINDS: Dictionary = {
 			}
 		},
 		"ivs": [
-			{"id": "patch", "n": "Sellar la fuga con el kit de parche", "d": "Reparación definitiva. Usa el minijuego de cables y gasta el kit.", "fixes": ["leak"], "mins": 45, "tool": "patch", "mg": "patch", "q": "full"},
+			{"id": "patch", "n": "Sellar la fuga con el kit de parche", "d": "Reparación definitiva. Usa el minijuego de sellar la fuga y gasta el kit.", "fixes": ["leak"], "mins": 45, "tool": "patch", "mg": "patch", "q": "full"},
 			{"id": "isolate", "n": "Aislar HAB-01 y cerrar su escotilla", "d": "Rápido y sin materiales, pero pierdes un módulo y queda daño en el casco.", "fixes": ["leak"], "mins": 20, "q": "partial"},
 			{"id": "filter_tool", "n": "Cambiar el cartucho con un filtro de polvo fabricado", "d": "Rápido. Gasta el filtro de polvo.", "fixes": ["filter"], "mins": 20, "tool": "filter", "q": "full"},
 			{"id": "filter_hand", "n": "Limpiar el filtro a mano", "d": "Más lento. Gasta 1 polímero.", "fixes": ["filter"], "mins": 40, "needs": {"polymer": 1}, "q": "full"},

@@ -104,6 +104,10 @@ func _after_start() -> void:
 			var t: Dictionary = main.get("tools")
 			t["map"] = 1
 			main.call("_open_world_map")
+		"mg_patch", "mg_filter", "mg_map":
+			# v32: minijuegos del banco
+			(main.get("inv") as Dictionary).merge({"scrap": 9, "polymer": 9, "circuits": 9}, true)
+			main.call("_craft", {"mg_patch": 0, "mg_filter": 3, "mg_map": 4}[state])
 		"pause":
 			main.call("_open_pause", true)
 		"ach":
