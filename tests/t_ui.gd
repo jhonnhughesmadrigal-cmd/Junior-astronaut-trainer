@@ -4,6 +4,8 @@ extends SceneTree
 #   RES=1280x720 SHOTS=menu SHOT_DIR=/tmp/shots godot --path . --rendering-driver opengl3 --script res://t_ui.gd
 # Estados: menu new opts credits howto endings end_win end_lose hud_moon hud_mars
 #          out_moon out_mars out_moon_low out_mars_low night_moon storm_mars pack bench map pause diag
+#          v40: lm_apollo lm_plaque lm_wreck (Luna) lm_rover (Marte): puntos de interes 'L' de cerca;
+#               base_moon base_mars: exterior de la base visto desde el sureste
 # Solo PREPARA el estado y toma la captura: no cambia la logica del juego.
 # (Version escrita en v28: la copia original citada en CLAUDE.md no estaba en el repositorio.)
 
@@ -39,6 +41,9 @@ func _prepare() -> void:
 	Lang.code = lc if lc == "en" else "es"
 	main.set("difficulty", 1)
 	main.set("cam_mode", 0)
+	# v40: vista 3D solo en memoria (no se guarda): las capturas no dependen de view3d=false guardado
+	if OS.get_environment("VIEW3D") != "0":
+		main.set("view3d_on", true)
 	main.set("show_tutorial", false)
 	if OS.get_environment("TOUCH") == "1":
 		main.get_node("TouchUI").set("setting", 1)   # controles tactiles visibles (sin guardar el ajuste)
@@ -102,7 +107,7 @@ func _prepare() -> void:
 			main.get("ui").call("show_page", state)
 		"opts":
 			main.get("ui").call("open_options")
-		"hud_moon", "out_moon", "out_moon_low", "night_moon", "end_win", "end_lose", "far_moon", "crew_moon", "ach", "hud_lv3":
+		"hud_moon", "out_moon", "out_moon_low", "night_moon", "end_win", "end_lose", "far_moon", "crew_moon", "ach", "hud_lv3", "lm_apollo", "lm_plaque", "lm_wreck", "base_moon":
 			_start("Luna")
 		_:
 			_start("Marte")
@@ -134,6 +139,20 @@ func _after_start() -> void:
 				main.set("clock", 22 * 60)
 			if state == "storm_mars":
 				main.set("storm_left", 2)
+			main.get("view3d").call("snap_camera")
+		"lm_apollo", "lm_plaque", "lm_wreck", "lm_rover", "base_moon", "base_mars":
+			# v40: 3 casillas al sur del punto de interes (o de la base), mirando al norte
+			var target := Vector2i(-1, -1)
+			if state.begins_with("base_"):
+				target = Vector2i(int(main.BASE_X0) + 6, int(main.BASE_Y0) + 5)
+			else:
+				var lm: String = state.substr(3)
+				for z in main.call("_zones"):
+					if str(z["lm"]) == lm and int(z["lx"]) >= 0:
+						target = Vector2i(int(z["lx"]), int(z["ly"]) + 3)
+						break
+			main.set("outside", true)
+			main.call("_set_player_tile", target, Vector2i(0, -1))
 			main.get("view3d").call("snap_camera")
 		"crew_moon", "crew_mars":
 			# primer plano de la tripulacion (zoom de camara)

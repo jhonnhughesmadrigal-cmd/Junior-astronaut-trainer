@@ -63,6 +63,8 @@ var t_gw: int = 0
 const Terrain3D = preload("res://terrain3d.gd")
 const WorldLook = preload("res://world_look.gd")
 const BaseLook = preload("res://base_look.gd")
+const CollectGlb = preload("res://collect_glb.gd")   # v40: recolectables de Blender
+const ExtArt = preload("res://ext_art.gd")   # v40: puntos de interes de Blender y fusion del exterior
 const CrewLook = preload("res://crew_look.gd")
 const StationArt = preload("res://station_art.gd")
 const CrewModel = preload("res://crew_model.gd")
@@ -666,38 +668,9 @@ func _glb_parts(nm: String, size: float) -> Array:
 	return found
 
 
-func _glb_instances(parent: Node3D, parts: Array, count: int) -> Array:
-	# Un MultiMesh por cada malla del modelo (conserva sus materiales/texturas).
-	var out: Array = []
-	for pt in parts:
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = pt["mesh"]
-		mm.instance_count = count
-		var mmi := MultiMeshInstance3D.new()
-		mmi.multimesh = mm
-		parent.add_child(mmi)
-		out.append(mmi)
-	return out
-
-
-func _place_glb_nodes(kind: String, size: float, tiles: Array, lift: float, g: RandomNumberGenerator) -> bool:
-	# Coloca un modelo .glb en cada casilla recolectable. Devuelve false si no hay modelo.
-	var parts: Array = _glb_parts(kind, size)
-	if parts.is_empty() or tiles.is_empty():
-		return false
-	var insts: Array = _glb_instances(exterior, parts, tiles.size())
-	for i in tiles.size():
-		var p: Vector2i = tiles[i]
-		var gy: float = ground_y(float(p.x) + 0.5, float(p.y) + 0.5)
-		var base: Transform3D = _xf(_tp(p.x, p.y, gy + lift), g.randf() * TAU, Vector3.ONE)
-		var plist: Array = []
-		for k in parts.size():
-			var xf: Transform3D = base * (parts[k]["xf"] as Transform3D)
-			(insts[k] as MultiMeshInstance3D).multimesh.set_instance_transform(i, xf)
-			plist.append([insts[k], i, xf])
-		node_data.append({"x": p.x, "y": p.y, "hidden": false, "parts": plist})
-	return true
+func _zone_tint(p: Vector2i) -> Color:
+	# v40: color de la zona para el material rock_tint de los recolectables de Blender (collect_glb.gd)
+	return game.zone_rock[game._zone_at(p.x, p.y)]
 
 
 func _place_glb_prop(parent: Node3D, nm: String, size: float) -> bool:
@@ -2095,7 +2068,7 @@ func _build_exterior() -> void:
 		mm_r.set_col(i, Color(zc.r * sh, zc.g * sh, zc.b * sh))
 	# vetas de metal: roca oscura + trozos metalicos
 	var metals: Array = lists["m"]
-	if _place_glb_nodes("material_scrap", float(MAT_SIZE["scrap"]), metals, 0.0, g):
+	if CollectGlb.place(self, "material_scrap", float(MAT_SIZE["scrap"]), metals, g, _zone_tint):
 		metals = []
 	var mm_mr: ChunkMM = _make_mm_c(exterior, Terrain3D.rock_mesh(2, moon_w, rock_seg), _ext_mat("rock", 0.0, 0.93), metals, 1)
 	var mm_mm: ChunkMM = _make_mm_c(exterior, ExtTex.lumpy_mesh(6, 0.22, 3), _ext_mat("ore", 0.55, 0.5), metals, 3)
@@ -2118,7 +2091,7 @@ func _build_exterior() -> void:
 	# hielo: cristales
 	ice_pts = PackedVector3Array()
 	var ices: Array = lists["i"]
-	if _place_glb_nodes("material_ice", float(MAT_SIZE["ice"]), ices, 0.0, g):
+	if CollectGlb.place(self, "material_ice", float(MAT_SIZE["ice"]), ices, g, Callable()):
 		ices = []
 	var mm_i: ChunkMM = _make_mm_c(exterior, ExtTex.crystal_mesh(), _ext_mat("ice", 0.0, 0.1, true), ices, 3)
 	for i in ices.size():
@@ -2136,7 +2109,7 @@ func _build_exterior() -> void:
 		node_data.append({"x": p3.x, "y": p3.y, "hidden": false, "parts": parts3})
 	# cargamento: cajas
 	var crates: Array = lists["c"]
-	if _place_glb_nodes("material_crate", float(MAT_SIZE["crate"]), crates, 0.0, g):
+	if CollectGlb.place(self, "material_crate", float(MAT_SIZE["crate"]), crates, g, Callable()):
 		crates = []
 	beacon_mat = StandardMaterial3D.new()
 	beacon_mat.albedo_color = Color(1.0, 0.2, 0.15)
@@ -2253,6 +2226,9 @@ func refresh_nodes() -> void:
 
 
 func _make_landmark(lm: String) -> Node3D:
+	var glb: Node3D = ExtArt.landmark(lm)   # v40: modelo de Blender si existe
+	if glb != null:
+		return glb
 	var n := Node3D.new()
 	var metal: StandardMaterial3D = _m(Color(0.7, 0.72, 0.8), 0.8, 0.3)
 	match lm:
@@ -2374,14 +2350,15 @@ func _build_base_exterior() -> void:
 		var rb: MeshInstance3D = _add(exterior, _tor(3.55, 3.62), trim, Vector3(cx, 3.3, cz), Vector3(PI / 2.0, 0, float(a) * PI / 3.0), false)
 		rb.scale = Vector3(1.0, 1.0, 0.75)
 	_add(exterior, _sph(0.35, 10), _m(Color(0.7, 0.95, 1.0), 0.0, 0.3, 1.8), Vector3(cx, 3.5, cz), Vector3.ZERO, false)
-	# esclusa con marquesina
-	_add(exterior, _box(Vector3(3.0, 3.1, 1.3)), dark, Vector3(ax, 1.55, az + 0.5))
-	_add(exterior, _box(Vector3(1.6, 2.3, 0.12)), _m(Color(0.14, 0.16, 0.22), 0.6, 0.4), Vector3(ax, 1.15, az + 1.16))
-	for i in 4:
-		_add(exterior, _box(Vector3(1.6, 0.18, 0.14)), _m(Color(0.82, 0.64, 0.2), 0.2, 0.55), Vector3(ax, 0.4 + float(i) * 0.55, az + 1.2), Vector3.ZERO, false)
-	_add(exterior, _box(Vector3(3.8, 0.16, 2.0)), _m(Color(0.8, 0.64, 0.24), 0.4, 0.45), Vector3(ax, 3.2, az + 0.9))
-	for sx in [-1.7, 1.7]:
-		_add(exterior, _cyl(0.07, 0.07, 3.1), rail, Vector3(ax + sx, 1.55, az + 1.8))
+	# esclusa con marquesina (v40: modelo de Blender art/3d/ext/airlock_ext.glb si existe)
+	if not ExtArt.airlock(exterior, Vector3(ax, 0.0, az)):
+		_add(exterior, _box(Vector3(3.0, 3.1, 1.3)), dark, Vector3(ax, 1.55, az + 0.5))
+		_add(exterior, _box(Vector3(1.6, 2.3, 0.12)), _m(Color(0.14, 0.16, 0.22), 0.6, 0.4), Vector3(ax, 1.15, az + 1.16))
+		for i in 4:
+			_add(exterior, _box(Vector3(1.6, 0.18, 0.14)), _m(Color(0.82, 0.64, 0.2), 0.2, 0.55), Vector3(ax, 0.4 + float(i) * 0.55, az + 1.2), Vector3.ZERO, false)
+		_add(exterior, _box(Vector3(3.8, 0.16, 2.0)), _m(Color(0.8, 0.64, 0.24), 0.4, 0.45), Vector3(ax, 3.2, az + 0.9))
+		for sx in [-1.7, 1.7]:
+			_add(exterior, _cyl(0.07, 0.07, 3.1), rail, Vector3(ax + sx, 1.55, az + 1.8))
 	_led(exterior, Vector3(ax, 2.75, az + 1.25), Color(0.2, 1.0, 0.4), Color(0.05, 0.3, 0.1))
 	# balizas del camino a la esclusa
 	for i in 4:
@@ -2394,6 +2371,7 @@ func _build_base_exterior() -> void:
 	dish.scale = Vector3(1.0, 0.5, 1.0)
 	_add(exterior, _cyl(0.07, 0.1, 0.8), dark, Vector3(x1 - 2.0, 3.5, z0 + 1.6))
 	BaseLook.build_details(self, exterior, bx, by, game.location == "Luna")
+	ExtArt.merge_static(exterior)   # v40: piezas fijas fusionadas por material
 	_build_base_ext_lv()
 
 
@@ -2481,6 +2459,7 @@ func _build_base_ext_lv() -> void:
 				_add(ext_lv, _sph(0.12, 6), _m(Color(1.0, 0.9, 0.5), 0.0, 0.4, 2.0), Vector3(mx + sd * (mr + 0.6), 3.4, mz), Vector3.ZERO, false)
 		if cl >= 3:
 			_add(ext_lv, _cyl(0.05, 0.07, 1.4), metal, Vector3(mx + 0.3, 4.2, mz), Vector3(0, 0, 0.8))
+	ExtArt.merge_static(ext_lv)   # v40: piezas por nivel fusionadas por material
 
 
 # ---------- actualización por fotograma ----------

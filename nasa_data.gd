@@ -149,13 +149,29 @@ func _on_image(result: int, code: int, _headers: PackedStringArray, body: Packed
 		updated.emit()
 
 
+# Tipo de imagen por sus primeros bytes: "jpg", "png", "webp" o "" (desconocido: no se intenta cargar).
+static func image_kind(b: PackedByteArray) -> String:
+	if b.size() >= 3 and b[0] == 0xFF and b[1] == 0xD8 and b[2] == 0xFF:
+		return "jpg"
+	if b.size() >= 8 and b[0] == 0x89 and b[1] == 0x50 and b[2] == 0x4E and b[3] == 0x47:
+		return "png"
+	if b.size() >= 12 and b.slice(0, 4).get_string_from_ascii() == "RIFF" and b.slice(8, 12).get_string_from_ascii() == "WEBP":
+		return "webp"
+	return ""
+
+
 func _set_image(b: PackedByteArray) -> bool:
+	# v40: se elige el cargador por la firma del archivo. Antes se probaba JPEG primero y, si la imagen era
+	# PNG/WebP, Godot 4.7 escribia "ERR_PARSE_ERROR" en la consola aunque luego se cargara bien.
 	var img := Image.new()
-	var err: int = img.load_jpg_from_buffer(b)
-	if err != OK:
-		err = img.load_png_from_buffer(b)
-	if err != OK:
-		err = img.load_webp_from_buffer(b)
+	var err: int = ERR_FILE_UNRECOGNIZED
+	match image_kind(b):
+		"jpg":
+			err = img.load_jpg_from_buffer(b)
+		"png":
+			err = img.load_png_from_buffer(b)
+		"webp":
+			err = img.load_webp_from_buffer(b)
 	if err != OK or img.get_width() < 2:
 		return false
 	var w: int = img.get_width()

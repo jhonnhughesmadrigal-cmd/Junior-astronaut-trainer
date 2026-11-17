@@ -29,6 +29,8 @@ Notas:
 - Orientación: no giro los modelos. Si alguno queda de espaldas a donde debería mirar, avísame y lo roto en código.
 - Los materiales recolectables se ocultan al recogerlos y reaparecen a los 5 días, igual que ahora.
 
+v40: los tres recolectables (`material_scrap/crate/ice.glb`) ya se generan con `tools/blender/collectables.py` (182–294 triángulos, 1–2 materiales; el color de la zona se aplica al material `rock_tint`). Los puntos de interés y la esclusa exterior van en `art/3d/ext/` (`tools/blender/landmarks.py`). Un archivo de otra herramienta con el mismo nombre los sustituye.
+
 ## 2. Iconos 2D (.png) -> carpeta `art/icons/`
 PNG con fondo transparente, cuadrados, recomendado 128x128 (se muestran a ~22 px en el HUD, así que deben leerse bien muy pequeños: silueta clara, pocos detalles).
 

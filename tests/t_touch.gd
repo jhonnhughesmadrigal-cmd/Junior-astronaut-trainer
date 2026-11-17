@@ -71,6 +71,12 @@ func _tap_btn(id: String) -> bool:
 func _process(_d: float) -> bool:
 	frame += 1
 	if frame == 5:
+		# v40: no depende de los ajustes guardados (antes «boton Camara» fallaba con view3d=false guardado):
+		# vista 3D solo en memoria (no se guarda) y sin la pantalla de perfil.
+		var pui: Control = main.get_node_or_null("ProfileUI")
+		if pui != null:
+			pui.visible = false
+		main.set("view3d_on", true)
 		main.set("show_tutorial", false)
 		main.call("_new_game", "Luna")
 		touch = main.get_node("TouchUI")
@@ -99,6 +105,14 @@ func _process(_d: float) -> bool:
 		_check(_tap_btn("jump"), "boton Saltar visible fuera de la base")
 	if frame == 47:
 		_check(bool(main.get("airborne")) or float(main.get("jump_z")) > 0.0, "el boton Saltar hace saltar")
+	if frame == 158:
+		# v40: el salto del fotograma 44 ya se comprobo; en la Luna puede seguir en el aire en el fotograma 160
+		# segun los FPS (con la partida y ajustes que deja t_mobile fallaba «la mochila se abre»).
+		# Se aterriza a Wilson para que la prueba de la mochila no dependa de la velocidad del equipo.
+		main.set("airborne", false)
+		main.set("jump_z", 0.0)
+		main.set("jump_vz", 0.0)
+		main.set("fall_t", -1.0)
 	if frame == 160:
 		_check(_tap_btn("pack"), "boton Mochila")
 	if frame == 165:

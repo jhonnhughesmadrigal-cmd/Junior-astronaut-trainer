@@ -1,6 +1,6 @@
 # Misión Perseo — guía para Claude Code
 
-Juego educativo 3D (Godot 4.4.1, GDScript, export web) para niños de 7–12 años, NASA Space Apps.
+Juego educativo 3D (Godot 4.7.2 desde v39, GDScript, export web) para niños de 7–12 años, NASA Space Apps.
 Wilson mantiene vivos a 4 tripulantes 30 días en la Luna o Marte. Español/inglés. Arte y audio generados por código.
 
 ## Reglas del proyecto (del dueño)
@@ -18,6 +18,7 @@ Wilson mantiene vivos a 4 tripulantes 30 días en la Luna o Marte. Español/ingl
 - `ui_screens.gd` (pantallas con DS) y `ui_motion.gd` (microinteracciones).
 - v30 `touch_ui.gd`: controles táctiles; simulan las teclas de `binds` con `Input.parse_input_event` (no tocar `main.gd` para el táctil).
 - v39 Modelos de Blender: `tools/blender/` (`bkit.py` utilidades, `astronaut.py`, `stations.py`; se ejecutan con `blender --background --factory-startup --python tools/blender/<script>.py -- <salida>`). Generan `art/3d/astronaut.glb` y `art/3d/base/station_X.glb` (O S G W R C B T A D). `crew_model.gd` carga el astronauta (mismas articulaciones que `_make_astronaut`: las poses por código no cambian; los materiales se sustituyen por nombre, así el color de rol sigue en `crew_look.gd`). `station_art.gd` carga las estaciones (`_build_glb`): nodos `anim_*` y materiales `screen_*`, `core`, `led_*`, `shield_band`, `glass`, `water`, `solar_cell` (ver cabecera de `stations.py`). Las estaciones reaccionan mientras Wilson las usa (modo 5) y destellan al terminar. Si falta un `.glb`, se usa el modelo por código.
+- v40 Exterior de Blender: `tools/blender/collectables.py` → `art/3d/material_{scrap,crate,ice}.glb` (los coloca `collect_glb.gd` con `ChunkMM`; materiales `rock_tint` = color de la zona, `led`, `*_vc` = color por vértice); `tools/blender/landmarks.py` → `art/3d/ext/landmark_{apollo,rover,plaque,wreck}.glb` y `airlock_ext.glb` (los carga `ext_art.gd`). `ExtArt.merge_static` fusiona por material las piezas fijas del exterior (164 → 36). Si falta un `.glb`, modelo por código. Ver DATOS.md v40.
 - v38 `interior_look.gd`: estructura, tuberías, equipo de pared, luces del interior y `merge_static` (fusiona piezas fijas por material: menos llamadas de dibujo). Parte alta de los muros bajos solo en cámaras cercanas (nodo del techo).
 - v37 Android: preset «Android» en `export_presets.cfg` (paquete `com.misionperseo.juego`), `mobile_os.gd` (botón «Atrás» = Esc, guardar en segundo plano), icono `art/app/` (`tools/gen_icon.gd`). Guía: `docs/ANDROID_APK.md`. La clave de firma de release NO está en el repo (se pasa con `GODOT_ANDROID_KEYSTORE_RELEASE_PATH/USER/PASSWORD`). Privacidad: `docs/PRIVACIDAD.md` (borrador para la escuela).
 - v36 Firebase: `firebase.gd` (REST: Auth + Firestore), `firebase_config.gd` (API_KEY/PROJECT_ID vacíos = modo local), `firebase/firestore.rules`. Guía: `docs/FIREBASE_SETUP.md`. Admin = documento `admins/{uid}` creado a mano. Emulador: `cd firebase && npx firebase-tools emulators:start --only auth,firestore --project demo-mision-perseo` y `FIREBASE_EMULATOR=127.0.0.1`.
@@ -34,15 +35,17 @@ Wilson mantiene vivos a 4 tripulantes 30 días en la Luna o Marte. Español/ingl
 - Sintaxis: `godot --headless --check-only --script res://main.gd --path .`
 - Lógica (debe dar 94/94): copia `tests/t_emg.gd` a la raíz y ejecuta `xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_emg.gd`. **Ojo (v28): `tests/t_emg.gd` no está en el repositorio**; hay que recuperarlo de quien lo tenga.
 - Huella de lógica (v28): copia `tests/t_logic.gd` a la raíz y ejecuta `LOGIC_OUT=/tmp/l.txt xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_logic.gd`. Compara el md5 ("HUELLA") con el del commit anterior: si la lógica no cambia, debe coincidir (v28: `9d5ba3a6…`).
-- Capturas: copia `tests/t_ui.gd` a la raíz y usa `tools/shot.sh 1280x720 menu new hud_mars out_moon out_mars pack bench map pause diag` (salida en /tmp/shots), o en paralelo `JOBS=3 tools/shots_all.sh <carpeta> 1920x1080 <estados...>`. Estados extra: stc_O stc_S stc_R stc_C stc_T stc_A stc_D (estaciones con cámara fija), hud_lv3, opts credits howto endings end_win end_lose hud_moon crew_moon far_moon far_mars out_moon_low out_mars_low night_moon storm_mars ach.
+- Capturas: copia `tests/t_ui.gd` a la raíz y usa `tools/shot.sh 1280x720 menu new hud_mars out_moon out_mars pack bench map pause diag` (salida en /tmp/shots), o en paralelo `JOBS=3 tools/shots_all.sh <carpeta> 1920x1080 <estados...>`. Estados extra: stc_O stc_S stc_R stc_C stc_T stc_A stc_D (estaciones con cámara fija), hud_lv3, opts credits howto endings end_win end_lose hud_moon crew_moon far_moon far_mars out_moon_low out_mars_low night_moon storm_mars ach; v40: lm_apollo lm_plaque lm_wreck lm_rover base_moon base_mars (puntos de interés y base desde fuera). `t_ui` activa la vista 3D solo en memoria (`VIEW3D=0` para no hacerlo).
 - Misiones de clase (debe dar 75/75): copia `tests/t_lessons.gd` a la raíz y ejecuta `xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_lessons.gd` (también con `LANG_CODE=en`). Al añadir una misión, regenera la guía docente.
-- Táctil (debe dar 22/22): `tests/t_touch.gd`. Ojo (v39): con `view3d=false` / cámara 2D en los ajustes guardados, «el botón Cámara cambia de cámara» falla también en v38 (depende de los ajustes, no del código).
+- Táctil (debe dar 22/22): `tests/t_touch.gd`. v40: ya no depende de los ajustes guardados (vista 3D solo en memoria) ni de los FPS (aterriza a Wilson antes de probar la mochila).
+- Exterior v40 (debe dar 26/26, también con `LOC=Marte`): `tests/t_exterior.gd` (modelos, recoger/reaparecer con `.glb`, tinte de zona, puntos de interés, esclusa, fusión, firma de imágenes de `nasa_data`).
 - Modelos de Blender (debe dar 32/32): `tests/t_stations.gd` (carga, piezas animables y reacción de cada estación al usarla).
 - Móvil/Android (debe dar 14/14): `tests/t_mobile.gd`. APK: `godot --headless --path . --export-debug Android build/x.apk` y `apksigner verify` (SDK en `~/android-sdk`).
 - Firebase con emulador (deben dar 26/26 y 14/14): `FIREBASE_EMULATOR=127.0.0.1` + `tests/t_firebase.gd` (headless) y `tests/t_fbflow.gd` (xvfb).
 - Perfiles (debe dar 19/19): `tests/t_profiles.gd` (borra `user://profiles.cfg`). Capturas: `prof_choose prof_email prof_role prof_teacher prof_student prof_newclass prof_lessons`.
 - Minijuegos del banco (debe dar 14/14): `tests/t_minigames.gd`. Capturas: estados `mg_patch mg_filter mg_map`. Capturas con controles táctiles: `TOUCH=1` en `tools/shots_all.sh`; escala de interfaz simulada: `UI_SCALE=1.25`.
-- Coste relativo: `tests/t_perf.gd` (primitivas y llamadas de dibujo; `LOC=Luna Q=2`, `INSIDE=1` dentro de la base; v38 Luna dentro: 419/846/877 llamadas en Q=0/1/2).
+- Coste relativo: `tests/t_perf.gd` (primitivas, llamadas de dibujo y recuento de la escena; `LOC=Luna Q=2`, `INSIDE=1` dentro de la base, `SNAP=/ruta.png` guarda lo que ve). v40: no depende de los ajustes (vista 3D y cámara fija en memoria), dentro mira el interior de verdad y fuera mira a la base. v40 Luna: fuera 227/234/239 llamadas (v39: 348/359/364), dentro 331/813/898 (Q=0/1/2). Las cifras anteriores a v40 se tomaron con la prueba antigua y no son comparables.
+- macOS (sin xvfb): las pruebas y capturas funcionan igual quitando `xvfb-run -a`; abren una ventana. Las capturas salen al doble de tamaño en pantallas Retina.
 - Web: `godot --headless --import`, luego `--export-release Web web/index.html`, servir con HTTP y revisar con Playwright (verificar fuentes e iconos SVG).
 - El viewport del proyecto es 1100×650 (canvas_items, aspect expand): comprobar 1920×1080, 1600×900, 1366×768, 1280×720 y 1024×600.
 
@@ -55,6 +58,7 @@ Pendiente:
 1. Verificar táctil, rendimiento real en GPU/navegador y revisión humana del inglés (nada de esto está medido).
 2. Hecho en v38: interior de la base (ver DATOS.md v38). Pendiente: medir en tabletas reales el coste de sus 5 luces.
 3. Hecho en v39: astronauta y estaciones modelados en Blender (ver arriba). Pendiente: medir en tabletas reales; personajes sin rostro (casco con visor opaco, a propósito).
+3b. Hecho en v40: recolectables, puntos de interés y esclusa exterior en Blender; exterior fusionado por material (−35 % llamadas fuera). Pendiente: casco de la base en Blender (hoy solo fusionado), rocas/relieve (siguen por código), probar el zip web en un navegador real y medir FPS en tabletas.
 4. Recuperar `tests/t_emg.gd` (94 pruebas).
 Criterio: menos ruido visual, mejores materiales, más profundidad, identidad consistente; sin neón ni efectos recargados.
 

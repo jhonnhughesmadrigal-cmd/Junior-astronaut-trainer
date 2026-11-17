@@ -565,3 +565,38 @@ Con los prompts de `docs/PROMPTS_LUDO.md` se generó en Ludo.ai una imagen con l
 **Verificación (Windows, Godot 4.7.2):** `t_stations` 32/32, minijuegos 14/14, misiones 75/75, móvil 14/14, táctil 21/22 (el mismo fallo aparece en v38 con estos ajustes guardados; ver CLAUDE.md). Capturas revisadas: interior Luna y Marte, estaciones con cámara fija, tripulación. Aviso conocido: Godot 4.7 muestra `ERR_PARSE_ERROR` al cargar una imagen en la interfaz (también sin los modelos nuevos; sin investigar).
 
 **No probado:** en tabletas o móviles reales; no se midieron FPS. Las animaciones de reacción solo se comprobaron por prueba automática (valores), no a ojo en movimiento.
+
+## v40 — Exterior con modelos de Blender (recolectables, puntos de interés, esclusa) y menos llamadas de dibujo
+
+**Archivos nuevos:** `tools/blender/collectables.py` → `art/3d/material_{scrap,crate,ice}.glb`; `tools/blender/landmarks.py` → `art/3d/ext/landmark_{apollo,rover,plaque,wreck}.glb` y `art/3d/ext/airlock_ext.glb`; `collect_glb.gd`, `ext_art.gd`, `tests/t_exterior.gd`. Cambios: `view3d.gd` (las 3 llamadas de recolectables, `_make_landmark`, esclusa y fusión del exterior; se quitan `_place_glb_nodes` y `_glb_instances`: −28 líneas), `nasa_data.gd`, `tests/t_perf.gd`, `tests/t_touch.gd`, `tests/t_ui.gd`, `export_presets.cfg` (0.40, code 40). `main.gd` sin cambios. Si falta cualquier `.glb`, se usa el modelo por código.
+
+**Recolectables (salen cientos):** chatarra = restos de un módulo (tanque tumbado con aros, placa de casco doblada, puntal) sobre un montículo que toma el color de la zona; caja = contenedor verde oliva con marco, asas, franja ámbar mate y piloto; hielo = grupo de prismas sobre base escarchada (opaco: ordenar cientos de instancias transparentes es caro). 294 / 268 / 182 triángulos; 2 / 2 / 1 materiales (las piezas que solo cambian de color comparten material con color por vértice).
+- **Fallo corregido (latente desde v33):** la ruta `.glb` de recolectables (`_place_glb_nodes`) guardaba `MultiMeshInstance3D` en `node_data`, pero `refresh_nodes()` espera `ChunkMM`: al recoger un material con modelo `.glb` habría dado error. Tampoco generaba los destellos del hielo y usaba un MultiMesh único para todo el mapa (sin descarte por bloques). `collect_glb.gd` usa `ChunkMM` (mismos bloques de 12×12 casillas que el modelo por código).
+- **Color por vértice:** con el renderizador del juego (Compatibilidad), el color por vértice del glTF se veía oscurecido dos veces; se pasa a sRGB al cargar (comprobado con capturas A/B).
+
+**Puntos de interés 'L':** etapa de descenso de un módulo lunar (lo que queda en los sitios Apolo: lámina dorada, patas con platos, escalerilla; sin banderas ni logotipos), rover genérico de 6 ruedas (no reproduce ninguna misión ni marcas), placa sobre pedestal con piloto ámbar tenue (antes: esfera y anillo cian brillantes) y restos del carguero. 236–1 256 triángulos.
+
+**Esclusa vista desde fuera:** vestíbulo, marco metálico, puerta doble con ojo de buey y asa, franjas de aviso mate, escalón, marquesina ámbar (identidad de la puerta) y postes; 704 triángulos. El LED animado y las balizas del camino siguen por código.
+
+**Piezas fijas fusionadas:** `_m()` comparte materiales por color, así que `InteriorLook.merge_static` también sirve fuera: casco, ventanas, plataforma, cables, equipo y mejoras por nivel (`ext_lv`). Piezas sueltas del exterior: 164 → 36. No cambia el aspecto.
+
+**Rendimiento (equipo de desarrollo: Mac, Godot 4.7.2, `--rendering-driver opengl3`; recuento y llamadas, no FPS ni GPU real).** `tests/t_perf.gd` (corregido, ver abajo), fuera mirando a la base:
+
+| | Llamadas Q0/Q1/Q2 | Primitivas visibles Q0/Q2 | Superficies escena | Triángulos escena (Q2) |
+|---|---|---|---|---|
+| Luna v39 | 348 / 359 / 364 | 84 816 / 206 574 | 701 | 417 972 |
+| Luna v40 | 227 / 234 / 239 (−35 %) | 92 612 / 208 870 | 520 (−26 %) | 417 244 (≈0 %) |
+| Marte v39 | 332 / 343 / 347 | 78 216 / 174 902 | 695 | 382 560 |
+| Marte v40 | 207 / 218 / 218 (−37 %) | 89 572 / 178 132 | 515 (−26 %) | 391 042 (+2 %) |
+
+Las primitivas visibles suben algo con calidad Baja (+9 % Luna, +15 % Marte: los modelos tienen más caras que las cajas de antes). Interior sin cambios (331 / 813 / 898 llamadas en v39 y v40).
+
+**Pruebas arregladas:**
+- `ERR_PARSE_ERROR` de Godot 4.7 **no venía de un icono** (todos los SVG cargan bien): `nasa_data.gd` probaba siempre `load_jpg_from_buffer` primero y, si la imagen era PNG/WebP, Godot escribía el error aunque luego se cargara. Ahora elige el cargador por la firma del archivo (`image_kind`).
+- `t_perf` con `INSIDE=1` dejaba a Wilson en la casilla exterior `ext_spawn` (la cámara solo veía una pared: 10 llamadas); fuera medía en 1.ª persona de espaldas a la base. Ahora: vista 3D y cámara fija solo en memoria, sin pantalla de perfil, interior desde `_find_start()`, exterior mirando a la base; imprime también el recuento de la escena.
+- `t_touch`: no depende de los ajustes (vista 3D en memoria). Además, en este Mac fallaba «la mochila se abre» tras `t_mobile`: Wilson seguía en el aire del salto en el fotograma 160 (depende de los FPS); se le hace aterrizar antes de esa parte (el salto ya se comprueba antes). 22/22 también con `view3d=false` guardado.
+- `t_ui`: vista 3D en memoria (`VIEW3D=0` para desactivarla); estados nuevos `lm_apollo lm_plaque lm_wreck lm_rover base_moon base_mars`.
+
+**Verificación (macOS, Godot 4.7.2, sin xvfb):** `t_exterior` 26/26 (Luna y Marte), `t_stations` 32/32, misiones 75/75 (es y en), móvil 14/14, táctil 22/22 (también tras `t_mobile` y con `view3d=false` guardado), perfiles 19/19, minijuegos 14/14 con datos de usuario limpios. **Ojo:** minijuegos da 13/14 («map: superar el minijuego fabrica la herramienta») si antes se ejecutan otras pruebas que dejan partida/ajustes guardados; pasa **igual en v39** (no es de v40) y no se investigó más. Capturas revisadas frente a v39: `out_moon out_mars far_moon lm_apollo lm_plaque lm_wreck lm_rover base_moon`. Web: exportado (9 archivos, `.pck` 4,1 MB) pero sin abrir en navegador.
+
+**No probado:** en tabletas/móviles reales; no se midieron FPS ni GPU. El zip web v40 no se pudo abrir en un navegador desde este equipo (ver CLAUDE.md). Las rocas y el relieve siguen por código (ya usan MultiMesh por bloques); el casco de la base no se remodeló (solo se fusionó).
