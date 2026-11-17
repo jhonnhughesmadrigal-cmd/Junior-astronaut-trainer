@@ -483,6 +483,7 @@ var muted: bool = false
 var root_box: VBoxContainer
 var root_margin: MarginContainer
 var ending_art: Control
+var ending_cine = null   # v41: escena final en 3D en vivo (ending_cine.gd)
 var ending_active: bool = false
 var show_tutorial: bool = true
 var easy_read: bool = false
@@ -1926,6 +1927,9 @@ func _close_pause() -> void:
 
 func _clear() -> void:
 	ending_active = false
+	if ending_cine != null:
+		ending_cine.call("stop")
+		ending_cine = null
 	if ending_art != null and is_instance_valid(ending_art):
 		ending_art.queue_free()
 	ending_art = null
@@ -2291,7 +2295,7 @@ func _is_night() -> bool:
 func _process(delta: float) -> void:
 	t_anim += delta
 	if vp3d != null:
-		var want: int = SubViewport.UPDATE_ALWAYS if (((playing and view3d_on) or in_menu) and view3d != null) else SubViewport.UPDATE_DISABLED
+		var want: int = SubViewport.UPDATE_ALWAYS if (((playing and view3d_on) or in_menu or (ending_active and ending_cine != null)) and view3d != null) else SubViewport.UPDATE_DISABLED
 		if in_menu and not playing and Engine.get_process_frames() % 2 == 1:
 			want = SubViewport.UPDATE_DISABLED # el fondo del menu se redibuja a la mitad de FPS
 		if int(vp3d.render_target_update_mode) != want:
@@ -5058,6 +5062,9 @@ func _input(event: InputEvent) -> void:
 	if playing and tut != null and bool(tut.call("handle_skip_key", k)):
 		get_viewport().set_input_as_handled()
 		return
+	if not playing and ending_cine != null and bool(ending_cine.call("handle_key", k)):
+		get_viewport().set_input_as_handled()   # v41: la primera tecla muestra la tarjeta del final
+		return
 	if not playing:
 		if in_menu and ui != null and k.keycode == KEY_ESCAPE and not k.echo and ui.cur_page != "main":
 			ui.show_page("main")
@@ -5065,6 +5072,12 @@ func _input(event: InputEvent) -> void:
 	if mode == 15:
 		# v29: cuestionario/resumen de una mision de clase (botones: el teclado sigue a la interfaz)
 		lesson.call("handle_key", k)
+		return
+	if mode == 16:
+		# v41: cinematica de un evento (cinema.gd): E / Esc / Espacio / Enter la saltan
+		if view3d != null and view3d.efx != null:
+			view3d.efx.call("handle_key", k)
+		get_viewport().set_input_as_handled()
 		return
 	if mode == 14:
 		# el centro de diagnostico usa botones (raton, flechas y Enter): solo cerramos con Esc o con su tecla
@@ -5206,6 +5219,7 @@ func _use_station(ch: String) -> void:
 			breach = false
 			_add("shield", 10)
 			_sfx("craft")
+			_efx("sealed")
 			_log(Lang.t("[color=lime]Sellas la brecha con el kit de parche. Alerta roja desactivada (+10 escudo).[/color]"))
 		else:
 			_log(Lang.t("[color=orange]La brecha sigue abierta: fabrica un kit de parche en el banco de trabajo.[/color]"))
@@ -5791,6 +5805,12 @@ func _weighted(w: Array) -> int:
 	return 0
 
 
+# v41: avisa a la vista 3D de un evento para hacerlo visible (event_fx.gd: efectos, bocadillos, cinematica)
+func _efx(kind: String, data: Dictionary = {}) -> void:
+	if view3d != null and view3d_on:
+		view3d.call("event_fx", kind, data)
+
+
 func _dust_storm() -> void:
 	var dmg: float = 15.0
 	storm_left = 2
@@ -5801,6 +5821,7 @@ func _dust_storm() -> void:
 		_log(Lang.t("[color=yellow]Usas el filtro de polvo: el daño de la tormenta se reduce.[/color]"))
 	_add("energy", -dmg)
 	_sfx("bad")
+	_efx("storm")
 	_log(Lang.t("[color=orange]Tormenta de polvo: bloquea la luz y cubre los paneles (-%d energía, solar reducido).[/color]") % int(dmg))
 
 
@@ -5855,16 +5876,19 @@ func _random_event() -> void:
 			_add("oxygen", -loss)
 			emg.add_maint("ext", -10.0)
 			_sfx("bad")
+			_efx("micro")
 			_log(Lang.t("[color=red]Micrometeorito: pequeña fuga de aire (-%d oxígeno). Los equipos exteriores bien mantenidos sufren menos; revísalos en el Centro de diagnóstico.[/color]") % int(round(loss)))
 		2:
 			emg.spawn("power", rng)
 		3:
 			_add("food", 12)
 			_sfx("good")
+			_efx("harvest")
 			_log(Lang.t("[color=green]Cosecha excelente en el invernadero (+12 comida).[/color]"))
 		4:
 			_add("morale", 10)
 			_sfx("good")
+			_efx("message")
 			_log(Lang.t("[color=green]Mensaje de la Tierra: sube la moral (+10 moral).[/color]"))
 		5:
 			if not emg.spawn("medical", rng).is_empty():
@@ -5882,6 +5906,7 @@ func _random_event() -> void:
 			_sfx("alarm", -8.0)
 			stats["bad_events"] += 1
 			emg.spawn("oxygen", rng, {"cause": "leak", "sev": 2})
+			_efx("meteor")
 			_log(Lang.t("[color=red][b]METEORO DIRECTO:[/b] daño crítico al escudo (-40) y brecha en el casco. ¡ALERTA ROJA! Pierdes oxígeno cada día hasta sellarla: investiga en el Centro de diagnóstico.[/color]"))
 		7:
 			emg.spawn("power", rng, {"sev": 2})
@@ -5891,11 +5916,13 @@ func _random_event() -> void:
 		9:
 			_add("food", -25)
 			_sfx("bad")
+			_efx("plague")
 			stats["bad_events"] += 1
 			_log(Lang.t("[color=red]Plaga en los cultivos (-25 comida).[/color]"))
 		10:
 			inv["scrap"] += 2
 			_sfx("good")
+			_efx("salvage")
 			_log(Lang.t("[color=green]Un compañero rescata piezas útiles de los desechos (+2 chatarra).[/color]"))
 
 
@@ -5958,6 +5985,9 @@ func _emg_on_spawn(inc: Dictionary) -> void:
 	if EmergencyData.COORD.has(str(inc["kind"])):
 		_log(Lang.t("[color=cyan]%s[/color]") % Lang.t(str(EmergencyData.COORD[str(inc["kind"])])))
 	_tod_toast("⚠ " + Lang.t(str(kd["alert"])), Color(1.0, 0.45, 0.4))
+	var ek: String = {"flare": "flare", "power": "power", "oxygen": "oxygen", "water": "water", "storm": "storm_warn", "medical": "medical"}.get(str(inc["kind"]), "")
+	if ek != "":
+		_efx(ek)
 	_refresh()
 
 
@@ -5976,6 +6006,7 @@ func _emg_storm_hit(mit: float) -> void:
 	storm_left = 1 if mit <= 0.5 else 2
 	_add("energy", -dmg)
 	_sfx("bad")
+	_efx("storm")
 	_log(Lang.t("[color=orange]Llega la tormenta de polvo: bloquea la luz y cubre los paneles (-%d energía, solar reducido).[/color]") % int(round(dmg)))
 	emg.add_maint("power", -6.0)
 	_refresh()
@@ -6092,10 +6123,19 @@ func _start_outro_music(nm: String) -> void:
 
 func _build_ending_screen(won: bool, eid: String) -> void:
 	var e: Dictionary = ENDINGS[eid]
-	ending_art = (load("res://ending_art.gd") as GDScript).new() as Control
+	# v41: con la vista 3D, escena final en vivo (ending_cine.gd); si no, ilustracion 2D (ending_art.gd)
+	if view3d_on and view3d != null:
+		ending_cine = (load("res://ending_cine.gd") as GDScript).new()
+		if bool(ending_cine.call("setup", self, won, eid)):
+			ending_art = ending_cine.call("make_view")
+		else:
+			ending_cine = null
+	if ending_cine == null:
+		ending_art = (load("res://ending_art.gd") as GDScript).new() as Control
 	add_child(ending_art)
 	move_child(ending_art, 1)
-	ending_art.call("setup", eid, location)
+	if ending_cine == null:
+		ending_art.call("setup", eid, location)
 	# v28: tarjeta del final con el sistema de diseno (ui_screens.gd)
 	var screens = load("res://ui_screens.gd")
 	screens.ending_screen(self, won, eid)

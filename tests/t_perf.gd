@@ -1,7 +1,7 @@
 extends SceneTree
 # Mide (v28; v40 corregido): tiempo de crear la partida, primitivas/llamadas de dibujo por fotograma y
 # recuento de la escena (superficies y triangulos de todo lo que cuelga del exterior o del interior).
-# Uso: cp tests/t_perf.gd . && LOC=Luna Q=2 [INSIDE=1: dentro de la base] godot --path . --rendering-driver opengl3 --script res://t_perf.gd
+# Uso: cp tests/t_perf.gd . && LOC=Luna Q=2 [INSIDE=1: dentro de la base] [EV=breach|storm (v41)] godot --path . --rendering-driver opengl3 --script res://t_perf.gd
 # (en Linux sin pantalla: xvfb-run -a godot ...). Opcional: SNAP=/ruta.png guarda lo que ve la camara.
 # Cifras RELATIVAS (equipo de desarrollo), no una medida de GPU real.
 # v40: no depende de los ajustes guardados: activa la vista 3D y la camara fija solo en memoria (no guarda),
@@ -77,6 +77,13 @@ func _process(_d: float) -> bool:
 		else:
 			main.call("_set_player_tile", main.get("ext_spawn"), Vector2i(0, -1))   # mirando a la base
 		main.get("view3d").call("snap_camera")
+		# v41: EV=breach (brecha: alarma, chispas, fuga) o EV=storm (tormenta) para medir el coste de los efectos
+		match OS.get_environment("EV"):
+			"breach":
+				main.set("breach", true)
+			"storm":
+				main.set("storm_left", 2)
+				main.get("view3d").get("efx").set("storm_k", 1.0)
 	if frame > 40 and frame <= 60:
 		var vp: Viewport = main.get("vp3d")
 		var rid: RID = vp.get_viewport_rid()

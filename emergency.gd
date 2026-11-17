@@ -444,6 +444,7 @@ func _apply_fix(inc: Dictionary, iv_id: String, q: String) -> void:
 			match cause:
 				"leak":
 					g.breach = false
+					g.call("_efx", "sealed")   # v41: la tripulacion lo celebra
 					if q == "full":
 						g._add("shield", 10)
 						add_maint("ext", 5.0)

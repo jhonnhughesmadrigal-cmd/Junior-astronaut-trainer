@@ -65,6 +65,14 @@ const WorldLook = preload("res://world_look.gd")
 const BaseLook = preload("res://base_look.gd")
 const CollectGlb = preload("res://collect_glb.gd")   # v40: recolectables de Blender
 const ExtArt = preload("res://ext_art.gd")   # v40: puntos de interes de Blender y fusion del exterior
+const CrewPoses = preload("res://crew_poses.gd")   # v41: poses de la tripulacion en los eventos
+const CrewAnims = preload("res://crew_anims.gd")   # v41: salto y recogida animados en Blender
+var efx: Node3D = null          # v41: event_fx.gd (eventos visibles y cinematicas)
+var cine_out: int = -1          # v41: la cinematica muestra el exterior (1) o el interior (0); -1 = segun el jugador
+var jump_vz0: float = 0.0       # v41: velocidad de despegue del salto (para recorrer la animacion)
+var land_t: float = 9.0         # v41: segundos desde el ultimo aterrizaje
+var was_air: bool = false
+var ending_stage = null         # v41: ending_cine.gd (escena final en 3D en vivo; la partida ya no corre)
 const CrewLook = preload("res://crew_look.gd")
 const StationArt = preload("res://station_art.gd")
 const CrewModel = preload("res://crew_model.gd")
@@ -468,8 +476,26 @@ func setup() -> void:
 	target_ring = _add(self, _tor(0.78, 0.92), ring_mat, Vector3.ZERO, Vector3.ZERO, false)
 	target_ring.visible = false
 	cam_focus = _tp(game.player.x, game.player.y)
-	last_outside = game.outside
+	if efx == null or not is_instance_valid(efx):
+		efx = Node3D.new()
+		efx.set_script(load("res://event_fx.gd"))
+		add_child(efx)
+		efx.call("init", self)
+	efx.call("setup")
+	cine_out = -1
+	last_outside = is_out()
 	_update_visibility()
+
+
+# v41: lo llama main.gd cuando ocurre un evento (event_fx.gd decide que se ve).
+func event_fx(kind: String, data: Dictionary = {}) -> void:
+	if efx != null and is_instance_valid(efx):
+		efx.call("trigger", kind, data)
+
+
+# v41: ¿se ve el exterior? (la cinematica puede mostrarlo aunque Wilson este dentro, y al reves)
+func is_out() -> bool:
+	return game.outside if cine_out < 0 else cine_out == 1
 
 
 func _build_sky() -> void:
@@ -1000,6 +1026,20 @@ func _anim_astronaut(n: Node3D, pose: String, t: float, phase: float = 0.0) -> v
 			tg["er_x"] = 0.0
 			tg["er_x"] = 0.4 * sin(t * 7.0)
 			tg["head_y"] = -0.2
+	# v41: animaciones de Blender (salto y recogida) y poses de evento de la tripulacion
+	var ba: Dictionary = {}
+	if pose == "jump" and n == player_node:
+		ba = CrewAnims.sample("jump", _jump_u())
+	elif pose == "land":
+		ba = CrewAnims.sample("jump", 0.85 + 0.15 * clampf(land_t / 0.18, 0.0, 1.0) - 0.15 * clampf((land_t - 0.18) / 0.25, 0.0, 1.0))
+	elif pose == "grab":
+		ba = CrewAnims.sample("collect", act_u)
+	if not ba.is_empty():
+		for kk in ba:
+			tg[kk] = ba[kk]
+		tg["bob"] = 0.0
+	else:
+		CrewPoses.apply(pose, tg, t, phase)
 	tg["head_x"] = float(tg["head_x"]) - float(tg["body_x"]) * 0.55   # la cabeza compensa la inclinacion del torso
 	var k: float = anim_k # suavizado hacia la pose (independiente de los FPS)
 	rig.position.y = lerpf(rig.position.y, float(tg["rig_y"]) + float(tg["bob"]), k)
@@ -1049,6 +1089,8 @@ func _player_pose() -> String:
 		return "fall"
 	if game.outside and game.jump_z > 0.03:
 		return "jump"
+	if game.outside and land_t < 0.45 and not game.moving and CrewAnims.has("jump"):
+		return "land"   # v41: amortiguar el aterrizaje
 	if game.mode == 1:
 		return "talk"
 	if game.moving:
@@ -2471,7 +2513,7 @@ func zoom_by(d: float) -> void:
 func _update_visibility() -> void:
 	if game == null or interior == null:
 		return
-	var out: bool = game.outside
+	var out: bool = is_out()
 	interior.visible = not out
 	exterior.visible = out
 	sun.visible = out
@@ -2522,17 +2564,23 @@ func _process(delta: float) -> void:
 	if menu_mode:
 		_menu_process(delta)
 		return
+	if ending_stage != null:
+		ending_stage.call("tick", delta)   # v41: escena final
+		return
 	if not game.playing:
 		return
 	t_node += delta
-	if game.outside != last_outside:
-		last_outside = game.outside
+	if is_out() != last_outside:
+		last_outside = is_out()
 		_update_visibility()
 		if game.outside:
 			cam_focus = _tp(game.player.x, game.player.y)
 	if not game.view3d_on:
 		return # en la vista 2D no hace falta animar la escena 3D
 	_update_light()
+	if efx != null:
+		efx.call("update", delta)
+		efx.call("post_light")
 	if wfx != null:
 		wfx.call("update", delta, last_daylight)
 	_task_fx(delta)
@@ -2567,7 +2615,7 @@ func _update_light() -> void:
 	sun.light_energy = (1.0 if moon else 1.1) * smoothstep(0.0, 0.3, sk)
 	sun.light_color = Color(1.0, 0.78 + 0.22 * sk, 0.6 + 0.4 * sk) if moon else Color(1.0, 0.72 + 0.16 * sk, 0.5 + 0.26 * sk)
 	if dust_fx != null:
-		dust_fx.visible = game.outside and daylight > 0.05
+		dust_fx.visible = is_out() and daylight > 0.05
 		dust_fx.speed_scale = 2.6 if game.storm_left > 0 else 1.0
 		dust_mat.albedo_color = Color(0.95, 0.65, 0.4, (0.45 if game.storm_left > 0 else 0.15) * daylight)
 	sun.shadow_enabled = sk > 0.02 and game.shadows_on
@@ -2577,7 +2625,7 @@ func _update_light() -> void:
 	env.adjustment_saturation = 0.86 if game.location == "Marte" else 0.95
 	env.adjustment_contrast = 1.06
 	env.tonemap_exposure = 0.9 * float(game.bright)
-	if game.outside or menu_mode:
+	if is_out() or menu_mode:
 		# v28: luz, sombras y gradacion propias de cada mundo (world_look.gd)
 		WorldLook.apply_outside(self, game.location, sk, daylight, game.storm_left > 0)
 		if moon:
@@ -2644,6 +2692,10 @@ func _set_reflection(kind: String) -> void:
 func _npc_pose(ch: String) -> String:
 	if game.mode == 1 and not game.outside and game.dlg_name.text == str(game.npcs[ch]["who"]):
 		return "talk"
+	if efx != null:
+		var ep: String = efx.call("npc_pose", ch)   # v41: enfermo, alarma, protegerse, celebrar...
+		if ep != "":
+			return ep
 	return "idle"
 
 
@@ -2703,7 +2755,17 @@ func _update_actors(delta: float) -> void:
 	yaw_player = lerp_angle(yaw_player, target, 1.0 - exp(-14.0 * delta))
 	player_node.rotation.y = yaw_player
 	_anim_astronaut(player_node, _player_pose(), t_node)
-	player_node.visible = game.cam_mode != 1 and not (game.fall_t > game.FALL_TIME * 0.55)
+	player_node.visible = game.cam_mode != 1 and not (game.fall_t > game.FALL_TIME * 0.55) and (cine_out < 0 or (cine_out == 1) == game.outside)
+	# v41: aterrizaje (polvo y amortiguacion de la animacion de Blender)
+	var air: bool = game.outside and game.jump_z > 0.03
+	if air and not was_air:
+		jump_vz0 = maxf(float(game.jump_vz), 0.1)
+	if was_air and not air and game.outside:
+		land_t = 0.0
+		fx_burst(ground_p + Vector3(0, 0.1, 0), Color(0.72, 0.66, 0.6) if game.location == "Luna" else Color(0.78, 0.5, 0.34), 14, 1.6, 0.6)
+		fx_ring(ground_p + Vector3(0, 0.06, 0), Color(0.8, 0.75, 0.7, 0.8), 0.7)
+	was_air = air
+	land_t += delta
 	var pp: Vector3 = player_node.position
 	var idx: int = 0
 	for ch in npc_nodes:
@@ -2865,6 +2927,13 @@ func _update_camera(delta: float) -> void:
 		cp.y = maxf(cp.y, ground_y(cp.x / T3, cp.z / T3) + (1.4 if mode == 2 else 3.0))
 	if game.shake_t > 0.0:
 		cp += Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * game.shake_t * 0.45
+	if efx != null and efx.get("cine") != null and bool(efx.cine.active):
+		# v41: camara de la cinematica (cinema.gd)
+		var cc: Dictionary = efx.cine.camera()
+		if not cc.is_empty():
+			cp = cc["pos"]
+			look = cc["look"]
+			want_fov = float(cc["fov"])
 	cam.fov = lerpf(cam.fov, want_fov, 1.0 - exp(-6.0 * delta))
 	cam.position = cp
 	cam.look_at(look, Vector3.UP)
@@ -2910,3 +2979,12 @@ func screen_of_tile(tx: int, ty: int, height: float = 2.6) -> Vector2:
 	var sp: Vector2 = cam.unproject_position(wp)
 	var vs: Vector2 = get_viewport().get_visible_rect().size
 	return sp / vs * game._mv()
+
+
+# v41: instante de la animacion de salto de Blender segun la velocidad vertical (0.12 despegue -> 0.85 suelo)
+func _jump_u() -> float:
+	var vz: float = float(game.jump_vz)
+	var v0: float = maxf(jump_vz0, 0.1)
+	if vz >= 0.0:
+		return 0.12 + 0.23 * clampf(1.0 - vz / v0, 0.0, 1.0)
+	return 0.35 + 0.5 * clampf(-vz / v0, 0.0, 1.0)

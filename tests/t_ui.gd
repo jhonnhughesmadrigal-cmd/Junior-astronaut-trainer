@@ -4,6 +4,8 @@ extends SceneTree
 #   RES=1280x720 SHOTS=menu SHOT_DIR=/tmp/shots godot --path . --rendering-driver opengl3 --script res://t_ui.gd
 # Estados: menu new opts credits howto endings end_win end_lose hud_moon hud_mars
 #          out_moon out_mars out_moon_low out_mars_low night_moon storm_mars pack bench map pause diag
+#          v41: ev_meteor ev_breach ev_breach_out ev_storm ev_storm_in ev_storm_cine (Marte) ev_sick ev_flare ev_power
+#               ev_harvest ev_micro ev_jump (EV_FRAME=fotograma de la captura)
 #          v40: lm_apollo lm_plaque lm_wreck (Luna) lm_rover (Marte): puntos de interes 'L' de cerca;
 #               base_moon base_mars: exterior de la base visto desde el sureste
 # Solo PREPARA el estado y toma la captura: no cambia la logica del juego.
@@ -107,7 +109,7 @@ func _prepare() -> void:
 			main.get("ui").call("show_page", state)
 		"opts":
 			main.get("ui").call("open_options")
-		"hud_moon", "out_moon", "out_moon_low", "night_moon", "end_win", "end_lose", "far_moon", "crew_moon", "ach", "hud_lv3", "lm_apollo", "lm_plaque", "lm_wreck", "base_moon":
+		"hud_moon", "out_moon", "out_moon_low", "night_moon", "end_win", "end_lose", "far_moon", "crew_moon", "ach", "hud_lv3", "lm_apollo", "lm_plaque", "lm_wreck", "base_moon", "ev_meteor", "ev_breach", "ev_breach_out", "ev_sick", "ev_flare", "ev_power", "ev_harvest", "ev_micro", "ev_jump", "ev_grab":
 			_start("Luna")
 		_:
 			_start("Marte")
@@ -205,11 +207,64 @@ func _after_start() -> void:
 			main.get("tut").call("unlock", "survivor10")
 		"diag":
 			main.call("_open_diag")
-		"end_win":
-			main.call("_finish", true, "heroes")
-		"end_lose":
-			main.call("_finish", false, "fail_oxygen")
+		"end_win", "end_lose":
+			# v41: END_ID elige cualquiera de los 11 finales (escena 3D en vivo); EV_FRAME = fotograma de la captura
+			var eid: String = OS.get_environment("END_ID")
+			if eid == "":
+				eid = "heroes" if state == "end_win" else "fail_oxygen"
+			if OS.get_environment("EV_FRAME") != "":
+				wait_frames = int(OS.get_environment("EV_FRAME"))
+			main.call("_finish", not eid.begins_with("fail_"), eid)
 	main.call("_refresh")
+
+	# v41: eventos visibles (event_fx.gd / cinema.gd). EV_FRAME = fotograma de la captura (p. ej. en mitad de la cinematica)
+	if state.begins_with("ev_"):
+		if OS.get_environment("EV_FRAME") != "":
+			wait_frames = int(OS.get_environment("EV_FRAME"))
+		var v3: Node3D = main.get("view3d")
+		var fx: Node3D = v3.get("efx")
+		main.set("clock", 11 * 60)
+		match state:
+			"ev_meteor":
+				main.set("breach", true)
+				main.call("_efx", "meteor")
+			"ev_breach":
+				main.set("breach", true)
+			"ev_breach_out":
+				main.set("breach", true)
+				main.set("outside", true)
+				main.call("_set_player_tile", main.get("ext_spawn"), Vector2i(0, -1))
+				v3.call("snap_camera")
+			"ev_storm", "ev_storm_in":
+				main.set("storm_left", 2)
+				fx.set("storm_k", 1.0)
+				if state == "ev_storm":
+					main.set("outside", true)
+					main.call("_set_player_tile", main.get("ext_spawn") + Vector2i(3, 4), Vector2i(0, -1))
+					v3.call("snap_camera")
+			"ev_storm_cine":
+				main.set("storm_left", 2)
+				main.call("_efx", "storm")
+			"ev_sick":
+				main.set("ill_days", 3)
+				fx.set("sick_ch", "l")
+				main.call("_efx", "medical", {"ch": "l"})
+			"ev_flare":
+				main.get("emg").call("spawn", "flare", main.get("rng"))
+			"ev_power":
+				main.get("emg").call("spawn", "power", main.get("rng"))
+			"ev_harvest":
+				main.call("_efx", "harvest")
+			"ev_micro":
+				main.call("_efx", "micro")
+			"ev_jump":
+				main.set("outside", true)
+				main.call("_set_player_tile", main.get("ext_spawn") + Vector2i(0, 3), Vector2i(1, 0))
+				v3.call("snap_camera")
+				main.call("_start_jump")
+			"ev_grab":
+				main.set("outside", true)
+				v3.call("snap_camera")
 
 
 func _process(_delta: float) -> bool:

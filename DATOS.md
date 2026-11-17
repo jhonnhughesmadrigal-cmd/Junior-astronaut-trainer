@@ -602,3 +602,29 @@ Las primitivas visibles suben algo con calidad Baja (+9 % Luna, +15 % Marte: los
 - Único error que queda en la consola web: `429` de api.nasa.gov (la clave `DEMO_KEY` tiene límite de peticiones; servicio externo, el juego sigue sin la imagen del día).
 
 **No probado:** en tabletas/móviles reales ni en Safari/Firefox; no se midieron FPS ni GPU. Las rocas y el relieve siguen por código (ya usan MultiMesh por bloques); el casco de la base no se remodeló (solo se fusionó).
+
+## v41 — Eventos visibles, cinemáticas, animaciones de Blender y escena final en 3D
+
+**Archivos nuevos:** `event_fx.gd` (efectos de los eventos, poses, bocadillos, velos de pantalla), `cinema.gd` (cinemáticas), `ending_cine.gd` (escena final en 3D en vivo), `crew_poses.gd` (poses de evento), `crew_anims.gd` (muestrea las animaciones de Blender), `event_lines.gd` (frases de la tripulación), `tools/blender/anims.py` → `art/3d/anim/astronaut_{jump,collect}.glb`, `tools/blender/fx_assets.py` → `art/3d/fx/{meteor,rescue_ship}.glb`, `tools/gen_sfx_events.py` → `audio/{impact,wind,cough,sparks,whoosh,engine}.wav`, `tests/t_events.gd`. Cambios: `main.gd` (+46 líneas: un gancho `_efx()` por evento, la entrada en modo 16 y la escena final), `view3d.gd` (+92: `event_fx`, `is_out()`/`cine_out`, cámara de cine, poses y animaciones, aterrizaje, escena final), `emergency.gd` (1 línea: aviso al sellar la brecha), `lang_en.gd` (+92 traducciones), `tests/t_ui.gd` (estados `ev_*` y `END_ID`), `export_presets.cfg` (0.41, code 41). Todo el arte y el audio nuevos son originales (generados por código o modelados en Blender); la nave de rescate es un diseño propio, sin logotipos.
+
+**Decisiones del dueño (preguntadas):** cinemáticas que pausan el reloj y se saltan (E / Esc / Espacio / Enter); la primera de cada tipo en la partida es larga y las siguientes, cortas. Finales: escena 3D en vivo. Bocadillos con frecuencia moderada (al empezar el evento y cada ~20–30 s mientras dure).
+
+**Qué se ve en cada evento:**
+- **Meteoro directo:** cinemática (meteoro con estela de fuego y humo cae sobre la base, destello, escombros, temblor; plano del casco dañado; plano interior con la alarma). Mientras la brecha siga abierta: baliza roja giratoria, luz roja que late, chispas, aire que se escapa y grieta en la pared; fuera, quemadura, grieta, humo y chispas en el casco; velo rojo en los bordes. La tripulación se protege y luego queda en alerta. Al sellarla, lo celebran.
+- **Micrometeorito:** golpe (temblor), chispas en la pared, la tripulación mira hacia arriba.
+- **Tormenta de polvo (Marte):** aviso con un muro de polvo en el horizonte que se acerca según el tiempo que falta; al llegar, cinemática, viento con polvo alrededor del jugador, niebla densa (0,05), sol al 40 %, velo y ráfagas en pantalla, polvo dentro de la base y viento en bucle (más fuerte fuera).
+- **Erupción solar:** cinemática; cúpula del escudo encendida sobre la base, rayos de partículas, destellos en el cielo y luz violeta en el generador. (No se dibujan auroras: la Luna no las tiene y en Marte son difusas y nocturnas.)
+- **Enfermedad:** cinemática de frente al tripulante; pose encorvada con tos cada ~3 s (y sonido), icono de botiquín sobre la cabeza y frases.
+- **Fallo eléctrico / energía < 12:** luces del interior que parpadean y chispas en el panel solar; cinemática la primera vez.
+- **Fuga de oxígeno / de agua:** vapor junto al soporte vital / goteo y charco junto al reciclador.
+- **Cosecha, mensaje de la Tierra, plaga, chatarra rescatada:** partículas y textos (+12 comida, +10 moral, −25 comida, +2 chatarra) y la tripulación celebra o se abate.
+
+**Salto y recogida (Blender):** las animaciones son fotogramas clave en Blender sobre vacíos con los nombres de las articulaciones; `crew_anims.gd` las muestrea (salto según la velocidad vertical; recogida según el avance de la tarea) y sustituyen a las poses por código. Al aterrizar: amortiguación, polvo y anillo. Comprobado: el exportador glTF de Blender 5.3 escribe una animación por objeto (se combinan) y los ángulos se leen con el orden YZX de Godot (= XYZ de Blender).
+
+**Finales (escena 3D en vivo):** usa el mundo de la partida que termina. Victorias: la nave de rescate desciende con llama y polvo y aterriza; la tripulación la recibe (variantes: Wilson martillea, corro de la tripulación, caminan hacia la nave, alivio al atardecer). Derrotas: alarma y fuga (sin aire), base a oscuras (apagón), invernadero con plaga (comida), goteo (agua), escudo que cede (radiación), tripulación separada y abatida (moral). La tarjeta aparece a los 5 s o al pulsar una tecla/tocar. Sin vista 3D, se usa la ilustración 2D anterior (`ending_art.gd`).
+
+**Rendimiento (Mac, Godot 4.7.2, `opengl3`; `tests/t_perf.gd`, Q=2; recuento, no FPS):** sin eventos igual que v40 (Luna fuera 239 → 240 llamadas, dentro 898 → 898; Marte fuera 219 → 218). Con la brecha abierta (dentro): +6 llamadas, +2 % primitivas (luces y partículas de la alarma). Con la tormenta (fuera): +2 llamadas. Nueva opción `EV=breach|storm` en `t_perf`. Las partículas se reducen con «Efectos» Bajo/Medio (×0,35 / ×0,7).
+
+**Verificación (macOS, Godot 4.7.2):** `t_events` 82/82, `t_exterior` 26/26 (Luna y Marte), `t_stations` 32/32, minijuegos 14/14, misiones 75/75 (es y en), móvil 14/14, táctil 22/22, perfiles 19/19. Capturas revisadas: meteoro (caída, impacto, casco, interior), brecha dentro y fuera, tormenta, enfermo (de frente), erupción solar, apagón, cosecha con bocadillo, salto, y los finales `heroes unidos supervivientes ingenio hilo fail_shield fail_oxygen fail_energy fail_food fail_water fail_morale`.
+
+**No probado / límites:** dispositivos táctiles reales y FPS en GPU; el salto y la recogida solo se revisaron en capturas fijas y por valores, no a ojo en movimiento. Los sonidos nuevos se escucharon solo por su forma de onda (sin altavoces en el entorno de pruebas). La nave y el meteoro son modelos sencillos (1 490 y 80 triángulos).
