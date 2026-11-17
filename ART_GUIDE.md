@@ -44,8 +44,8 @@ PNG con fondo transparente, cuadrados, recomendado 128x128 (se muestran a ~22 px
 | map.png        | Mapa de navegación                      |
 
 ## 3. Personajes
-El diseño de los trajes y las acciones (trabajar, fabricar, recoger, hablar, correr) se hizo por código, no requiere archivos.
-No hay carga de personajes importados con esqueleto/animación todavía.
+v39: el astronauta se modela en Blender con `tools/blender/astronaut.py` -> `art/3d/astronaut.glb`. No usa esqueleto: cada pieza cuelga de un nodo con el nombre de su articulación (rig, body, head, pack, ant, arm_l, elb_l, arm_r, elb_r, leg_l, kn_l, leg_r, kn_r), y las acciones (trabajar, fabricar, recoger, hablar, correr...) siguen animándose por código.
+Las estaciones del interior se modelan con `tools/blender/stations.py` -> `art/3d/base/station_X.glb` (conservan sus animaciones). Un `art/3d/station_X.glb` (Ludo.ai u otro) sigue teniendo prioridad, pero pierde las animaciones.
 
 ## Consejos para que todo se vea coherente
 - Usa el mismo estilo (por ejemplo "low poly, estilo caricatura, colores limpios") y la misma paleta en todas las generaciones.

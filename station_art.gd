@@ -16,11 +16,27 @@ const WOOD := Color(0.55, 0.38, 0.22)
 const BEIGE := Color(0.6, 0.56, 0.49)
 const COPPER := Color(0.7, 0.44, 0.26)
 
-static var anims: Array = []      # [{type, node|mat, ...}] animaciones registradas
+static var anims: Array = []      # [{type, node|mat, st, ...}] animaciones registradas (st = nodo de la estacion)
+static var stations: Array = []   # nodos de las estaciones construidas (para saber cual se esta usando)
+static var _boost: Dictionary = {}   # id de la estacion -> 0..1 (cuanto reacciona: sube mientras se usa)
+static var _flash: Dictionary = {}   # id de la estacion -> 1..0 (destello al terminar la accion)
+static var _active: Node3D = null
+
+# v39: modelos de Blender (tools/blender/stations.py) con piezas animables por nombre; tienen prioridad
+# sobre los modelos por codigo de este archivo y de view3d.gd. Si falta el .glb, se usa el de codigo.
+const GLB_DIR: String = "res://art/3d/base/"
+const GLB_CHARS: Array = ["O", "S", "G", "W", "R", "C", "B", "T", "A", "D"]
+const BLOB: Dictionary = {"O": 2.6, "S": 2.4, "R": 2.7, "C": 2.6, "G": 2.5, "W": 2.5}
+const LED_ON: Dictionary = {"led_green": Color(0.35, 0.85, 0.45), "led_amber": Color(0.9, 0.6, 0.2),
+	"led_red": Color(0.85, 0.25, 0.2), "led_blue": Color(0.3, 0.75, 1.0)}
 
 
 static func reset() -> void:
 	anims.clear()
+	stations.clear()
+	_boost.clear()
+	_flash.clear()
+	_active = null
 
 
 static func has_style(ch: String) -> bool:
@@ -38,6 +54,143 @@ static func _emit(c: Color, e: float) -> StandardMaterial3D:
 
 
 static func build(v: Node3D, n: Node3D, ch: String) -> bool:
+	var before: int = anims.size()
+	if not _build_glb(v, n, ch):
+		if not _build_code(v, n, ch):
+			return false
+	for i in range(before, anims.size()):
+		anims[i]["st"] = n
+	stations.append(n)
+	return true
+
+
+# ---------- modelo de Blender: art/3d/base/station_X.glb ----------
+static func _build_glb(v: Node3D, n: Node3D, ch: String) -> bool:
+	if not ch in GLB_CHARS:
+		return false
+	var path: String = GLB_DIR + "station_" + ch + ".glb"
+	if not ResourceLoader.exists(path):
+		return false
+	var ps: PackedScene = load(path) as PackedScene
+	if ps == null:
+		return false
+	var inst: Node3D = ps.instantiate() as Node3D
+	if inst == null:
+		return false
+	if BLOB.has(ch):
+		v._blob(n, float(BLOB[ch]))
+	n.add_child(inst)
+	var leaves: Array = [null, null]
+	_wire(v, inst, {}, leaves)
+	if leaves[0] != null and leaves[1] != null:
+		anims.append({"type": "door", "leaves": leaves, "open": 0.0})
+	return true
+
+
+static func _wire(v: Node3D, node: Node, cache: Dictionary, leaves: Array) -> void:
+	# recorre el modelo: registra las piezas animables (anim_*) y cambia los materiales especiales
+	var nm: String = str(node.name)
+	if nm.begins_with("anim_needle"):
+		anims.append({"type": "needle", "node": node, "ph": float(anims.size()) * 1.7})
+	elif nm == "anim_solar":
+		anims.append({"type": "solar", "node": node})
+	elif nm == "anim_dish":
+		anims.append({"type": "dish", "node": node, "ph": 0.0})
+	elif nm == "anim_coil":
+		v.shield_ring = node
+		anims.append({"type": "coil", "node": node})
+	elif nm == "anim_leaf_l":
+		leaves[0] = node
+	elif nm == "anim_leaf_r":
+		leaves[1] = node
+	elif nm.begins_with("anim_fan"):
+		anims.append({"type": "fan", "node": node})
+	elif nm.begins_with("anim_sway"):
+		anims.append({"type": "sway", "node": node, "ph": float(anims.size()) * 1.3})
+	elif nm.begins_with("anim_twist"):
+		anims.append({"type": "twist", "node": node})
+	if node is MeshInstance3D:
+		var mi: MeshInstance3D = node
+		if mi.mesh != null:
+			for i in mi.mesh.get_surface_count():
+				var m: Material = mi.mesh.surface_get_material(i)
+				if m == null:
+					continue
+				var r: Material = _swap(v, m, cache)
+				if r != null:
+					mi.set_surface_override_material(i, r)
+				if m.resource_name == "glass" or m.resource_name == "water":
+					mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			var s: Vector3 = mi.mesh.get_aabb().size
+			if maxf(s.x, maxf(s.y, s.z)) < 0.12:
+				mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for c in node.get_children():
+		_wire(v, c, cache, leaves)
+
+
+static func _swap(v: Node3D, m: Material, cache: Dictionary) -> Material:
+	# materiales con nombre especial -> materiales del juego (animables). null = dejar el del .glb
+	var key: String = m.resource_name
+	if cache.has(key):
+		return cache[key]
+	var base: Color = Color.WHITE
+	if m is BaseMaterial3D:
+		base = (m as BaseMaterial3D).albedo_color
+	var r: Material = null
+	if key.begins_with("screen"):
+		r = _emit(base, 0.5)
+		anims.append({"type": "screen", "mat": r, "base": 0.5})
+	elif key == "core":
+		r = _emit(base, 0.6)
+		anims.append({"type": "pulse", "mat": r, "base": 0.6, "amp": 0.35, "speed": 1.6})
+	elif key.begins_with("led_"):
+		var on: Color = LED_ON.get(key, base)
+		var off: Color = on.darkened(0.72)
+		var lm := StandardMaterial3D.new()
+		lm.albedo_color = off
+		lm.emission_enabled = true
+		lm.emission = off
+		v.led_mats.append([lm, on, off])
+		r = lm
+	elif key == "shield_band":
+		var sm := StandardMaterial3D.new()
+		sm.albedo_color = Color(0.5, 0.36, 0.3)
+		sm.metallic = 0.6
+		sm.roughness = 0.35
+		sm.set_meta("normal", sm.albedo_color)
+		v.shield_mat = sm
+		r = sm
+	elif key == "glass":
+		var gm := StandardMaterial3D.new()
+		gm.albedo_color = Color(0.72, 0.92, 0.95, 0.2)
+		gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		gm.cull_mode = BaseMaterial3D.CULL_DISABLED
+		gm.metallic = 0.3
+		gm.roughness = 0.05
+		r = gm
+	elif key == "water":
+		var wm := StandardMaterial3D.new()
+		wm.albedo_color = Color(0.18, 0.5, 0.95, 0.78)
+		wm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		wm.emission_enabled = true
+		wm.emission = Color(0.12, 0.35, 0.7)
+		wm.emission_energy_multiplier = 0.35
+		wm.roughness = 0.1
+		r = wm
+		anims.append({"type": "screen", "mat": wm, "base": 0.35})
+	elif key == "solar_cell":
+		var pm := StandardMaterial3D.new()
+		pm.albedo_texture = v._panel_tex()
+		pm.albedo_color = Color(0.55, 0.62, 0.85)
+		pm.metallic = 0.6
+		pm.roughness = 0.25
+		r = pm
+	cache[key] = r
+	return r
+
+
+# ---------- modelos por codigo (v33) ----------
+static func _build_code(v: Node3D, n: Node3D, ch: String) -> bool:
 	if not has_style(ch):
 		return false
 	var grey: StandardMaterial3D = v._m(GREY, 0.55, 0.42)
@@ -155,6 +308,7 @@ static func _shield(v, n: Node3D, grey, greyd, graph, rust) -> void:
 	v._add(coil, v._cyl(0.3, 0.3, 0.66, 16), core, Vector3.ZERO, Vector3.ZERO, false)
 	v._add(coil, v._cyl(0.48, 0.48, 0.05, 24), graph, Vector3(0, 0.36, 0), Vector3.ZERO, false)
 	v.shield_ring = coil
+	anims.append({"type": "coil", "node": coil})
 	anims.append({"type": "pulse", "mat": core, "base": 0.6, "amp": 0.35, "speed": 1.6})
 	# tanques laterales y panel
 	for sx in [-1.0, 1.0]:
@@ -309,25 +463,92 @@ static func _door(v, n: Node3D, grey, greyd, graph) -> void:
 	v._add(n, v._box(Vector3(1.6, 0.05, 0.9)), v._m(Color(0.3, 0.3, 0.32), 0.5, 0.5), Vector3(0, 0.03, -0.1), Vector3.ZERO, false)
 
 
+# ---------- estacion en uso: la que esta junto a Wilson mientras hace una tarea (modo 5) ----------
+static func _find_active(v: Node3D, g) -> Node3D:
+	if int(g.mode) != 5 or bool(g.outside):
+		return null
+	var pl: Node3D = v.player_node
+	if pl == null or not is_instance_valid(pl):
+		return null
+	var pp: Vector3 = pl.global_position
+	var best: Node3D = null
+	var bd: float = 3.3
+	for s in stations:
+		if not is_instance_valid(s):
+			continue
+		var d: float = Vector2(s.global_position.x - pp.x, s.global_position.z - pp.z).length()
+		if d < bd:
+			bd = d
+			best = s
+	return best
+
+
 # ---------- animaciones (se llaman cada fotograma desde view3d._update_props) ----------
+# Cada estacion tiene una animacion discreta en reposo; mientras Wilson la usa, "boost" sube a 1 y la
+# animacion se intensifica (pantallas, agujas, bobina, antena, ventilador, plantas, manivela). Al terminar
+# la tarea hay un destello ("flash") y un anillo de luz en el suelo.
 static func animate(v: Node3D, t: float, dt: float) -> void:
 	var g = v.game
+	var act: Node3D = _find_active(v, g)
+	if act != _active:
+		if _active != null and is_instance_valid(_active) and int(g.mode) != 5:
+			_flash[_active.get_instance_id()] = 1.0
+			if v.has_method("fx_ring"):
+				v.fx_ring(_active.global_position + Vector3(0, 0.08, 0), Color(0.55, 0.95, 0.75), 1.2)
+		_active = act
+	for s in stations:
+		if not is_instance_valid(s):
+			continue
+		var id: int = s.get_instance_id()
+		_boost[id] = lerpf(float(_boost.get(id, 0.0)), 1.0 if s == act else 0.0, minf(1.0, dt * 4.0))
+		_flash[id] = maxf(0.0, float(_flash.get(id, 0.0)) - dt * 1.4)
 	for a in anims:
+		var b: float = 0.0
+		var f: float = 0.0
+		var st = a.get("st")
+		if st != null and is_instance_valid(st):
+			b = float(_boost.get(st.get_instance_id(), 0.0))
+			f = float(_flash.get(st.get_instance_id(), 0.0))
 		match str(a["type"]):
 			"screen":
 				var m: StandardMaterial3D = a["mat"]
-				m.emission_energy_multiplier = float(a["base"]) * (0.9 + 0.1 * sin(t * 2.3))
+				m.emission_energy_multiplier = float(a["base"]) * (0.9 + 0.1 * sin(t * 2.3)) * (1.0 + 1.8 * b) \
+					+ b * 0.18 * sin(t * 17.0) + f * 2.5
 			"pulse":
 				var m2: StandardMaterial3D = a["mat"]
-				m2.emission_energy_multiplier = float(a["base"]) + float(a["amp"]) * (0.5 + 0.5 * sin(t * float(a["speed"])))
+				var sp: float = float(a["speed"]) * (1.0 + 2.0 * b)
+				m2.emission_energy_multiplier = float(a["base"]) + float(a["amp"]) * (0.5 + 0.5 * sin(t * sp)) + 0.9 * b + 2.0 * f
 			"needle":
 				var nd: Node3D = a["node"]
 				if is_instance_valid(nd):
-					nd.rotation.z = -0.4 + 0.25 * sin(t * 0.7 + float(a["ph"])) + 0.05 * sin(t * 5.0 + float(a["ph"]))
+					var ph: float = float(a["ph"])
+					nd.rotation.z = -0.4 + (0.25 + 0.5 * b) * sin(t * (0.7 + 3.3 * b) + ph) + (0.05 + 0.06 * b) * sin(t * 5.0 + ph)
 			"dish":
 				var hd: Node3D = a["node"]
 				if is_instance_valid(hd):
-					hd.rotation.y = 0.9 * sin(t * 0.15)
+					if a.has("ph"):
+						a["ph"] = float(a["ph"]) + dt * (0.15 + 1.4 * b)
+						hd.rotation.y = 0.9 * sin(float(a["ph"]))
+					else:
+						hd.rotation.y = 0.9 * sin(t * 0.15)
+			"coil":
+				var cn: Node3D = a["node"]
+				if is_instance_valid(cn):
+					cn.rotation.y += dt * 6.0 * b   # view3d ya la gira despacio; aqui acelera al usarla
+			"fan":
+				var fn: Node3D = a["node"]
+				if is_instance_valid(fn):
+					fn.rotation.y += dt * (2.0 + 14.0 * b)
+			"sway":
+				var sw: Node3D = a["node"]
+				if is_instance_valid(sw):
+					var p2: float = float(a["ph"])
+					sw.rotation.z = 0.035 * sin(t * 1.2 + p2) + b * 0.07 * sin(t * 5.0 + p2)
+					sw.rotation.x = 0.025 * sin(t * 0.9 + p2 * 1.3)
+			"twist":
+				var tw: Node3D = a["node"]
+				if is_instance_valid(tw):
+					tw.rotation.z += dt * 9.0 * b
 			"solar":
 				# sigue la hora del dia (de este a oeste); de noche vuelve al centro
 				var mt: Node3D = a["node"]
@@ -336,6 +557,7 @@ static func animate(v: Node3D, t: float, dt: float) -> void:
 					var want: float = 0.0
 					if h >= 6.0 and h <= 20.0:
 						want = lerpf(-0.7, 0.7, (h - 6.0) / 14.0)
+					want += b * 0.12 * sin(t * 4.0)   # al usarlo, el panel se reajusta buscando el sol
 					mt.rotation.y = lerpf(mt.rotation.y, want, minf(1.0, dt * 1.5))
 			"door":
 				# se abre cuando Wilson esta cerca de la esclusa (dentro de la base) o cruzandola

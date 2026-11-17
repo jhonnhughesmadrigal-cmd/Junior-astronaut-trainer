@@ -17,6 +17,7 @@ Wilson mantiene vivos a 4 tripulantes 30 días en la Luna o Marte. Español/ingl
 - `view3d.gd`: mundo 3D (iluminación, terreno, base, personajes, partículas, presets de calidad Bajo/Medio/Alto). `ext_tex.gd` / `int_tex.gd` / `space_tex.gd`: texturas procedurales. v28: `terrain3d.gd`, `world_look.gd`, `base_look.gd`, `world_fx.gd`, `crew_look.gd`.
 - `ui_screens.gd` (pantallas con DS) y `ui_motion.gd` (microinteracciones).
 - v30 `touch_ui.gd`: controles táctiles; simulan las teclas de `binds` con `Input.parse_input_event` (no tocar `main.gd` para el táctil).
+- v39 Modelos de Blender: `tools/blender/` (`bkit.py` utilidades, `astronaut.py`, `stations.py`; se ejecutan con `blender --background --factory-startup --python tools/blender/<script>.py -- <salida>`). Generan `art/3d/astronaut.glb` y `art/3d/base/station_X.glb` (O S G W R C B T A D). `crew_model.gd` carga el astronauta (mismas articulaciones que `_make_astronaut`: las poses por código no cambian; los materiales se sustituyen por nombre, así el color de rol sigue en `crew_look.gd`). `station_art.gd` carga las estaciones (`_build_glb`): nodos `anim_*` y materiales `screen_*`, `core`, `led_*`, `shield_band`, `glass`, `water`, `solar_cell` (ver cabecera de `stations.py`). Las estaciones reaccionan mientras Wilson las usa (modo 5) y destellan al terminar. Si falta un `.glb`, se usa el modelo por código.
 - v38 `interior_look.gd`: estructura, tuberías, equipo de pared, luces del interior y `merge_static` (fusiona piezas fijas por material: menos llamadas de dibujo). Parte alta de los muros bajos solo en cámaras cercanas (nodo del techo).
 - v37 Android: preset «Android» en `export_presets.cfg` (paquete `com.misionperseo.juego`), `mobile_os.gd` (botón «Atrás» = Esc, guardar en segundo plano), icono `art/app/` (`tools/gen_icon.gd`). Guía: `docs/ANDROID_APK.md`. La clave de firma de release NO está en el repo (se pasa con `GODOT_ANDROID_KEYSTORE_RELEASE_PATH/USER/PASSWORD`). Privacidad: `docs/PRIVACIDAD.md` (borrador para la escuela).
 - v36 Firebase: `firebase.gd` (REST: Auth + Firestore), `firebase_config.gd` (API_KEY/PROJECT_ID vacíos = modo local), `firebase/firestore.rules`. Guía: `docs/FIREBASE_SETUP.md`. Admin = documento `admins/{uid}` creado a mano. Emulador: `cd firebase && npx firebase-tools emulators:start --only auth,firestore --project demo-mision-perseo` y `FIREBASE_EMULATOR=127.0.0.1`.
@@ -35,7 +36,8 @@ Wilson mantiene vivos a 4 tripulantes 30 días en la Luna o Marte. Español/ingl
 - Huella de lógica (v28): copia `tests/t_logic.gd` a la raíz y ejecuta `LOGIC_OUT=/tmp/l.txt xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_logic.gd`. Compara el md5 ("HUELLA") con el del commit anterior: si la lógica no cambia, debe coincidir (v28: `9d5ba3a6…`).
 - Capturas: copia `tests/t_ui.gd` a la raíz y usa `tools/shot.sh 1280x720 menu new hud_mars out_moon out_mars pack bench map pause diag` (salida en /tmp/shots), o en paralelo `JOBS=3 tools/shots_all.sh <carpeta> 1920x1080 <estados...>`. Estados extra: stc_O stc_S stc_R stc_C stc_T stc_A stc_D (estaciones con cámara fija), hud_lv3, opts credits howto endings end_win end_lose hud_moon crew_moon far_moon far_mars out_moon_low out_mars_low night_moon storm_mars ach.
 - Misiones de clase (debe dar 75/75): copia `tests/t_lessons.gd` a la raíz y ejecuta `xvfb-run -a godot --path . --rendering-driver opengl3 --script res://t_lessons.gd` (también con `LANG_CODE=en`). Al añadir una misión, regenera la guía docente.
-- Táctil (debe dar 22/22): `tests/t_touch.gd`.
+- Táctil (debe dar 22/22): `tests/t_touch.gd`. Ojo (v39): con `view3d=false` / cámara 2D en los ajustes guardados, «el botón Cámara cambia de cámara» falla también en v38 (depende de los ajustes, no del código).
+- Modelos de Blender (debe dar 32/32): `tests/t_stations.gd` (carga, piezas animables y reacción de cada estación al usarla).
 - Móvil/Android (debe dar 14/14): `tests/t_mobile.gd`. APK: `godot --headless --path . --export-debug Android build/x.apk` y `apksigner verify` (SDK en `~/android-sdk`).
 - Firebase con emulador (deben dar 26/26 y 14/14): `FIREBASE_EMULATOR=127.0.0.1` + `tests/t_firebase.gd` (headless) y `tests/t_fbflow.gd` (xvfb).
 - Perfiles (debe dar 19/19): `tests/t_profiles.gd` (borra `user://profiles.cfg`). Capturas: `prof_choose prof_email prof_role prof_teacher prof_student prof_newclass prof_lessons`.
@@ -52,7 +54,7 @@ Pendiente:
 0. Hecho en v30–v31: control táctil e interfaz adaptable a móviles. Pendiente: textos de paneles que nombran teclas, prueba en dispositivos reales, más misiones y pruebas con alumnos.
 1. Verificar táctil, rendimiento real en GPU/navegador y revisión humana del inglés (nada de esto está medido).
 2. Hecho en v38: interior de la base (ver DATOS.md v38). Pendiente: medir en tabletas reales el coste de sus 5 luces.
-3. Personajes: siguen hechos con primitivas; un modelo por piezas más orgánico mejoraría los primeros planos.
+3. Hecho en v39: astronauta y estaciones modelados en Blender (ver arriba). Pendiente: medir en tabletas reales; personajes sin rostro (casco con visor opaco, a propósito).
 4. Recuperar `tests/t_emg.gd` (94 pruebas).
 Criterio: menos ruido visual, mejores materiales, más profundidad, identidad consistente; sin neón ni efectos recargados.
 

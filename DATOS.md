@@ -551,3 +551,17 @@ Con los prompts de `docs/PROMPTS_LUDO.md` se generó en Ludo.ai una imagen con l
 **APK:** calidad Media la primera vez en móvil (`OS.has_feature("mobile")`); el teclado en pantalla ya no tapa el campo activo (el panel sube lo justo). Firmado con la misma clave que v37 (se instala encima).
 
 **Verificación:** `t_mobile` 14/14 (incluye teclado simulado), huella de lógica `9d5ba3a6…` (sin cambios), misiones 75/75 (es y en), táctil 22/22, minijuegos 14/14, perfiles 19/19. **No probado en un dispositivo real**; no medido el coste real de las 5 luces en GPU móviles.
+
+## v39 — Astronauta y estaciones modelados en Blender; las estaciones reaccionan al usarlas
+
+**Archivos nuevos:** `tools/blender/bkit.py`, `tools/blender/astronaut.py`, `tools/blender/stations.py` (scripts de Blender 5.3, modo en segundo plano), `art/3d/astronaut.glb`, `art/3d/base/station_{O,S,G,W,R,C,B,T,A,D}.glb`, `crew_model.gd`, `tests/t_stations.gd`. Cambios: `view3d.gd` (≈10 líneas en `_make_astronaut`: usa el `.glb` si existe), `station_art.gd` (carga de los `.glb`, piezas `anim_*`, reacción al uso), `export_presets.cfg` (0.39, code 39). `main.gd` sin cambios. Proyecto abierto con Godot 4.7.2: se regeneraron los `.import` de audio, fuentes e iconos (sin cambio visible).
+
+**Astronauta:** proporciones más humanas (casco menor, torso rígido tipo traje EVA, brazos y piernas delgados con pliegues, guantes con dedos, botas con caña); mismas articulaciones y posiciones que el modelo por código, así que las 14 poses no cambian. Un solo modelo para los cuatro: el color de rol se aplica por código (`crew_look.gd`). ≈12 500 triángulos, 42 mallas (piezas fusionadas por material).
+
+**Estaciones:** mismas medidas y orientación que antes (encajan las mejoras de nivel y los andamios). Cada una tiene una animación discreta en reposo; **mientras Wilson la usa** (tarea en curso junto a ella) se intensifica: pantallas más brillantes con parpadeo, agujas de los manómetros, bobina del escudo, antena que barre, panel solar que se reajusta, ventilador del reciclador, plantas que se mecen, manivela del tornillo del banco. **Al terminar**: destello de las luces y un anillo en el suelo. 1 500–5 100 triángulos por estación.
+
+**Rendimiento (recuento de la escena, no medida de GPU):** dentro de la base (Luna), superficies dibujadas 557 → 318 (−43 %) y triángulos 165 870 → 76 726 (−54 %) frente a v38, porque las piezas de cada estación se fusionan por material.
+
+**Verificación (Windows, Godot 4.7.2):** `t_stations` 32/32, minijuegos 14/14, misiones 75/75, móvil 14/14, táctil 21/22 (el mismo fallo aparece en v38 con estos ajustes guardados; ver CLAUDE.md). Capturas revisadas: interior Luna y Marte, estaciones con cámara fija, tripulación. Aviso conocido: Godot 4.7 muestra `ERR_PARSE_ERROR` al cargar una imagen en la interfaz (también sin los modelos nuevos; sin investigar).
+
+**No probado:** en tabletas o móviles reales; no se midieron FPS. Las animaciones de reacción solo se comprobaron por prueba automática (valores), no a ojo en movimiento.

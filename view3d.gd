@@ -65,6 +65,7 @@ const WorldLook = preload("res://world_look.gd")
 const BaseLook = preload("res://base_look.gd")
 const CrewLook = preload("res://crew_look.gd")
 const StationArt = preload("res://station_art.gd")
+const CrewModel = preload("res://crew_model.gd")
 const InteriorLook = preload("res://interior_look.gd")
 var hull_mats: Array = []               # v28: materiales del casco con textura de paneles
 var wfx: Node3D = null                  # v28: particulas del exterior (world_fx.gd)
@@ -757,6 +758,16 @@ func _make_astronaut(suit: Color, role: String = "") -> Node3D:
 	var dark: StandardMaterial3D = _sm(Color(0.22, 0.24, 0.3), 0.4, 0.55)
 	var metal: StandardMaterial3D = _sm(Color(0.7, 0.72, 0.8), 0.85, 0.3)
 	var glove: StandardMaterial3D = _sm(Color(0.82, 0.84, 0.9), 0.0, 0.75)
+	# v39: modelo de Blender (art/3d/astronaut.glb) con las mismas articulaciones; si falta, el de codigo
+	var gm: Node3D = CrewModel.build(_glb_scene("astronaut"), {"suit": suitm, "shell": shell,
+		"visor": CrewLook.visor(), "accent": accm, "dark": dark, "metal": metal, "glove": glove, "bearing": bear})
+	if gm != null:
+		var GP: Dictionary = gm.get_meta("parts")
+		if role == "a":
+			CrewModel.add_cross(GP["body"], white)
+		if role == "k":
+			enoc_hammer = CrewModel.add_hammer(GP["elb_r"])
+		return gm
 	var rig := Node3D.new()
 	n.add_child(rig)
 	var body := Node3D.new()
