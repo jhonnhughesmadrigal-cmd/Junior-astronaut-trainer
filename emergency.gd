@@ -246,7 +246,7 @@ func ivs(inc: Dictionary) -> Array:
 			var i: int = int(idx)
 			var o: Dictionary = {"id": "t" + str(i), "n": str((cs["o2"] as Array)[i]), "fixes": (["h0"] if i == 0 else []), "mins": 30, "q": ("full" if i == 0 else "none")}
 			if i == 0:
-				o["d"] = Lang.t("Lo aplica la Dra. YARISBEL. Necesita el botiquín.")
+				o["d"] = Lang.t("Lo aplica la Dra. Yarisbel. Necesita el botiquín.")
 				o["tool"] = "medkit"
 			else:
 				o["d"] = Lang.t("Un tratamiento que no corresponde puede empeorar las cosas.")
@@ -353,7 +353,7 @@ func ask_advice(inc: Dictionary) -> String:
 
 func _advice_text(inc: Dictionary) -> String:
 	if str(inc["kind"]) == "medical":
-		return Lang.t("Dra. YARISBEL: «Fíjate en esto:»") + " " + str(_case(inc)["h1"])
+		return Lang.t("Dra. Yarisbel: «Fíjate en esto:»") + " " + str(_case(inc)["h1"])
 	return Lang.t(str(Data.KINDS[str(inc["kind"])]["advice"]))
 
 
@@ -486,7 +486,7 @@ func _apply_fix(inc: Dictionary, iv_id: String, q: String) -> void:
 			else:
 				g.ill_days = 0
 				g._add("morale", 20)
-				g.call("_emg_log", Lang.t("[color=lime]La Dra. YARISBEL aplica el tratamiento con el botiquín: el tripulante se recupera (+20 moral).[/color]"))
+				g.call("_emg_log", Lang.t("[color=lime]La Dra. Yarisbel aplica el tratamiento con el botiquín: el tripulante se recupera (+20 moral).[/color]"))
 
 
 # ---------------------------------------------------------------- tiempo, consecuencias de ignorar y plazos
@@ -735,7 +735,7 @@ func close(inc: Dictionary, result: String, iv: Dictionary) -> Dictionary:
 		what = str(cs["title"]) + ". " + str(cs["sym"])
 		why = str(cs["w1"])
 		learn = str(cs["w2"])
-		tip = Lang.t("Pide ayuda a la Dra. YARISBEL en cuanto aparezcan los síntomas y ten un botiquín fabricado.")
+		tip = Lang.t("Pide ayuda a la Dra. Yarisbel en cuanto aparezcan los síntomas y ten un botiquín fabricado.")
 	elif is_env(inc):
 		var ls: Dictionary = kd["lesson"]
 		what = Lang.t(str(ls["what"]))

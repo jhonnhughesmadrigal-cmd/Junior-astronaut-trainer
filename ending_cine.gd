@@ -67,7 +67,7 @@ func stop() -> void:
 # ------------------------------------------------------------------ puesta en escena
 
 func _crew() -> Array:
-	# [nodo, clave]: Wilson + tripulacion
+	# [nodo, clave]: Zadiel + tripulacion
 	var out: Array = [[v.get("player_node"), "w"]]
 	var nn: Dictionary = v.get("npc_nodes")
 	for ch in ["a", "k", "l"]:

@@ -11,7 +11,7 @@ static var code: String = _initial()
 static var _en: Dictionary = {}
 
 const SPEAKERS_EN: Dictionary = {
-	"Narración": "Narration", "Dra. YARISBEL": "Dr. YARISBEL",
+	"Narración": "Narration", "Dra. Yarisbel": "Dr. Yarisbel", "Ing. Enoc": "Eng. Enoc", "Com. Pam": "Cmdr. Pam",
 	"Banco de trabajo": "Workbench", "Cama": "Bed",
 }
 const LOC_EN: Dictionary = {"Luna": "Moon", "Marte": "Mars"}

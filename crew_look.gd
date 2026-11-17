@@ -1,14 +1,14 @@
 extends RefCounted
-# v28 — Materiales de los trajes de la tripulacion (Wilson, Dra. YARISBEL, ENOC, PAM).
+# v28 — Materiales de los trajes de la tripulacion (Zadiel, Dra. Yarisbel, Ing. Enoc, Com. Pam).
 # Inspiracion general en trajes EVA reales (casco duro brillante, visor dorado, franjas de color
 # para distinguir a cada astronauta); diseno propio, sin logotipos.
 
 # color de rol (franjas y parche): mismo que antes para no cambiar la identidad de cada uno
 const ROLE: Dictionary = {
 	"wilson": Color(0.93, 0.52, 0.18),   # naranja
-	"a": Color(0.82, 0.22, 0.22),        # Dra. YARISBEL (medica): rojo
-	"k": Color(0.16, 0.52, 0.6),         # ENOC: azul petroleo
-	"l": Color(0.9, 0.74, 0.24),         # PAM (comandante): dorado
+	"a": Color(0.82, 0.22, 0.22),        # Dra. Yarisbel (medica): rojo
+	"k": Color(0.16, 0.52, 0.6),         # Ing. Enoc: azul petroleo
+	"l": Color(0.9, 0.74, 0.24),         # Com. Pam (comandante): dorado
 }
 
 

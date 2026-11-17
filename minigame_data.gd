@@ -6,7 +6,7 @@ static func cases() -> Array:
 	return [
 		{
 			"title": Lang.t("Mareo de adaptación"),
-			"sym": Lang.t("ENOC lleva dos días con náuseas, vómitos, dolor de cabeza y siente que todo da vueltas cuando mueve rápido la cabeza. Hace poco cambió de gravedad. No tiene fiebre."),
+			"sym": Lang.t("El Ing. Enoc lleva dos días con náuseas, vómitos, dolor de cabeza y siente que todo da vueltas cuando mueve rápido la cabeza. Hace poco cambió de gravedad. No tiene fiebre."),
 			"q1": Lang.t("¿Qué le pasa?"),
 			"h1": Lang.t("Pista: lo marea sobre todo mover la cabeza. ¿Qué órgano ayuda a mantener el equilibrio?"),
 			"w1": Lang.t("El oído interno nos dice hacia dónde está «abajo». Al cambiar de gravedad se confunde. Es común en los primeros días del espacio y suele mejorar en pocos días."),
@@ -18,7 +18,7 @@ static func cases() -> Array:
 		},
 		{
 			"title": Lang.t("Deshidratación"),
-			"sym": Lang.t("La Dra. YARISBEL trabajó seis horas con el traje. Tiene mucha sed, la boca seca, la orina muy oscura, dolor de cabeza y cansancio. No tiene fiebre ni heridas."),
+			"sym": Lang.t("La Dra. Yarisbel trabajó seis horas con el traje. Tiene mucha sed, la boca seca, la orina muy oscura, dolor de cabeza y cansancio. No tiene fiebre ni heridas."),
 			"q1": Lang.t("¿Qué le pasa?"),
 			"h1": Lang.t("Pista: sed + orina oscura son señales de que al cuerpo le falta algo muy simple."),
 			"w1": Lang.t("La orina oscura y la sed intensa indican que el cuerpo necesita agua. En el espacio el agua es tan valiosa que se recicla."),
@@ -30,7 +30,7 @@ static func cases() -> Array:
 		},
 		{
 			"title": Lang.t("Irritación por polvo"),
-			"sym": Lang.t("PAM estornuda, tiene los ojos rojos y llorosos y la garganta irritada. Acaba de entrar de la superficie sin limpiar bien su traje. No tiene fiebre."),
+			"sym": Lang.t("La Com. Pam estornuda, tiene los ojos rojos y llorosos y la garganta irritada. Acaba de entrar de la superficie sin limpiar bien su traje. No tiene fiebre."),
 			"q1": Lang.t("¿Qué le pasa?"),
 			"h1": Lang.t("Pista: ojos, nariz y garganta son por donde entra el polvo."),
 			"w1": Lang.t("El polvo es muy fino y se pega al traje. Algunos astronautas de las misiones Apolo tuvieron estornudos y ojos irritados por el polvo lunar."),
@@ -42,7 +42,7 @@ static func cases() -> Array:
 		},
 		{
 			"title": Lang.t("Exceso de dióxido de carbono"),
-			"sym": Lang.t("En el módulo de dormir, ENOC y PAM tienen dolor de cabeza, mucho sueño y respiran más rápido. El filtro de CO2 lleva semanas sin cambiarse."),
+			"sym": Lang.t("En el módulo de dormir, Ing. Enoc y la Com. Pam tienen dolor de cabeza, mucho sueño y respiran más rápido. El filtro de CO2 lleva semanas sin cambiarse."),
 			"q1": Lang.t("¿Qué les pasa?"),
 			"h1": Lang.t("Pista: los dos sienten lo mismo en el mismo lugar. Mira qué dice el último dato."),
 			"w1": Lang.t("Al respirar sacamos CO2. Si el filtro falla, se acumula y da dolor de cabeza y sueño. En la Estación Espacial se vigila mucho el CO2."),
@@ -54,7 +54,7 @@ static func cases() -> Array:
 		},
 		{
 			"title": Lang.t("Herida infectada"),
-			"sym": Lang.t("La Dra. YARISBEL se cortó la mano con una chapa hace tres días. Hoy la herida está roja, caliente, hinchada y con pus, y tiene un poco de fiebre."),
+			"sym": Lang.t("La Dra. Yarisbel se cortó la mano con una chapa hace tres días. Hoy la herida está roja, caliente, hinchada y con pus, y tiene un poco de fiebre."),
 			"q1": Lang.t("¿Qué le pasa?"),
 			"h1": Lang.t("Pista: pus, calor y fiebre después de un corte."),
 			"w1": Lang.t("Enrojecimiento, calor, hinchazón, pus y fiebre son señales de infección."),
@@ -66,7 +66,7 @@ static func cases() -> Array:
 		},
 		{
 			"title": Lang.t("Quemadura"),
-			"sym": Lang.t("ENOC tocó sin querer un radiador muy caliente. Tiene la piel roja y dolorida con una ampolla pequeña en la palma de la mano."),
+			"sym": Lang.t("El Ing. Enoc tocó sin querer un radiador muy caliente. Tiene la piel roja y dolorida con una ampolla pequeña en la palma de la mano."),
 			"q1": Lang.t("¿Qué le pasa?"),
 			"h1": Lang.t("Pista: piel roja, ampolla y un objeto muy caliente."),
 			"w1": Lang.t("Una ampolla pequeña con piel roja es una quemadura leve."),
@@ -78,7 +78,7 @@ static func cases() -> Array:
 		},
 		{
 			"title": Lang.t("Hipotermia"),
-			"sym": Lang.t("Después de una noche fuera con el traje averiado, PAM tiembla sin parar, tiene manos y pies helados y habla lento y confundida."),
+			"sym": Lang.t("Después de una noche fuera con el traje averiado, Com. Pam tiembla sin parar, tiene manos y pies helados y habla lento y confundida."),
 			"q1": Lang.t("¿Qué le pasa?"),
 			"h1": Lang.t("Pista: tiembla, está helada y confundida."),
 			"w1": Lang.t("Cuando el cuerpo pierde calor más rápido de lo que lo produce, tiembla y puede confundirse. La noche en la Luna y en Marte es muy fría."),
@@ -90,7 +90,7 @@ static func cases() -> Array:
 		},
 		{
 			"title": Lang.t("Esguince de tobillo"),
-			"sym": Lang.t("Al caer en un hueco, ENOC se torció el tobillo: está hinchado y duele al apoyar el pie, pero el pie conserva su forma normal."),
+			"sym": Lang.t("Al caer en un hueco, Ing. Enoc se torció el tobillo: está hinchado y duele al apoyar el pie, pero el pie conserva su forma normal."),
 			"q1": Lang.t("¿Qué le pasa?"),
 			"h1": Lang.t("Pista: golpe en el tobillo, hinchazón y dolor al apoyar."),
 			"w1": Lang.t("Torcerse el tobillo estira los ligamentos y los inflama."),
@@ -102,7 +102,7 @@ static func cases() -> Array:
 		},
 		{
 			"title": Lang.t("Problemas de sueño"),
-			"sym": Lang.t("Desde que llegó a la base, la Dra. YARISBEL duerme mal, se despierta a mitad de la noche y está irritable y distraída. El día y la noche de aquí no se parecen a los de la Tierra."),
+			"sym": Lang.t("Desde que llegó a la base, la Dra. Yarisbel duerme mal, se despierta a mitad de la noche y está irritable y distraída. El día y la noche de aquí no se parecen a los de la Tierra."),
 			"q1": Lang.t("¿Qué le pasa?"),
 			"h1": Lang.t("Pista: el problema es cuándo duerme, no una herida."),
 			"w1": Lang.t("El cuerpo se guía por la luz para saber cuándo dormir. En Marte, un día (sol) dura unos 24 h 39 min, y en la Luna el día y la noche duran unas dos semanas cada uno. Por eso los equipos usan horarios fijos."),
@@ -119,7 +119,7 @@ static func tool_info(id: String) -> Dictionary:
 		"patch":
 			return {"title": Lang.t("Kit de parche"), "pages": [Lang.t("Para qué sirve: sella las brechas que abren los meteoritos en el casco. Si hay ALERTA ROJA, sin parche pierdes oxígeno cada día. Cómo se usa: ve al generador de escudo y pulsa [E] para sellar la brecha."), Lang.t("En la realidad: los módulos de la Estación Espacial Internacional tienen capas protectoras contra micrometeoritos y la tripulación tiene procedimientos para reparar fugas.")]}
 		"medkit":
-			return {"title": Lang.t("Botiquín"), "pages": [Lang.t("Para qué sirve: cura una enfermedad de la tripulación. Cómo se usa: si hay enfermos, habla con la Dra. YARISBEL y ella lo usa. Cada botiquín cura una vez."), Lang.t("En la realidad: la tripulación entrena primeros auxilios, y en Marte la señal tarda varios minutos en llegar a la Tierra: no se puede esperar a que un médico responda.")]}
+			return {"title": Lang.t("Botiquín"), "pages": [Lang.t("Para qué sirve: cura una enfermedad de la tripulación. Cómo se usa: si hay enfermos, habla con la Dra. Yarisbel y ella lo usa. Cada botiquín cura una vez."), Lang.t("En la realidad: la tripulación entrena primeros auxilios, y en Marte la señal tarda varios minutos en llegar a la Tierra: no se puede esperar a que un médico responda.")]}
 		"repair":
 			return {"title": Lang.t("Reparador de circuitos"), "pages": [Lang.t("Para qué sirve: reduce el daño cuando una falla eléctrica o un cortocircuito golpea la base. Cómo se usa: se gasta solo cuando ocurre la falla; basta con tenerlo en el inventario."), Lang.t("En la realidad: el polvo se pega a los equipos y puede dañar conexiones, por eso las misiones llevan repuestos y herramientas para reparar electrónica.")]}
 		"filter":

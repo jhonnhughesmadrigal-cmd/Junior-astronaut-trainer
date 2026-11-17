@@ -123,7 +123,7 @@ func _layout() -> void:
 		else:
 			btns.append({"id": "next", "pos": pos, "r": 46.0, "icon": "play", "label": Lang.t("Seguir"), "key": KEY_E})
 	elif md == 2 or md == 9:
-		# confirmar dormir (2) o encargar una mejora a ENOC (9): E = si, Esc = cancelar
+		# confirmar dormir (2) o encargar una mejora al Ing. Enoc (9): E = si, Esc = cancelar
 		var cpos := Vector2(vs.x - m - 58.0, vs.y - m - 132.0)
 		btns.append({"id": "yes", "pos": cpos, "r": 46.0, "icon": "check", "label": Lang.t("Sí"), "key": KEY_E})
 		btns.append({"id": "no", "pos": cpos + Vector2(-118.0, 20.0), "r": 38.0, "icon": "close", "label": Lang.t("Cancelar"), "key": KEY_ESCAPE})
@@ -270,7 +270,7 @@ func _touch_hints() -> void:
 		Lang.t("[E] continuar"): Lang.t("Toca «Seguir» para continuar"),
 		Lang.t("Elige con 1 o 2"): Lang.t("Toca 1 o 2 para elegir"),
 		Lang.t("[E] Dormir      [Esc] Cancelar"): Lang.t("Toca «Sí» para dormir o «Cancelar»"),
-		Lang.t("[E] Encargar la obra a ENOC      [Esc] Cancelar"): Lang.t("Toca «Sí» para encargar la obra a ENOC o «Cancelar»"),
+		Lang.t("[E] Encargar la obra al Ing. Enoc      [Esc] Cancelar"): Lang.t("Toca «Sí» para encargar la obra al Ing. Enoc o «Cancelar»"),
 	}
 	if rep.has(lb.text):
 		lb.text = rep[lb.text]

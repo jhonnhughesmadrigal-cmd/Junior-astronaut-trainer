@@ -470,7 +470,7 @@ func setup() -> void:
 	_build_exterior()
 	player_node = _make_astronaut(Color(0.97, 0.97, 1.0), "wilson")
 	add_child(player_node)
-	_nametag(player_node, "Wilson", Color(0.7, 0.95, 1.0))
+	_nametag(player_node, "Zadiel", Color(0.7, 0.95, 1.0))
 	_apply_suit_tex()
 	var ring_mat: StandardMaterial3D = _m(Color(0.3, 0.9, 1.0, 0.55), 0.0, 0.5, 2.0)
 	target_ring = _add(self, _tor(0.78, 0.92), ring_mat, Vector3.ZERO, Vector3.ZERO, false)
@@ -493,7 +493,7 @@ func event_fx(kind: String, data: Dictionary = {}) -> void:
 		efx.call("trigger", kind, data)
 
 
-# v41: ¿se ve el exterior? (la cinematica puede mostrarlo aunque Wilson este dentro, y al reves)
+# v41: ¿se ve el exterior? (la cinematica puede mostrarlo aunque Zadiel este dentro, y al reves)
 func is_out() -> bool:
 	return game.outside if cine_out < 0 else cine_out == 1
 
@@ -736,7 +736,7 @@ func _nametag(parent: Node3D, text: String, col: Color) -> void:
 
 
 func _make_astronaut(suit: Color, role: String = "") -> Node3D:
-	# Traje mas detallado. role: "" (sin marca), "wilson", "a" (YARISBEL, medica), "k" (ENOC), "l" (PAM, comandante)
+	# Traje mas detallado. role: "" (sin marca), "wilson", "a" (Yarisbel, medica), "k" (Ing. Enoc), "l" (Com. Pam, comandante)
 	var n := Node3D.new()
 	var accent: Color = suit
 	match role:

@@ -13,7 +13,7 @@
 Consumos diarios (-6 oxígeno, -5 comida, etc.), efectos de cada acción, y probabilidades de eventos.
 
 # Historia
-Historia y diálogos originales, inspirados en la premisa general de la película The Martian (2015): astronauta(s) que deben sobrevivir en otro mundo con recursos limitados. Los personajes (Wilson, Dra. Osei, Kenji, Lucía) son inventados para este proyecto.
+Historia y diálogos originales, inspirados en la premisa general de la película The Martian (2015): astronauta(s) que deben sobrevivir en otro mundo con recursos limitados. Los personajes (Zadiel, Dra. Osei, Kenji, Lucía) son inventados para este proyecto.
 
 # Audio
 Música y efectos generados por código (Python/numpy) para este proyecto: carpeta audio/. Se pueden reemplazar por archivos propios con el mismo nombre.
@@ -144,7 +144,7 @@ No tengo una fuente verificada con URL exacta para cada pregunta; trátalas como
 - Rocas, vetas de metal, hielo y cajas de polímero: texturas y mallas generadas por código (ext_tex.gd), sin imágenes externas. Opciones → Gráficos → "Texturas del exterior": Sencillas / Detalladas / Alta (con relieve). El cambio de textura es inmediato; la forma de las rocas cambia al iniciar una misión nueva.
 
 ## Alfa 0.7 — Nombres, gráficos y web
-- Tripulación renombrada: Dra. YARISBEL (antes Osei), ENOC (antes Kenji), PAM (antes Lucía). Etiquetas de nombre sobre cada personaje.
+- Tripulación renombrada: Dra. Yarisbel (antes Osei), Ing. Enoc (antes Kenji), Com. Pam (antes Lucía). Etiquetas de nombre sobre cada personaje.
 - Gráficos: sombras, MSAA, escala de render, FPS, efectos, estrellas, glow, niebla, brillo, presets. FXAA NO se ofrece: en el renderizador Compatibilidad no produjo cambio visible en la prueba (Godot 4.4.1).
 - Web: export_presets.cfg incluye el preset "Web" (sin hilos). Ver LEEME_WEB.txt en la carpeta web.
 
@@ -159,7 +159,7 @@ No tengo una fuente verificada con URL exacta para cada pregunta; trátalas como
 - Idiomas: Español / English. Primera ejecución: idioma del sistema (escritorio) o del navegador (web); `en*` → inglés, cualquier otro → español. Se cambia desde el menú principal (botones Español/English; recarga la escena) y queda guardado en settings.cfg. En Opciones → Juego el selector se desactiva durante una partida.
 - Cómo funciona: el texto original en español es la clave. `Lang.t("texto")` (lang.gd) devuelve el mismo texto o su traducción de `lang_en.gd` (~720 entradas). Si falta una traducción se ve el texto en español. Para añadir/corregir inglés, editar solo `lang_en.gd`.
 - Las traducciones al inglés las escribí yo (Claude) y NO han sido revisadas por una persona. Los datos de la NASA (placas, preguntas del Aprende, lecciones) conservan las mismas cifras que en español, pero la redacción en inglés conviene que la revise alguien antes de usarla en clase.
-- Los nombres de personajes no se traducen (Wilson, ENOC, PAM, Control); "Dra. YARISBEL" se muestra como "Dr. YARISBEL" y "Narración/Banco de trabajo/Cama" como "Narration/Workbench/Bed". Los textos que vienen de api.nasa.gov (APOD) ya son en inglés (texto original de la NASA).
+- Los nombres de personajes no se traducen (Zadiel, Ing. Enoc, Com. Pam, Control); "Dra. Yarisbel" se muestra como "Dr. Yarisbel" y "Narración/Banco de trabajo/Cama" como "Narration/Workbench/Bed". Los textos que vienen de api.nasa.gov (APOD) ya son en inglés (texto original de la NASA).
 - Optimización (medido en Godot 4.4.1 con render por software; NO hay medición en GPU real):
   - Rocas, vetas, hielo, cajas y guijarros se dibujan en bloques de 12x12 casillas en vez de un único MultiMesh gigante, así el motor descarta lo que no se ve (y sus sombras). Triángulos por fotograma en el exterior (calidad Alta): ~1,08 M → ~0,22–0,38 M según la posición; menú: ~1,03 M → ~0,38 M. Las llamadas de dibujo suben (255–290 → 300–570).
   - Textura del suelo (cráteres): perfil radial tabulado en vez de calcular cada píxel; ~2,2 veces más rápido (≈0,7 s → ≈0,3 s con 10 px/casilla, en este equipo). Diferencia con la versión anterior: media 0,01–0,05 de 255.
@@ -205,7 +205,7 @@ No tengo una fuente verificada con URL exacta para cada pregunta; trátalas como
 - Datos reales en los textos de las herramientas (revisar antes de publicar): Opportunity perdió contacto en 2018 tras una tormenta de polvo global; un sol marciano dura ~24 h 39 min; LRO (Luna) y MRO (Marte) son orbitadores que fotografían la superficie; la ISS usa capas protectoras contra micrometeoritos. Sin documento citado en esta sesión para ellos (los conozco de memoria).
 
 
-## Alfa 0.9.7 — Sistema incremental, mochila y obras de ENOC
+## Alfa 0.9.7 — Sistema incremental, mochila y obras del Ing. Enoc
 
 Todo esto es **mecánica de diseño del juego, no datos científicos**. Los números son valores de partida para equilibrar; **no se han probado jugando de verdad** (solo con scripts automáticos), así que conviene ajustarlos tras partidas reales.
 
@@ -231,8 +231,8 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Se piden con [U] frente a la estación; **solo materiales**, distintos en cada una (sin herramienta especial). Costes `[chatarra, polímero, circuitos]` por nivel en `_upg_cost`:
   O [4,3,0] [6,5,1] [8,8,3] · S [4,0,2] [6,2,4] [8,4,7] · G [6,2,0] [9,4,1] [12,6,2] · W [6,0,1] [9,2,3] [12,3,5] · R [5,0,2] [8,0,4] [12,3,6] · C [3,3,0] [5,5,1] [7,8,2].
 - Efecto por nivel: la estación gasta un 10 % menos de su recurso (`STATION_DRAIN_CUT`) y rinde un 25 % más al usarla (`STATION_BOOST`).
-- Obra en segundo plano a cargo de **ENOC**: 60 / 120 / 180 minutos de juego (`_build_mins`). Solo una obra a la vez; la estación no se puede usar mientras está en obra; el tiempo avanza también durmiendo. Se guarda y se carga con la partida.
-- Visual: cada nivel cambia el modelo de la estación en 3D y 2D (tanques extra, paneles, lámparas, pilonas, anillos, etc.), y mientras dura la obra se ve un andamio amarillo y a ENOC martillando con chispas.
+- Obra en segundo plano a cargo de **Ing. Enoc**: 60 / 120 / 180 minutos de juego (`_build_mins`). Solo una obra a la vez; la estación no se puede usar mientras está en obra; el tiempo avanza también durmiendo. Se guarda y se carga con la partida.
+- Visual: cada nivel cambia el modelo de la estación en 3D y 2D (tanques extra, paneles, lámparas, pilonas, anillos, etc.), y mientras dura la obra se ve un andamio amarillo y al Ing. Enoc martillando con chispas.
 - Exterior de la base rediseñado y más grande (10 x 4 casillas en vez de 6 x 3, con módulos laterales, cúpula, marquesina en la esclusa y balizas) que **crece con las mejoras**: más paneles solares, tanques de oxígeno, invernadero en el techo, torre de agua, pilonas y anillo del escudo, y mirador.
 
 ## Alfa 0.9.8 — Interior, cámara y Diario
@@ -286,11 +286,11 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Probado con script y capturas por software (el fundido se vio en negro; no medí la suavidad con GPU real).
 
 ### 0.9.17 Roles de la tripulación (v24.4)
-- Wilson: ingeniero y botánico. Dra. YARISBEL: médica (aplica el botiquín, avisa de comida, agua y moral; cruz blanca en el parche del traje). ENOC: técnico de sistemas (oxígeno, energía, agua; construye las obras). PAM: comandante (avisa de oxígeno, energía, escudo y moral; parche dorado). Las líneas de historia y finales se reasignaron a quien encaja con su rol. El rol se ve al mirar a cada uno ("Hablar con Dra. YARISBEL, médica").
-- Los síntomas de enfermedad en los minijuegos siguen nombrando a PAM como paciente (no es un rol). Verificado solo por carga del juego, no revisé cada diálogo en pantalla.
+- Zadiel: ingeniero y botánico. Dra. Yarisbel: médica (aplica el botiquín, avisa de comida, agua y moral; cruz blanca en el parche del traje). Ing. Enoc: técnico de sistemas (oxígeno, energía, agua; construye las obras). Com. Pam: comandante (avisa de oxígeno, energía, escudo y moral; parche dorado). Las líneas de historia y finales se reasignaron a quien encaja con su rol. El rol se ve al mirar a cada uno ("Hablar con Dra. Yarisbel, médica").
+- Los síntomas de enfermedad en los minijuegos siguen nombrando a la Com. Pam como paciente (no es un rol). Verificado solo por carga del juego, no revisé cada diálogo en pantalla.
 
-### 0.9.18 Diálogos graciosos de ENOC (v24.5)
-- ENOC suma 13 frases de humor sobre su tema (sistemas, oxígeno, energía, agua, herramientas) a las 3 que tenía; al hablar con él, cuando nada está bajo, dice una al azar. Son chistes de diseño del juego, sin datos científicos. Interpreté "tema claro" como "el tema de ENOC"; si te referías a otra cosa, dímelo. Textos en inglés sin revisar.
+### 0.9.18 Diálogos graciosos del Ing. Enoc (v24.5)
+- Ing. Enoc suma 13 frases de humor sobre su tema (sistemas, oxígeno, energía, agua, herramientas) a las 3 que tenía; al hablar con él, cuando nada está bajo, dice una al azar. Son chistes de diseño del juego, sin datos científicos. Interpreté "tema claro" como "el tema del Ing. Enoc"; si te referías a otra cosa, dímelo. Textos en inglés sin revisar.
 
 ### 0.9.19 Controles, carga, HUD e inventario (v25)
 - Controles reasignables (Opciones > Controles): 17 acciones (mover, correr, saltar, usar, mejorar, mochila, objeto en mano, mapa, diario, logros, chat, cámara, vista, silencio). Se guardan en la configuración (`[controls]`); si una tecla ya está en uso, se intercambian. Fijos: flechas, Esc, F1, F2, F3, F11, Enter y las teclas de los menús (E/Enter en diálogos). Se guardan como código de tecla físico: en teclados no QWERTY el nombre mostrado sigue la distribución del usuario (no probado en otras distribuciones).
@@ -300,11 +300,11 @@ Todo esto es **mecánica de diseño del juego, no datos científicos**. Los núm
 - Cámara de salida: al cruzar la esclusa se recoloca de golpe detrás del jugador; si el casco o la marquesina estorban, sube casi encima del jugador (antes se ponía de lado).
 - Chat inferior: se oculta y muestra con T. Quitados los botones F1/F2 de la esquina (las teclas y el menú de pausa siguen).
 - Aviso rápido arriba al cambiar de momento: amanece/de día (06:00), de tarde (12:00), atardece (18:00), de noche (20:00) y muy de noche (00:00).
-- Inventario: muñeco 3D de Wilson con su traje (como el de Minecraft), gira solo y se arrastra con el ratón. Usa otro mundo 3D en un SubViewport; no medí su costo en navegadores.
+- Inventario: muñeco 3D de Zadiel con su traje (como el de Minecraft), gira solo y se arrastra con el ratón. Usa otro mundo 3D en un SubViewport; no medí su costo en navegadores.
 
 ### 0.9.20 Emergencias, diagnóstico y registro de incidentes (v26)
 - Archivos nuevos: `emergency_data.gd` (datos de cada emergencia), `emergency.gd` (gestor central), `diag_ui.gd` (Centro de diagnóstico, tecla H reasignable, modo 14). Estados de cada incidente: Normal, Detectada, Investigación, Diagnóstico, Intervención, Verificación, Resuelta, Fallida.
-- Emergencias: fuga de oxígeno/brecha (causas: fuga real, filtro saturado, sensor defectuoso, fallo del reciclador), cortocircuito (circuito dañado, sobrecarga, paneles sucios, medidor), falla de agua (fuga física, avería del reciclador, mayor consumo, medidor), emergencia médica (usa el brote de enfermedad, el botiquín, a la Dra. YARISBEL y los casos clínicos del minijuego), llamarada solar (aviso con horas, refugiarse/reforzar escudo) y tormenta de polvo marciana (pronóstico y preparación; solo en Marte). Los micrometeoritos dañan según el estado de los equipos exteriores.
+- Emergencias: fuga de oxígeno/brecha (causas: fuga real, filtro saturado, sensor defectuoso, fallo del reciclador), cortocircuito (circuito dañado, sobrecarga, paneles sucios, medidor), falla de agua (fuga física, avería del reciclador, mayor consumo, medidor), emergencia médica (usa el brote de enfermedad, el botiquín, a la Dra. Yarisbel y los casos clínicos del minijuego), llamarada solar (aviso con horas, refugiarse/reforzar escudo) y tormenta de polvo marciana (pronóstico y preparación; solo en Marte). Los micrometeoritos dañan según el estado de los equipos exteriores.
 - Mantenimiento preventivo: 5 sistemas (soporte vital, eléctrico, reciclador de agua, filtros, equipos exteriores) con estado 0–100 %. Riesgo = 0,5 + 1,5·(1−estado/100) sobre las probabilidades de evento; bajo 35 % hay fallos por desgaste. Nunca baja el riesgo a cero. Cada mantenimiento cuesta 45 min y 1 chatarra o polímero. La dificultad cambia el costo de consultar, el número de hipótesis, las lecturas mínimas, los plazos y el desgaste.
 - Historial persistente (`emerg` dentro de la partida; versión de guardado sigue en 2; las partidas v25 con brecha o enfermedad se migran a incidentes al cargar). Informe educativo de 5 bloques que cambia según tus acciones.
 - Simplificaciones (son de juego, no datos medidos): presión normal 98–103 kPa, CO₂ 0,3 % vs 0,9 %, porcentajes de carga de red, tiempos de aviso de llamarada y tormenta, y la fracción de daño evitado al refugiarse (25 %) o reforzar (60 %). Los ejemplos reales mencionados (agua reciclada en la ISS, tormenta global de 2018 y el rover Opportunity) son conocimiento general que no verifiqué de nuevo contra una fuente en esta versión: conviene revisarlos. La emergencia médica no es una simulación clínica profesional. Textos en inglés sin revisión humana.
@@ -425,7 +425,7 @@ Catálogo de **9 lecciones cortas** que el docente elige desde el menú (**Misio
 2. **Encaje de paneles:** si un panel abierto (menú, pausa, opciones, mapa, diagnóstico, misiones…) no cabe, se reduce lo justo y se centra. Si cabe, no se toca (en escritorio no cambia nada: comprobado a 1920×1080 y 1024×600). Con controles táctiles se deja libre una franja a la derecha para el botón «Cerrar».
 3. **Menú compacto** en pantallas bajas (márgenes, título y botones más pequeños, sin la línea de versión) para que apenas haya que reducirlo. Los textos con alto automático se recalculan al cambiar de modo (antes se solapaban).
 4. **Aviso «Gira el dispositivo»** si un dispositivo táctil está en vertical.
-5. **Táctil:** botones «Sí» / «Cancelar» para confirmar dormir y encargar obras a ENOC (antes solo con E/Esc); los textos de ayuda del diálogo que nombran teclas se cambian por los botones; «Cerrar» por encima de mochila y banco (z_index); la pausa se coloca en el grupo de botones en pantallas bajas o durante una misión; la etiqueta del salto usa la clave «Salto» (la clave «Saltar» se traducía como «Skip»).
+5. **Táctil:** botones «Sí» / «Cancelar» para confirmar dormir y encargar obras al Ing. Enoc (antes solo con E/Esc); los textos de ayuda del diálogo que nombran teclas se cambian por los botones; «Cerrar» por encima de mochila y banco (z_index); la pausa se coloca en el grupo de botones en pantallas bajas o durante una misión; la etiqueta del salto usa la clave «Salto» (la clave «Saltar» se traducía como «Skip»).
 
 **Verificación:**
 - Capturas simulando un lienzo de 856×481 (1280×720 con ×1,35, más estrecho que un móvil real): menú, nueva misión, misiones de clase, cómo jugar, créditos, finales, opciones, pausa, mapa, mochila, banco, diagnóstico, misión en curso, cuestionario, resumen y final: todo cabe sin cortes.
@@ -469,7 +469,7 @@ Se generó con Ludo.ai (a partir de `docs/PROMPTS_LUDO.md`) una **imagen 2D de r
 - Cajas de cargamento del exterior: verde oliva (como en la referencia).
 El invernadero (G), el reciclador de agua (W) y la cama (B) mantienen su modelo (no aparecían en la referencia). Las mejoras de nivel de cada estación siguen viéndose (comprobado con todo al nivel 3).
 
-**Animaciones discretas:** las agujas de los manómetros oscilan; las pantallas varían levemente su brillo; el panel solar sigue la hora del día (de este a oeste, y vuelve al centro de noche); la antena de la radio gira despacio; el núcleo del escudo «respira»; la puerta de la esclusa se abre cuando Wilson se acerca y al cruzarla. Son decorativas: no cambian la lógica.
+**Animaciones discretas:** las agujas de los manómetros oscilan; las pantallas varían levemente su brillo; el panel solar sigue la hora del día (de este a oeste, y vuelve al centro de noche); la antena de la radio gira despacio; el núcleo del escudo «respira»; la puerta de la esclusa se abre cuando Zadiel se acerca y al cruzarla. Son decorativas: no cambian la lógica.
 
 **Verificación:** capturas de cada estación con cámara fija (estados `stc_O stc_S stc_R stc_C stc_T stc_A stc_D` en `tests/t_ui.gd`), vista general de Luna y Marte, todas las estaciones al nivel 3 y exterior. Animación de la puerta comprobada por script (0 → 1 al acercarse). Huella de lógica igual (`9d5ba3a6…`), táctil 22/22, minijuegos 14/14, misiones 75/75. No medido: coste en GPU real (hay más piezas por estación que antes).
 
@@ -558,7 +558,7 @@ Con los prompts de `docs/PROMPTS_LUDO.md` se generó en Ludo.ai una imagen con l
 
 **Astronauta:** proporciones más humanas (casco menor, torso rígido tipo traje EVA, brazos y piernas delgados con pliegues, guantes con dedos, botas con caña); mismas articulaciones y posiciones que el modelo por código, así que las 14 poses no cambian. Un solo modelo para los cuatro: el color de rol se aplica por código (`crew_look.gd`). ≈12 500 triángulos, 42 mallas (piezas fusionadas por material).
 
-**Estaciones:** mismas medidas y orientación que antes (encajan las mejoras de nivel y los andamios). Cada una tiene una animación discreta en reposo; **mientras Wilson la usa** (tarea en curso junto a ella) se intensifica: pantallas más brillantes con parpadeo, agujas de los manómetros, bobina del escudo, antena que barre, panel solar que se reajusta, ventilador del reciclador, plantas que se mecen, manivela del tornillo del banco. **Al terminar**: destello de las luces y un anillo en el suelo. 1 500–5 100 triángulos por estación.
+**Estaciones:** mismas medidas y orientación que antes (encajan las mejoras de nivel y los andamios). Cada una tiene una animación discreta en reposo; **mientras Zadiel la usa** (tarea en curso junto a ella) se intensifica: pantallas más brillantes con parpadeo, agujas de los manómetros, bobina del escudo, antena que barre, panel solar que se reajusta, ventilador del reciclador, plantas que se mecen, manivela del tornillo del banco. **Al terminar**: destello de las luces y un anillo en el suelo. 1 500–5 100 triángulos por estación.
 
 **Rendimiento (recuento de la escena, no medida de GPU):** dentro de la base (Luna), superficies dibujadas 557 → 318 (−43 %) y triángulos 165 870 → 76 726 (−54 %) frente a v38, porque las piezas de cada estación se fusionan por material.
 
@@ -593,8 +593,8 @@ Las primitivas visibles suben algo con calidad Baja (+9 % Luna, +15 % Marte: los
 
 **Pruebas arregladas:**
 - `ERR_PARSE_ERROR` de Godot 4.7 **no venía de un icono** (todos los SVG cargan bien): `nasa_data.gd` probaba siempre `load_jpg_from_buffer` primero y, si la imagen era PNG/WebP, Godot escribía el error aunque luego se cargara. Ahora elige el cargador por la firma del archivo (`image_kind`).
-- `t_perf` con `INSIDE=1` dejaba a Wilson en la casilla exterior `ext_spawn` (la cámara solo veía una pared: 10 llamadas); fuera medía en 1.ª persona de espaldas a la base. Ahora: vista 3D y cámara fija solo en memoria, sin pantalla de perfil, interior desde `_find_start()`, exterior mirando a la base; imprime también el recuento de la escena.
-- `t_touch`: no depende de los ajustes (vista 3D en memoria). Además, en este Mac fallaba «la mochila se abre» tras `t_mobile`: Wilson seguía en el aire del salto en el fotograma 160 (depende de los FPS); se le hace aterrizar antes de esa parte (el salto ya se comprueba antes). 22/22 también con `view3d=false` guardado.
+- `t_perf` con `INSIDE=1` dejaba a Zadiel en la casilla exterior `ext_spawn` (la cámara solo veía una pared: 10 llamadas); fuera medía en 1.ª persona de espaldas a la base. Ahora: vista 3D y cámara fija solo en memoria, sin pantalla de perfil, interior desde `_find_start()`, exterior mirando a la base; imprime también el recuento de la escena.
+- `t_touch`: no depende de los ajustes (vista 3D en memoria). Además, en este Mac fallaba «la mochila se abre» tras `t_mobile`: Zadiel seguía en el aire del salto en el fotograma 160 (depende de los FPS); se le hace aterrizar antes de esa parte (el salto ya se comprueba antes). 22/22 también con `view3d=false` guardado.
 - `t_ui`: vista 3D en memoria (`VIEW3D=0` para desactivarla); estados nuevos `lm_apollo lm_plaque lm_wreck lm_rover base_moon base_mars`.
 
 **Verificación (macOS, Godot 4.7.2, sin xvfb):** `t_exterior` 26/26 (Luna y Marte), `t_stations` 32/32, misiones 75/75 (es y en), móvil 14/14, táctil 22/22 (también tras `t_mobile` y con `view3d=false` guardado), perfiles 19/19, minijuegos 14/14 con datos de usuario limpios. **Ojo:** minijuegos da 13/14 («map: superar el minijuego fabrica la herramienta») si antes se ejecutan otras pruebas que dejan partida/ajustes guardados; pasa **igual en v39** (no es de v40) y no se investigó más. Capturas revisadas frente a v39: `out_moon out_mars far_moon lm_apollo lm_plaque lm_wreck lm_rover base_moon`. **Web (Chrome 157 en macOS, zip extraído y servido por HTTP local):** carga con WebGL 2 (Compatibilidad); fuentes Inter e iconos SVG correctos; perfil invitado → nueva misión Luna → interior con astronautas y estaciones de Blender → salida por la esclusa → exterior con la esclusa, recolectables y plataforma nuevos. Mismo recorrido con el zip v39: misma iluminación (amanecer, 06:07), sin regresión. Sin `ERR_PARSE_ERROR` ni errores de página.
@@ -621,7 +621,7 @@ Las primitivas visibles suben algo con calidad Baja (+9 % Luna, +15 % Marte: los
 
 **Salto y recogida (Blender):** las animaciones son fotogramas clave en Blender sobre vacíos con los nombres de las articulaciones; `crew_anims.gd` las muestrea (salto según la velocidad vertical; recogida según el avance de la tarea) y sustituyen a las poses por código. Al aterrizar: amortiguación, polvo y anillo. Comprobado: el exportador glTF de Blender 5.3 escribe una animación por objeto (se combinan) y los ángulos se leen con el orden YZX de Godot (= XYZ de Blender).
 
-**Finales (escena 3D en vivo):** usa el mundo de la partida que termina. Victorias: la nave de rescate desciende con llama y polvo y aterriza; la tripulación la recibe (variantes: Wilson martillea, corro de la tripulación, caminan hacia la nave, alivio al atardecer). Derrotas: alarma y fuga (sin aire), base a oscuras (apagón), invernadero con plaga (comida), goteo (agua), escudo que cede (radiación), tripulación separada y abatida (moral). La tarjeta aparece a los 5 s o al pulsar una tecla/tocar. Sin vista 3D, se usa la ilustración 2D anterior (`ending_art.gd`).
+**Finales (escena 3D en vivo):** usa el mundo de la partida que termina. Victorias: la nave de rescate desciende con llama y polvo y aterriza; la tripulación la recibe (variantes: Zadiel martillea, corro de la tripulación, caminan hacia la nave, alivio al atardecer). Derrotas: alarma y fuga (sin aire), base a oscuras (apagón), invernadero con plaga (comida), goteo (agua), escudo que cede (radiación), tripulación separada y abatida (moral). La tarjeta aparece a los 5 s o al pulsar una tecla/tocar. Sin vista 3D, se usa la ilustración 2D anterior (`ending_art.gd`).
 
 **Rendimiento (Mac, Godot 4.7.2, `opengl3`; `tests/t_perf.gd`, Q=2; recuento, no FPS):** sin eventos igual que v40 (Luna fuera 239 → 240 llamadas, dentro 898 → 898; Marte fuera 219 → 218). Con la brecha abierta (dentro): +6 llamadas, +2 % primitivas (luces y partículas de la alarma). Con la tormenta (fuera): +2 llamadas. Nueva opción `EV=breach|storm` en `t_perf`. Las partículas se reducen con «Efectos» Bajo/Medio (×0,35 / ×0,7).
 

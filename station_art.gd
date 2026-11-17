@@ -463,7 +463,7 @@ static func _door(v, n: Node3D, grey, greyd, graph) -> void:
 	v._add(n, v._box(Vector3(1.6, 0.05, 0.9)), v._m(Color(0.3, 0.3, 0.32), 0.5, 0.5), Vector3(0, 0.03, -0.1), Vector3.ZERO, false)
 
 
-# ---------- estacion en uso: la que esta junto a Wilson mientras hace una tarea (modo 5) ----------
+# ---------- estacion en uso: la que esta junto a Zadiel mientras hace una tarea (modo 5) ----------
 static func _find_active(v: Node3D, g) -> Node3D:
 	if int(g.mode) != 5 or bool(g.outside):
 		return null
@@ -484,7 +484,7 @@ static func _find_active(v: Node3D, g) -> Node3D:
 
 
 # ---------- animaciones (se llaman cada fotograma desde view3d._update_props) ----------
-# Cada estacion tiene una animacion discreta en reposo; mientras Wilson la usa, "boost" sube a 1 y la
+# Cada estacion tiene una animacion discreta en reposo; mientras Zadiel la usa, "boost" sube a 1 y la
 # animacion se intensifica (pantallas, agujas, bobina, antena, ventilador, plantas, manivela). Al terminar
 # la tarea hay un destello ("flash") y un anillo de luz en el suelo.
 static func animate(v: Node3D, t: float, dt: float) -> void:
@@ -560,7 +560,7 @@ static func animate(v: Node3D, t: float, dt: float) -> void:
 					want += b * 0.12 * sin(t * 4.0)   # al usarlo, el panel se reajusta buscando el sol
 					mt.rotation.y = lerpf(mt.rotation.y, want, minf(1.0, dt * 1.5))
 			"door":
-				# se abre cuando Wilson esta cerca de la esclusa (dentro de la base) o cruzandola
+				# se abre cuando Zadiel esta cerca de la esclusa (dentro de la base) o cruzandola
 				var want_o: float = 0.0
 				if not bool(g.outside) and g.has_method("_tile"):
 					var dp: Vector2 = Vector2(-1, -1)

@@ -24,17 +24,17 @@ const INSTR: Dictionary = {
 	"pressure": "Presión del módulo", "o2": "Oxígeno y consumo", "co2": "CO₂ del aire", "sensors": "Sensores de presión", "filters": "Estado de los filtros",
 	"grid": "Carga de la red", "gen": "Generación solar", "lines": "Líneas eléctricas", "sys": "Sistemas afectados", "maint_power": "Mantenimiento eléctrico",
 	"tank": "Reserva y balance de agua", "recycler": "Reciclador", "pipes": "Conductos", "usage": "Consumo de la tripulación", "maint_water": "Mantenimiento del agua",
-	"status": "Estado de la tripulación", "symptoms": "Síntomas", "ask": "Consultar a la Dra. YARISBEL", "kit": "Botiquín disponible",
+	"status": "Estado de la tripulación", "symptoms": "Síntomas", "ask": "Consultar a la Dra. Yarisbel", "kit": "Botiquín disponible",
 	"rad": "Nivel de radiación", "shield": "Escudo de la base", "plan": "Pronóstico", "solar": "Paneles y energía"
 }
 
 const KINDS: Dictionary = {
 	"oxygen": {
-		"cat": "tech", "sys": "life", "owner": "ENOC",
+		"cat": "tech", "sys": "life", "owner": "Ing. Enoc",
 		"name": "Alarma de presión y oxígeno",
 		"alert": "ALERTA DE PRESIÓN — HAB-01",
 		"intro": "El sistema detecta una lectura de presión anormal y el oxígeno disponible baja más rápido de lo normal.",
-		"advice": "ENOC: «Compara las lecturas entre sí. Si dos instrumentos independientes coinciden, probablemente no es un error de lectura. Y mira qué más cambia: la presión, el CO₂ o solo el consumo.»",
+		"advice": "Ing. Enoc: «Compara las lecturas entre sí. Si dos instrumentos independientes coinciden, probablemente no es un error de lectura. Y mira qué más cambia: la presión, el CO₂ o solo el consumo.»",
 		"instr": ["pressure", "o2", "co2", "sensors", "filters"],
 		"causes": {
 			"leak": {
@@ -78,11 +78,11 @@ const KINDS: Dictionary = {
 		"drain": {"filter": {"oxygen": 8.0}}
 	},
 	"power": {
-		"cat": "tech", "sys": "power", "owner": "ENOC",
+		"cat": "tech", "sys": "power", "owner": "Ing. Enoc",
 		"name": "Anomalía en la red eléctrica",
 		"alert": "ALERTA ELÉCTRICA — RED PRINCIPAL",
 		"intro": "La red eléctrica presenta anomalías: hay cortes y la energía disponible está cayendo.",
-		"advice": "ENOC: «Mira cuánta carga lleva la red frente a su capacidad y compara con lo que generan los paneles. Si la carga es normal y la generación baja, el problema no está en la red.»",
+		"advice": "Ing. Enoc: «Mira cuánta carga lleva la red frente a su capacidad y compara con lo que generan los paneles. Si la carga es normal y la generación baja, el problema no está en la red.»",
 		"instr": ["grid", "gen", "lines", "sys", "maint_power"],
 		"causes": {
 			"circuit": {
@@ -126,11 +126,11 @@ const KINDS: Dictionary = {
 		"drain": {"circuit": {"energy": 9.0}, "overload": {"energy": 6.0}, "panel": {"energy": 7.0}}
 	},
 	"water": {
-		"cat": "tech", "sys": "water", "owner": "ENOC",
+		"cat": "tech", "sys": "water", "owner": "Ing. Enoc",
 		"name": "El agua no cuadra",
 		"alert": "ALERTA DE AGUA — BALANCE ANORMAL",
 		"intro": "El sistema de control detecta que la cantidad de agua no coincide con lo producido y consumido: falta agua.",
-		"advice": "ENOC: «Separa dos preguntas: ¿se está yendo el agua (pérdida física) o el reciclador está produciendo menos? Los conductos y el reciclador te lo dicen.»",
+		"advice": "Ing. Enoc: «Separa dos preguntas: ¿se está yendo el agua (pérdida física) o el reciclador está produciendo menos? Los conductos y el reciclador te lo dicen.»",
 		"instr": ["tank", "recycler", "pipes", "usage", "maint_water"],
 		"causes": {
 			"leak": {
@@ -170,11 +170,11 @@ const KINDS: Dictionary = {
 		"drain": {"leak": {"water": 12.0}, "recycler": {"water": 7.0}}
 	},
 	"flare": {
-		"cat": "env", "sys": "ext", "owner": "PAM",
+		"cat": "env", "sys": "ext", "owner": "Com. Pam",
 		"name": "Tormenta solar en camino",
 		"alert": "ALERTA SOLAR — LLAMARADA DETECTADA",
 		"intro": "Se detectó una llamarada solar. En unas horas llegará una oleada de radiación y puedes prepararte antes del impacto.",
-		"advice": "PAM: «El escudo reduce la radiación y las zonas protegidas reducen más. Decide rápido: el tiempo que queda es limitado, y reforzar o refugiarse cuesta tiempo.»",
+		"advice": "Com. Pam: «El escudo reduce la radiación y las zonas protegidas reducen más. Decide rápido: el tiempo que queda es limitado, y reforzar o refugiarse cuesta tiempo.»",
 		"instr": ["rad", "shield", "plan"],
 		"causes": {},
 		"ivs": [
@@ -190,11 +190,11 @@ const KINDS: Dictionary = {
 		}
 	},
 	"storm": {
-		"cat": "env", "sys": "power", "owner": "PAM", "mars": true,
+		"cat": "env", "sys": "power", "owner": "Com. Pam", "mars": true,
 		"name": "Tormenta de polvo en camino",
 		"alert": "ALERTA METEOROLÓGICA — TORMENTA DE POLVO",
 		"intro": "El pronóstico indica una tormenta de polvo que llegará a la base. Cubrirá los paneles y bajará la energía.",
-		"advice": "PAM: «Si los paneles están limpios y los filtros listos, el golpe será menor. Prioriza la energía: es lo primero que se resiente.»",
+		"advice": "Com. Pam: «Si los paneles están limpios y los filtros listos, el golpe será menor. Prioriza la energía: es lo primero que se resiente.»",
 		"instr": ["plan", "solar", "filters"],
 		"causes": {},
 		"ivs": [
@@ -210,7 +210,7 @@ const KINDS: Dictionary = {
 		}
 	},
 	"medical": {
-		"cat": "med", "sys": "crew", "owner": "Dra. YARISBEL",
+		"cat": "med", "sys": "crew", "owner": "Dra. Yarisbel",
 		"name": "Tripulante con síntomas anormales",
 		"alert": "ALERTA MÉDICA — TRIPULANTE CON SÍNTOMAS ANORMALES",
 		"intro": "Un tripulante presenta síntomas y necesita atención. Reúne información, identifica qué le pasa y decide cómo ayudarlo.",
@@ -221,14 +221,14 @@ const KINDS: Dictionary = {
 	}
 }
 
-# Consejos de PAM y ENOC para los mensajes de coordinacion al aparecer una emergencia
+# Consejos de la Com. Pam y el Ing. Enoc para los mensajes de coordinacion al aparecer una emergencia
 const COORD: Dictionary = {
-	"oxygen": "PAM: «Prioridad: el aire. Revisa los instrumentos del soporte vital antes de gastar materiales.»",
-	"power": "PAM: «Prioridad: la energía. Que todo lo demás espere hasta saber de dónde viene el problema.»",
-	"water": "PAM: «Prioridad: no perder agua. Primero hay que saber si se pierde o se produce menos.»",
-	"flare": "PAM: «Tormenta solar en camino. Decidamos pronto cómo protegernos.»",
-	"storm": "PAM: «Tormenta de polvo en camino. Preparemos los paneles y cuidemos la energía.»",
-	"medical": "PAM: «La Dra. YARISBEL puede guiarnos. Los síntomas primero, el tratamiento después.»"
+	"oxygen": "Com. Pam: «Prioridad: el aire. Revisa los instrumentos del soporte vital antes de gastar materiales.»",
+	"power": "Com. Pam: «Prioridad: la energía. Que todo lo demás espere hasta saber de dónde viene el problema.»",
+	"water": "Com. Pam: «Prioridad: no perder agua. Primero hay que saber si se pierde o se produce menos.»",
+	"flare": "Com. Pam: «Tormenta solar en camino. Decidamos pronto cómo protegernos.»",
+	"storm": "Com. Pam: «Tormenta de polvo en camino. Preparemos los paneles y cuidemos la energía.»",
+	"medical": "Com. Pam: «La Dra. Yarisbel puede guiarnos. Los síntomas primero, el tratamiento después.»"
 }
 
 

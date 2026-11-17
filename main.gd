@@ -55,7 +55,7 @@ var ACTIONS: Array = [
 
 var RECIPES: Array = [
 	{"id": "patch", "name": Lang.t("Kit de parche"), "mins": 90, "cost": {"scrap": 2, "polymer": 1}, "desc": Lang.t("sella brechas de meteoritos")},
-	{"id": "medkit", "name": Lang.t("Botiquín"), "mins": 60, "cost": {"polymer": 1, "circuits": 1}, "desc": Lang.t("cura enfermedades (habla con la Dra. YARISBEL)")},
+	{"id": "medkit", "name": Lang.t("Botiquín"), "mins": 60, "cost": {"polymer": 1, "circuits": 1}, "desc": Lang.t("cura enfermedades (habla con la Dra. Yarisbel)")},
 	{"id": "repair", "name": Lang.t("Reparador de circuitos"), "mins": 120, "cost": {"scrap": 1, "circuits": 2}, "desc": Lang.t("reduce el daño de fallas eléctricas")},
 	{"id": "filter", "name": Lang.t("Filtro de polvo"), "mins": 90, "cost": {"scrap": 1, "polymer": 2}, "desc": Lang.t("reduce el daño de las tormentas de polvo")},
 	{"id": "map", "name": Lang.t("Mapa de navegación"), "mins": 120, "cost": {"scrap": 1, "polymer": 1, "circuits": 1}, "desc": Lang.t("mapa del mundo (Tab) y minimapa; se fabrica una sola vez")}
@@ -73,25 +73,25 @@ var DIFFICULTIES: Array = [
 var NIGHTMARES: Array = [
 	{"title": Lang.t("Pesadilla: la esclusa"), "morale": 12, "lines": [
 		["Narración", Lang.t("Sueñas que la esclusa no abre y el aire se agota mientras golpeas la puerta.")],
-		["Wilson", Lang.t("Solo fue un sueño... solo un sueño.")]]},
+		["Zadiel", Lang.t("Solo fue un sueño... solo un sueño.")]]},
 	{"title": Lang.t("Pesadilla: el silencio"), "morale": 10, "lines": [
 		["Narración", Lang.t("Sueñas que Control deja de responder. Nadie en la Tierra recuerda que estás aquí.")],
-		["Wilson", Lang.t("Control sí responde. Sí responde.")]]},
+		["Zadiel", Lang.t("Control sí responde. Sí responde.")]]},
 	{"title": Lang.t("Pesadilla: el rescate"), "morale": 14, "lines": [
 		["Narración", Lang.t("Sueñas que la nave de rescate pasa de largo, cada vez más pequeña en el cielo.")],
-		["Wilson", Lang.t("Faltan días. Llegará.")]]},
+		["Zadiel", Lang.t("Faltan días. Llegará.")]]},
 	{"title": Lang.t("Ruidos en la noche"), "morale": 6, "lines": [
 		["Narración", Lang.t("Un crujido metálico en el casco te despierta. Es dilatación térmica, pero ya no puedes dormir.")],
-		["Wilson", Lang.t("Es solo el metal enfriándose. Eso espero.")]]},
+		["Zadiel", Lang.t("Es solo el metal enfriándose. Eso espero.")]]},
 	{"title": Lang.t("Discusión en el pasillo"), "morale": 7, "lines": [
-		["Narración", Lang.t("Oyes a ENOC y a la Dra. YARISBEL discutir en voz baja sobre las raciones.")],
-		["Wilson", Lang.t("Todos estamos al límite. Mañana hablaré con ellos.")]]},
+		["Narración", Lang.t("Oyes al Ing. Enoc y a la Dra. Yarisbel discutir en voz baja sobre las raciones.")],
+		["Zadiel", Lang.t("Todos estamos al límite. Mañana hablaré con ellos.")]]},
 	{"title": "Nostalgia", "morale": 8, "lines": [
 		["Narración", Lang.t("Despiertas pensando en casa. La Tierra es solo una luz diminuta en el cielo.")],
-		["Wilson", Lang.t("Treinta días. Después, café de verdad.")]]},
+		["Zadiel", Lang.t("Treinta días. Después, café de verdad.")]]},
 	{"title": Lang.t("Falsa alarma"), "morale": 6, "lines": [
 		["Narración", Lang.t("Un sensor de presión salta sin motivo y te lanzas de la cama con el corazón a mil.")],
-		["ENOC", Lang.t("Falsa alarma, Wilson. Vuelve a dormir... si puedes.")]]}
+		["Ing. Enoc", Lang.t("Falsa alarma, Zadiel. Vuelve a dormir... si puedes.")]]}
 ]
 
 var UNCOMFORTABLE: Array = [
@@ -139,9 +139,9 @@ var ZONES_MARTE: Array = [
 ]
 
 var ENDINGS: Dictionary = {
-	"heroes": {"title": Lang.t("Los héroes de Perseo"), "desc": Lang.t("Sistemas estables, tripulación sana y herramientas de sobra. La base de Wilson se estudiará como ejemplo de gestión y de ingenio.")},
+	"heroes": {"title": Lang.t("Los héroes de Perseo"), "desc": Lang.t("Sistemas estables, tripulación sana y herramientas de sobra. La base de Zadiel se estudiará como ejemplo de gestión y de ingenio.")},
 	"hilo": {"title": Lang.t("Por un hilo"), "desc": Lang.t("Sobrevivieron, pero un recurso quedó casi en cero. Un día más y habría sido otra historia.")},
-	"ingenio": {"title": Lang.t("El ingenio de Wilson"), "desc": Lang.t("Entre herramientas fabricadas y salidas a la superficie, Wilson demostró que improvisar también es una forma de ciencia.")},
+	"ingenio": {"title": Lang.t("El ingenio de Zadiel"), "desc": Lang.t("Entre herramientas fabricadas y salidas a la superficie, Zadiel demostró que improvisar también es una forma de ciencia.")},
 	"unidos": {"title": Lang.t("Más que una tripulación"), "desc": Lang.t("La moral y la amistad sostuvieron al equipo cuando los sistemas flaqueaban.")},
 	"supervivientes": {"title": Lang.t("Supervivientes"), "desc": Lang.t("Cumplieron la misión: los cuatro siguen con vida cuando llega el rescate.")},
 	"fail_oxygen": {"title": Lang.t("Sin aire"), "desc": Lang.t("Te quedaste sin oxígeno. El soporte vital es lo primero que hay que proteger.")},
@@ -153,9 +153,9 @@ var ENDINGS: Dictionary = {
 }
 
 var ENDING_EPILOGUE: Dictionary = {
-	"heroes": Lang.t("Cuando la nave de rescate acopló, Control pidió el informe de la base. Wilson sonrió: «Todo en verde». En la Tierra, los ingenieros estudiaron los registros de Perseo durante años."),
+	"heroes": Lang.t("Cuando la nave de rescate acopló, Control pidió el informe de la base. Zadiel sonrió: «Todo en verde». En la Tierra, los ingenieros estudiaron los registros de Perseo durante años."),
 	"hilo": Lang.t("En el último día los indicadores parpadeaban en rojo y nadie dijo nada. Solo cuando sintieron el golpe del acople pudieron respirar. Habían llegado por un hilo."),
-	"ingenio": Lang.t("Con chatarra, polímero y circuitos, Wilson convirtió los restos del cargamento en la salvación de la base. En la Tierra lo llamaron «el botánico que arreglaba todo»."),
+	"ingenio": Lang.t("Con chatarra, polímero y circuitos, Zadiel convirtió los restos del cargamento en la salvación de la base. En la Tierra lo llamaron «el botánico que arreglaba todo»."),
 	"unidos": Lang.t("Cuando fallaba la energía, alguien contaba una historia. Cuando escaseaba la comida, alguien cocinaba con lo que había. Al llegar el rescate, ninguno quería ser el primero en subir."),
 	"supervivientes": Lang.t("Treinta días, cuatro personas. Cuando se abrió la escotilla de la nave de rescate, el cansancio era enorme, pero estaban todos."),
 	"fail_oxygen": Lang.t("El aire se fue acabando sin hacer ruido. La misión terminó antes de que llegara el rescate."),
@@ -198,9 +198,9 @@ var stations: Dictionary = {
 
 var npcs: Dictionary = {
 	"a": {
-		"who": "Dra. YARISBEL", "role": Lang.t("médica"), "suit": Color(1.0, 0.62, 0.3),
+		"who": "Dra. Yarisbel", "role": Lang.t("médica"), "suit": Color(1.0, 0.62, 0.3),
 		"domain": ["morale", "food", "water"],
-		"warn": Lang.t("Wilson, me preocupa el nivel de %s. Cuida a la gente antes de que se note."),
+		"warn": Lang.t("Zadiel, me preocupa el nivel de %s. Cuida a la gente antes de que se note."),
 		"flavor": [
 			Lang.t("Dormir bien también es parte de la misión."),
 			Lang.t("Un invernadero vivo hace más por la moral que cualquier discurso."),
@@ -208,9 +208,9 @@ var npcs: Dictionary = {
 		]
 	},
 	"k": {
-		"who": "ENOC", "role": Lang.t("técnico de sistemas"), "suit": Color(0.3, 0.8, 0.8),
+		"who": "Ing. Enoc", "role": Lang.t("técnico de sistemas"), "suit": Color(0.3, 0.8, 0.8),
 		"domain": ["oxygen", "energy", "water"],
-		"warn": Lang.t("Ojo, Wilson: el nivel de %s está peligrosamente bajo. Los sistemas no perdonan."),
+		"warn": Lang.t("Ojo, Zadiel: el nivel de %s está peligrosamente bajo. Los sistemas no perdonan."),
 		"flavor": [
 			Lang.t("Los sistemas funcionan, aunque hacen ruidos que prefiero no investigar."),
 			Lang.t("Si la energía es la sangre de la base, el oxígeno es su pulso."),
@@ -231,9 +231,9 @@ var npcs: Dictionary = {
 		]
 	},
 	"l": {
-		"who": "PAM", "role": Lang.t("comandante"), "suit": Color(0.85, 0.5, 0.75),
+		"who": "Com. Pam", "role": Lang.t("comandante"), "suit": Color(0.85, 0.5, 0.75),
 		"domain": ["oxygen", "energy", "shield", "morale"],
-		"warn": Lang.t("Wilson, el nivel de %s está muy bajo. Prioricemos eso antes de que sea una emergencia."),
+		"warn": Lang.t("Zadiel, el nivel de %s está muy bajo. Prioricemos eso antes de que sea una emergencia."),
 		"flavor": [
 			Lang.t("Tres acciones por día. Úsalas con cabeza fría."),
 			Lang.t("Control confirma que el rescate sigue en camino."),
@@ -243,8 +243,8 @@ var npcs: Dictionary = {
 }
 
 var speaker_colors: Dictionary = {
-	"Wilson": Color(0.7, 0.95, 1.0), "Dra. YARISBEL": Color(1.0, 0.7, 0.4),
-	"ENOC": Color(0.4, 0.9, 0.9), "PAM": Color(0.95, 0.6, 0.85),
+	"Zadiel": Color(0.7, 0.95, 1.0), "Dra. Yarisbel": Color(1.0, 0.7, 0.4),
+	"Ing. Enoc": Color(0.4, 0.9, 0.9), "Com. Pam": Color(0.95, 0.6, 0.85),
 	"Control": Color(0.6, 0.75, 1.0), "Narración": Color(0.75, 0.75, 0.8),
 	"Cama": Color(1.0, 0.9, 0.5), "Banco de trabajo": Color(1.0, 0.85, 0.4)
 }
@@ -295,7 +295,7 @@ var exhausted: bool = false
 var sprint_frame: bool = false
 var held: String = ""
 var upg_pending: Dictionary = {}
-# obra en curso (la hace ENOC): {ch, left, total, lvl}
+# obra en curso (la hace Ing. Enoc): {ch, left, total, lvl}
 var build: Dictionary = {}
 var enoc_px: Vector2 = Vector2(-1, -1)
 var enoc_work: bool = false
@@ -1125,7 +1125,7 @@ func _panel_style() -> StyleBoxFlat:
 	return DS.card(1, DS.R_LG, 0.97)
 
 
-const SPEAKER_ROLES: Dictionary = {"Wilson": "Ingeniero y botánico", "Dra. YARISBEL": "Médica", "ENOC": "Técnico de sistemas", "PAM": "Comandante", "Control": "Control de misión", "Narración": "Registro de misión"}
+const SPEAKER_ROLES: Dictionary = {"Zadiel": "Ingeniero y botánico", "Dra. Yarisbel": "Médica", "Ing. Enoc": "Técnico de sistemas", "Com. Pam": "Comandante", "Control": "Control de misión", "Narración": "Registro de misión"}
 var dlg_avatar: Label = null
 var dlg_role: Label = null
 var dlg_avatar_panel: PanelContainer = null
@@ -1532,7 +1532,7 @@ func _build_pause() -> void:
 
 
 func _help_text() -> String:
-	return Lang.t("[b]Objetivo:[/b] sobrevive %d días hasta que llegue el rescate.\n[b]Reloj:[/b] el tiempo corre solo (1 hora de juego cada 60 s) y se pausa en diálogos y menús. Las tareas aceleran el tiempo: estaciones x20 y fabricar o mejorar x40.\n[b]Noche:[/b] desde las 20:00. Si sigues despierto bajan la energía y la moral, y pueden ocurrir situaciones incómodas. Duerme en la cama desde las 18:00 hasta las 06:00 (a veces hay pesadillas). Si no duermes te desplomas a las 06:00; tras 16 h despierto tus acciones rinden menos.\n[b]Exterior:[/b] la esclusa da a un mundo amplio con zonas reales, sin límite de pasos. Las placas (E) dan datos reales y +3 de moral. Fabrica el Mapa de navegación para usar Tab y el minimapa. El material reaparece tras %d días.\n[b]Herramientas:[/b] banco de trabajo. Parche: sella brechas (generador de escudo). Botiquín: cura enfermedad (habla con la Dra. YARISBEL). Reparador: reduce fallas eléctricas. Filtro: reduce tormentas de polvo.\n[b]Alerta roja:[/b] una brecha drena oxígeno hasta sellarla.\n[b]Controles:[/b] pulsa F1.") % [MAX_DAYS, NODE_RESPAWN_DAYS]
+	return Lang.t("[b]Objetivo:[/b] sobrevive %d días hasta que llegue el rescate.\n[b]Reloj:[/b] el tiempo corre solo (1 hora de juego cada 60 s) y se pausa en diálogos y menús. Las tareas aceleran el tiempo: estaciones x20 y fabricar o mejorar x40.\n[b]Noche:[/b] desde las 20:00. Si sigues despierto bajan la energía y la moral, y pueden ocurrir situaciones incómodas. Duerme en la cama desde las 18:00 hasta las 06:00 (a veces hay pesadillas). Si no duermes te desplomas a las 06:00; tras 16 h despierto tus acciones rinden menos.\n[b]Exterior:[/b] la esclusa da a un mundo amplio con zonas reales, sin límite de pasos. Las placas (E) dan datos reales y +3 de moral. Fabrica el Mapa de navegación para usar Tab y el minimapa. El material reaparece tras %d días.\n[b]Herramientas:[/b] banco de trabajo. Parche: sella brechas (generador de escudo). Botiquín: cura enfermedad (habla con la Dra. Yarisbel). Reparador: reduce fallas eléctricas. Filtro: reduce tormentas de polvo.\n[b]Alerta roja:[/b] una brecha drena oxígeno hasta sellarla.\n[b]Controles:[/b] pulsa F1.") % [MAX_DAYS, NODE_RESPAWN_DAYS]
 
 
 func _on_cam_selected(i: int) -> void:
@@ -2115,7 +2115,7 @@ func _new_game(loc: String) -> void:
 	playing = true
 	mode = 0
 	_play_music(_wanted_music())
-	_log(Lang.t("Base establecida en %s. Son las 06:00. Wilson al mando.") % Lang.loc(location))
+	_log(Lang.t("Base establecida en %s. Son las 06:00. Zadiel al mando.") % Lang.loc(location))
 	learned_day = -1
 	if nasa != null:
 		nasa.call("fetch", false)
@@ -4020,7 +4020,7 @@ func _target_text() -> String:
 	if stations.has(ch):
 		var t: String = "[E] " + _station_text(ch)
 		if not build.is_empty() and str(build["ch"]) == ch:
-			return Lang.t("EN OBRA: ENOC trabaja aquí (%d min restantes)") % int(build["left"])
+			return Lang.t("EN OBRA: el Ing. Enoc trabaja aquí (%d min restantes)") % int(build["left"])
 		if ch == "R" and breach:
 			t += Lang.t("  ¡BRECHA! Parches: %d") % tools["patch"]
 		return t
@@ -4252,8 +4252,8 @@ func _talk(ch: String) -> void:
 	var bonus: bool = false
 	stats["talks"] += 1
 	if ch == "a" and emg.has_kind("medical"):
-		# v26: la enfermedad se diagnostica y se trata desde el Centro de diagnostico, con la ayuda de la Dra. YARISBEL
-		lines.append(_l("Dra. YARISBEL", Lang.t("Veamos qué le pasa antes de tratarlo. Abre el Centro de diagnóstico, revisa sus síntomas y dime qué tratamiento aplicar.")))
+		# v26: la enfermedad se diagnostica y se trata desde el Centro de diagnostico, con la ayuda de la Dra. Yarisbel
+		lines.append(_l("Dra. Yarisbel", Lang.t("Veamos qué le pasa antes de tratarlo. Abre el Centro de diagnóstico, revisa sus síntomas y dime qué tratamiento aplicar.")))
 		lines.append(_l("Narración", Lang.t("Abre el Centro de diagnóstico con [%s].") % key_name("diag")))
 		_start_dialog(lines, _talk_after.bind(false))
 		return
@@ -4262,14 +4262,14 @@ func _talk(ch: String) -> void:
 		ill_days = 0
 		_add("morale", 20)
 		_sfx("good")
-		_log(Lang.t("[color=lime]La Dra. YARISBEL usa el botiquín: la enfermedad desaparece (+20 moral).[/color]"))
-		lines.append(_l("Dra. YARISBEL", Lang.t("Con el botiquín que fabricaste puedo tratarlos ahora mismo. Gracias, Wilson.")))
+		_log(Lang.t("[color=lime]La Dra. Yarisbel usa el botiquín: la enfermedad desaparece (+20 moral).[/color]"))
+		lines.append(_l("Dra. Yarisbel", Lang.t("Con el botiquín que fabricaste puedo tratarlos ahora mismo. Gracias, Zadiel.")))
 		lines.append(_l("Narración", Lang.t("El equipo se recupera. Enfermedad curada.")))
 		_refresh()
 		_start_dialog(lines, _talk_after.bind(false))
 		return
 	if ch == "a" and ill_days > 0:
-		lines.append(_l("Dra. YARISBEL", Lang.t("Hay enfermos en la base. Necesito un botiquín: polímero y circuitos. Búscalos afuera y fabrícalo en el banco de trabajo.")))
+		lines.append(_l("Dra. Yarisbel", Lang.t("Hay enfermos en la base. Necesito un botiquín: polímero y circuitos. Búscalos afuera y fabrícalo en el banco de trabajo.")))
 	else:
 		var worst_k: String = ""
 		var worst_v: float = 101.0
@@ -4309,7 +4309,7 @@ func _radio() -> void:
 	elif breach:
 		lines.append(_l("Control", Lang.t("Perseo, vemos la brecha en su escudo. Fabriquen un kit de parche en el banco de trabajo y séllenla desde el generador de escudo.")))
 	elif ill_days > 0:
-		lines.append(_l("Control", Lang.t("Perseo, nos reportan enfermos. Un botiquín ayudará: hablen con la Dra. YARISBEL una vez que lo fabriquen.")))
+		lines.append(_l("Control", Lang.t("Perseo, nos reportan enfermos. Un botiquín ayudará: hablen con la Dra. Yarisbel una vez que lo fabriquen.")))
 	elif _is_night():
 		lines.append(_l("Control", Lang.t("La noche lunar sigue. Los paneles rinden poco: planifiquen la energía. Rescate en %d días.") % left))
 	elif storm_left > 0:
@@ -4561,7 +4561,7 @@ func _tool_name(id: String) -> String:
 	return id
 
 
-# ---- ENOC: el obrero de la base ----
+# ---- Ing. Enoc: el obrero de la base ----
 func _map_find(ch: String) -> Vector2i:
 	for y in MAP.size():
 		var x: int = String(MAP[y]).find(ch)
@@ -4618,7 +4618,7 @@ func _update_enoc(delta: float) -> void:
 					view3d.call("enoc_spark")
 
 
-# ---- mejora de estaciones: [U] frente a la estacion; la obra la hace ENOC ----
+# ---- mejora de estaciones: [U] frente a la estacion; la obra la hace Ing. Enoc ----
 func _build_mins(lvl: int) -> int:
 	return 60 * lvl
 
@@ -4631,11 +4631,11 @@ func _open_upgrade(ch: String) -> void:
 		return
 	if not build.is_empty():
 		_sfx("error")
-		_log(Lang.t("[color=orange]ENOC ya está trabajando en una obra. Solo puede con una a la vez.[/color]"))
+		_log(Lang.t("[color=orange]El Ing. Enoc ya está trabajando en una obra. Solo puede con una a la vez.[/color]"))
 		return
 	var cost: Dictionary = _upg_cost(ch, lv + 1)
 	upg_pending = {"kind": "station", "id": ch}
-	var t: String = Lang.t("Nivel %d → %d. Cuesta: %s. Obra de ENOC: %d min de juego (la estación no se puede usar mientras tanto). Beneficio total: gasta un %d %% menos y rinde un %d %% más; además cambia su aspecto.") % [lv, lv + 1, _cost_text(cost), _build_mins(lv + 1), int(STATION_DRAIN_CUT * 100.0 * float(lv + 1)), int(STATION_BOOST * 100.0 * float(lv + 1))]
+	var t: String = Lang.t("Nivel %d → %d. Cuesta: %s. Obra del Ing. Enoc: %d min de juego (la estación no se puede usar mientras tanto). Beneficio total: gasta un %d %% menos y rinde un %d %% más; además cambia su aspecto.") % [lv, lv + 1, _cost_text(cost), _build_mins(lv + 1), int(STATION_DRAIN_CUT * 100.0 * float(lv + 1)), int(STATION_BOOST * 100.0 * float(lv + 1))]
 	if not _can_pay(cost):
 		t += Lang.t("  [faltan materiales]")
 	mode = 9
@@ -4643,7 +4643,7 @@ func _open_upgrade(ch: String) -> void:
 	dlg.visible = true
 	dlg_name.text = Lang.t("Mejorar: %s") % _station_name(ch)
 	dlg_name.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-	dlg_hint.text = Lang.t("[E] Encargar la obra a ENOC      [Esc] Cancelar")
+	dlg_hint.text = Lang.t("[E] Encargar la obra al Ing. Enoc      [Esc] Cancelar")
 	typing = false
 	dlg_text.text = t
 	dlg_text.visible_characters = -1
@@ -4685,7 +4685,7 @@ func _start_build(ch: String) -> void:
 	build = {"ch": ch, "left": _build_mins(lv), "total": _build_mins(lv), "lvl": lv}
 	_sfx("craft")
 	_fx("craft", "", Color(1.0, 0.8, 0.3))
-	_log(Lang.t("[color=lime]ENOC empieza la obra de %s (nivel %d). Durará %d minutos de juego.[/color]") % [_station_name(ch), lv, _build_mins(lv)])
+	_log(Lang.t("[color=lime]El Ing. Enoc empieza la obra de %s (nivel %d). Durará %d minutos de juego.[/color]") % [_station_name(ch), lv, _build_mins(lv)])
 	if view3d != null:
 		view3d.call("set_build", ch)
 	_refresh()
@@ -4693,7 +4693,7 @@ func _start_build(ch: String) -> void:
 		learned["build"] = true
 		_top_info(Lang.t("Mejoras"), [
 			Lang.t("Para qué sirve: cada mejora (3 niveles por estación) hace que esa estación gaste menos y rinda más, y cambia su aspecto. También crece el exterior de la base."),
-			Lang.t("Cómo funciona: ponte frente a la estación y pulsa [U]. Paga materiales distintos en cada una. ENOC la construye en segundo plano: martilla y suelda mientras tú sigues jugando. La estación no se puede usar en obra.")], Callable())
+			Lang.t("Cómo funciona: ponte frente a la estación y pulsa [U]. Paga materiales distintos en cada una. El Ing. Enoc la construye en segundo plano: martilla y suelda mientras tú sigues jugando. La estación no se puede usar en obra.")], Callable())
 
 
 func _progress_build(step: int) -> void:
@@ -4836,7 +4836,7 @@ func _suit_collapse() -> void:
 	flash_t = 1.0
 	shake_t = 0.6
 	_sfx("bad")
-	_log(Lang.t("[color=red]¡Te quedaste sin aire! ENOC te arrastra a la esclusa. Pierdes 2 horas recuperándote (-10 moral, -10 energía, -8 oxígeno). Mejora el tanque del traje.[/color]"))
+	_log(Lang.t("[color=red]¡Te quedaste sin aire! El Ing. Enoc te arrastra a la esclusa. Pierdes 2 horas recuperándote (-10 moral, -10 energía, -8 oxígeno). Mejora el tanque del traje.[/color]"))
 
 
 func _stamina_regen(delta: float) -> void:
@@ -4868,76 +4868,76 @@ func _story_lines(d: int) -> Array:
 				_l("Narración", Lang.t("Misión Perseo, día 1. Cuatro astronautas viven en una base en %s.") % place),
 				_l("Control", Lang.t("Perseo, aquí Control. Malas noticias: la nave de reabastecimiento sufrió una falla y no llegará.")),
 				_l("Control", Lang.t("La nave de rescate sale de inmediato, pero tardará %d días en alcanzarlos.") % MAX_DAYS),
-				_l("PAM", Lang.t("Entendido, Control. Wilson, eres nuestro ingeniero y botánico. Necesito que esta base aguante un mes.")),
-				_l("Wilson", Lang.t("Treinta días. He cultivado tomates con menos. Dame herramientas y un poco de optimismo.")),
-				_l("ENOC", Lang.t("Yo vigilo el oxígeno, pero tú decides en qué gastamos la energía.")),
-				_l("Dra. YARISBEL", Lang.t("Y yo me encargo de que nadie enferme ni pierda la cabeza. Hablen conmigo, con ENOC, con quien sea: ayuda.")),
+				_l("Com. Pam", Lang.t("Entendido, Control. Zadiel, eres nuestro ingeniero y botánico. Necesito que esta base aguante un mes.")),
+				_l("Zadiel", Lang.t("Treinta días. He cultivado tomates con menos. Dame herramientas y un poco de optimismo.")),
+				_l("Ing. Enoc", Lang.t("Yo vigilo el oxígeno, pero tú decides en qué gastamos la energía.")),
+				_l("Dra. Yarisbel", Lang.t("Y yo me encargo de que nadie enferme ni pierda la cabeza. Hablen conmigo, con el Ing. Enoc, con quien sea: ayuda.")),
 				_l("Narración", Lang.t("Muévete con WASD. Mira una estación y presiona E para usarla. Cada acción consume tiempo: vigila el reloj en la esquina del mapa.")),
 				_l("Narración", Lang.t("A las 20:00 empieza la noche. Si sigues despierto, bajan la energía y la moral. Puedes dormir en la cama desde las 18:00, aunque a veces hay pesadillas. Esc abre la pausa."))
 			]
 		3:
 			return [
-				_l("ENOC", Lang.t("Wilson, parte del cargamento perdido cayó cerca de la base: chatarra, polímeros, circuitos.")),
-				_l("Wilson", Lang.t("Con eso y el banco de trabajo puedo fabricar herramientas para reparar casi cualquier cosa.")),
-				_l("ENOC", Lang.t("La esclusa está en la esquina sur. Allá afuera el reloj sigue corriendo, así que no te distraigas.")),
+				_l("Ing. Enoc", Lang.t("Zadiel, parte del cargamento perdido cayó cerca de la base: chatarra, polímeros, circuitos.")),
+				_l("Zadiel", Lang.t("Con eso y el banco de trabajo puedo fabricar herramientas para reparar casi cualquier cosa.")),
+				_l("Ing. Enoc", Lang.t("La esclusa está en la esquina sur. Allá afuera el reloj sigue corriendo, así que no te distraigas.")),
 				_l("Narración", Lang.t("Sal por la esclusa (mira la puerta y presiona E). Puedes explorar sin límite de pasos, pero el tiempo sigue corriendo. Recoge material y fabrica herramientas en el banco de trabajo."))
 			]
 		4:
 			return [
 				_l("Control", Lang.t("Perseo, tenemos imágenes de satélite de varias zonas cerca de su base. Fabriquen un mapa de navegación en el banco de trabajo para ubicarse.")),
-				_l("Wilson", Lang.t("Con un mapa podré ver el terreno completo, mis rutas y cuánto me he alejado de la base.")),
+				_l("Zadiel", Lang.t("Con un mapa podré ver el terreno completo, mis rutas y cuánto me he alejado de la base.")),
 				_l("Narración", Lang.t("Con el mapa (tecla Tab) verás todo el mundo y un minimapa. Cada zona tiene una placa con datos reales: acércate y presiona E."))
 			]
 		5:
 			return [
-				_l("ENOC", Lang.t("Wilson, los filtros de aire ya muestran desgaste. Si el oxígeno baja de 40, avísame.")),
-				_l("Wilson", Lang.t("Anotado. Prefiero que las alarmas sigan apagadas."))
+				_l("Ing. Enoc", Lang.t("Zadiel, los filtros de aire ya muestran desgaste. Si el oxígeno baja de 40, avísame.")),
+				_l("Zadiel", Lang.t("Anotado. Prefiero que las alarmas sigan apagadas."))
 			]
 		9:
 			if mars:
 				return [
 					_l("Control", Lang.t("Perseo, los orbitadores ven polvo levantándose en su región. Prepárense para tormentas.")),
-					_l("Wilson", Lang.t("Los paneles solares van a sufrir. Un filtro de polvo no vendría mal."))
+					_l("Zadiel", Lang.t("Los paneles solares van a sufrir. Un filtro de polvo no vendría mal."))
 				]
 			return [
 				_l("Control", Lang.t("Perseo, empieza la noche lunar: unos 14 días sin luz solar. Prioricen la energía.")),
-				_l("Wilson", Lang.t("Entendido. Apagaremos las luces que no sirvan... bueno, casi todas."))
+				_l("Zadiel", Lang.t("Entendido. Apagaremos las luces que no sirvan... bueno, casi todas."))
 			]
 		12:
 			return [
-				_l("Dra. YARISBEL", Lang.t("Wilson, la comida va justa. Necesito tu decisión: ¿reducimos raciones o cuidamos el ánimo del equipo?")),
-				{"who": "Wilson", "text": Lang.t("Mi decisión:"), "choice": [
+				_l("Dra. Yarisbel", Lang.t("Zadiel, la comida va justa. Necesito tu decisión: ¿reducimos raciones o cuidamos el ánimo del equipo?")),
+				{"who": "Zadiel", "text": Lang.t("Mi decisión:"), "choice": [
 					{"label": Lang.t("Reducir raciones (+10 comida, -8 moral)"), "fx": {"food": 10, "morale": -8}, "tag": ["d12", "reducir"],
-						"reply": [_l("PAM", Lang.t("Será duro, pero es lo más sensato. Yo vigilaré a todos."))]},
+						"reply": [_l("Com. Pam", Lang.t("Será duro, pero es lo más sensato. Yo vigilaré a todos."))]},
 					{"label": Lang.t("Mantener raciones (+6 moral, -8 comida)"), "fx": {"morale": 6, "food": -8}, "tag": ["d12", "mantener"],
-						"reply": [_l("ENOC", Lang.t("Esa es la actitud. Ya me quejaré del hambre más tarde."))]}
+						"reply": [_l("Ing. Enoc", Lang.t("Esa es la actitud. Ya me quejaré del hambre más tarde."))]}
 				]}
 			]
 		16:
 			return [
-				_l("Dra. YARISBEL", Lang.t("Llevamos más de dos semanas encerrados. ENOC está muy callado.")),
-				_l("Dra. YARISBEL", Lang.t("Charlar con la tripulación sube la moral. No lo subestimes.")),
-				_l("Wilson", Lang.t("Tomo nota: el equipo también es un recurso."))
+				_l("Dra. Yarisbel", Lang.t("Llevamos más de dos semanas encerrados. El Ing. Enoc está muy callado.")),
+				_l("Dra. Yarisbel", Lang.t("Charlar con la tripulación sube la moral. No lo subestimes.")),
+				_l("Zadiel", Lang.t("Tomo nota: el equipo también es un recurso."))
 			]
 		20:
 			return [
 				_l("Control", Lang.t("Perseo, la nave de rescate cruzó el punto sin retorno. Diez días.")),
-				_l("Wilson", Lang.t("Diez días. Ya casi huelo el aire fresco... filtrado, claro."))
+				_l("Zadiel", Lang.t("Diez días. Ya casi huelo el aire fresco... filtrado, claro."))
 			]
 		22:
 			return [
-				_l("ENOC", Lang.t("Wilson, el sistema de agua tiene una grieta. Puedo repararla ahora, pero cuesta energía. O arriesgarnos a que aguante.")),
-				{"who": "Wilson", "text": Lang.t("Mi decisión:"), "choice": [
+				_l("Ing. Enoc", Lang.t("Zadiel, el sistema de agua tiene una grieta. Puedo repararla ahora, pero cuesta energía. O arriesgarnos a que aguante.")),
+				{"who": "Zadiel", "text": Lang.t("Mi decisión:"), "choice": [
 					{"label": Lang.t("Reparar ahora (-8 energía, +10 agua)"), "fx": {"energy": -8, "water": 10}, "tag": ["d22", "reparar"],
-						"reply": [_l("ENOC", Lang.t("Hecho. Un problema menos, aunque la batería lo siente."))]},
+						"reply": [_l("Ing. Enoc", Lang.t("Hecho. Un problema menos, aunque la batería lo siente."))]},
 					{"label": Lang.t("Arriesgarse (+5 energía, -10 agua)"), "fx": {"energy": 5, "water": -10}, "tag": ["d22", "arriesgar"],
-						"reply": [_l("ENOC", Lang.t("Cruzaré los dedos... y los cables."))]}
+						"reply": [_l("Ing. Enoc", Lang.t("Cruzaré los dedos... y los cables."))]}
 				]}
 			]
 		26:
 			return [
-				_l("PAM", Lang.t("Cuatro días, Wilson. Pase lo que pase, gracias por no rendirte.")),
-				_l("Wilson", Lang.t("Todavía no se acaba. Nadie baja la guardia."))
+				_l("Com. Pam", Lang.t("Cuatro días, Zadiel. Pase lo que pase, gracias por no rendirte.")),
+				_l("Zadiel", Lang.t("Todavía no se acaba. Nadie baja la guardia."))
 			]
 	return []
 
@@ -4945,22 +4945,22 @@ func _story_lines(d: int) -> Array:
 func _ending_lines(eid: String) -> Array:
 	var lines: Array = [
 		_l("Control", Lang.t("Perseo, aquí Control. La nave de rescate está en órbita y lista para el acoplamiento.")),
-		_l("PAM", Lang.t("Lo logramos. Cuatro personas, treinta días y una base que no se rindió.")),
-		_l("ENOC", Lang.t("Mis filtros jamás me habían caído tan bien.")),
-		_l("Dra. YARISBEL", Lang.t("Wilson, tu invernadero nos mantuvo con ánimo... y con comida."))
+		_l("Com. Pam", Lang.t("Lo logramos. Cuatro personas, treinta días y una base que no se rindió.")),
+		_l("Ing. Enoc", Lang.t("Mis filtros jamás me habían caído tan bien.")),
+		_l("Dra. Yarisbel", Lang.t("Zadiel, tu invernadero nos mantuvo con ánimo... y con comida."))
 	]
 	match eid:
 		"heroes":
 			lines.append(_l("Control", Lang.t("Informe final: sistemas estables, equipo sano y herramientas de sobra. Perseo será estudiada en las academias.")))
 		"hilo":
-			lines.append(_l("PAM", Lang.t("Estuvimos a un paso del desastre. No lo olvidaremos.")))
+			lines.append(_l("Com. Pam", Lang.t("Estuvimos a un paso del desastre. No lo olvidaremos.")))
 		"ingenio":
-			lines.append(_l("ENOC", Lang.t("Jamás vi a alguien fabricar tanto con tan poco.")))
+			lines.append(_l("Ing. Enoc", Lang.t("Jamás vi a alguien fabricar tanto con tan poco.")))
 		"unidos":
-			lines.append(_l("Dra. YARISBEL", Lang.t("Más que una tripulación, somos una familia.")))
+			lines.append(_l("Dra. Yarisbel", Lang.t("Más que una tripulación, somos una familia.")))
 		_:
-			lines.append(_l("PAM", Lang.t("Sobrevivimos. A veces eso es suficiente.")))
-	lines.append(_l("Wilson", Lang.t("Para la próxima misión, pedimos más repuestos y menos suspenso.")))
+			lines.append(_l("Com. Pam", Lang.t("Sobrevivimos. A veces eso es suficiente.")))
+	lines.append(_l("Zadiel", Lang.t("Para la próxima misión, pedimos más repuestos y menos suspenso.")))
 	lines.append(_l("Narración", Lang.t("Misión Perseo: cumplida.")))
 	return lines
 
@@ -5166,7 +5166,7 @@ func _tile(p: Vector2i) -> String:
 	if p.x < 0 or p.x >= row.length():
 		return "#"
 	if not build.is_empty() and not outside and row[p.x] == "k":
-		return "." # ENOC esta en la obra: su casilla queda libre
+		return "." # Ing. Enoc esta en la obra: su casilla queda libre
 	return row[p.x]
 
 
@@ -5204,7 +5204,7 @@ func _use_station(ch: String) -> void:
 	tut.call("event", "station")
 	if not build.is_empty() and str(build["ch"]) == ch:
 		_sfx("error")
-		_log(Lang.t("[color=orange]%s está en obra: ENOC está trabajando. Espera a que termine.[/color]") % _station_name(ch))
+		_log(Lang.t("[color=orange]%s está en obra: el Ing. Enoc está trabajando. Espera a que termine.[/color]") % _station_name(ch))
 		return
 	_sfx("interact")
 	_fx("ring", "", Color(0.6, 0.85, 1.0))
@@ -5758,7 +5758,7 @@ func _new_day() -> bool:
 		awake_min = 600
 		fatigue_warned = false
 		lines.append(_l("Narración", Lang.t("Llevas toda la noche sin dormir. Te desplomas de cansancio y despiertas con el cuerpo molido.")))
-		lines.append(_l("Wilson", Lang.t("Nota mental: dormir no es opcional.")))
+		lines.append(_l("Zadiel", Lang.t("Nota mental: dormir no es opcional.")))
 		_log(Lang.t("[color=red]Agotamiento: pasaste la noche en vela (-10 moral, -5 energía).[/color]"))
 	else:
 		_log(Lang.t("[color=lime]Dormiste bien.[/color]"))

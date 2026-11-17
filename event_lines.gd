@@ -1,23 +1,23 @@
 extends RefCounted
 # v41 — Frases cortas de la tripulacion durante los eventos (bocadillos sobre la cabeza, event_fx.gd).
 # Claves en espanol (Lang.t); el ingles va en lang_en.gd. "*" = cualquier tripulante.
-# a = Dra. YARISBEL (medica), k = ENOC (tecnico), l = PAM (comandante).
+# a = Dra. Yarisbel (medica), k = Ing. Enoc (tecnico), l = Com. Pam (comandante).
 
 const LINES: Dictionary = {
 	"meteor": {
-		"l": ["¡Impacto! ¡Todos a sus puestos!", "¡Brecha en el casco! Wilson, hay que sellarla."],
+		"l": ["¡Impacto! ¡Todos a sus puestos!", "¡Brecha en el casco! Zadiel, hay que sellarla."],
 		"k": ["¡Perdemos presión! Busca el kit de parche.", "Oigo el aire salir… ¡rápido!"],
 		"a": ["¿Alguien está herido?", "Respiren despacio, no gasten aire."],
 	},
 	"breach": {
 		"l": ["La brecha sigue abierta.", "Cada hora perdemos oxígeno."],
 		"k": ["Ese silbido no me gusta nada.", "Hay que sellar esa brecha ya."],
-		"a": ["Nos estamos quedando sin aire.", "Wilson, el casco primero."],
+		"a": ["Nos estamos quedando sin aire.", "Zadiel, el casco primero."],
 	},
 	"sealed": {
 		"l": ["¡Brecha sellada! Buen trabajo.", "Presión estable. Respiremos."],
 		"k": ["¡Ni un silbido más!", "Ese parche aguantará."],
-		"a": ["Uf… ya respiro tranquila.", "¡Bien hecho, Wilson!"],
+		"a": ["Uf… ya respiro tranquila.", "¡Bien hecho, Zadiel!"],
 	},
 	"micro": {
 		"*": ["¿Oyeron ese golpe?", "Algo pequeño golpeó el casco.", "Micrometeorito… revisemos los equipos."],
@@ -68,7 +68,7 @@ const LINES: Dictionary = {
 	},
 	"salvage": {
 		"k": ["¡Mira lo que encontré!", "Estas piezas nos servirán."],
-		"*": ["¡Buen hallazgo, ENOC!", "Más chatarra para el banco."],
+		"*": ["¡Buen hallazgo, Ing. Enoc!", "Más chatarra para el banco."],
 	},
 }
 

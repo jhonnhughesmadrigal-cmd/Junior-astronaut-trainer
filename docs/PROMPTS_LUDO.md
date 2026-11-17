@@ -75,7 +75,7 @@ Si los generas, preparo el código para cargarlos (hueco, nombre, tamaño y posi
 | `deco_plants.glb` | 0,8 m | invernadero (interior) | `A small hydroponic tray with lettuce and herb seedlings growing in a white plastic container.` |
 | `tool_wrench.glb` | 0,35 m | en la mano del astronauta | `A chunky space wrench tool, oversized grip for gloved hands.` |
 
-Los personajes (Wilson, YARISBEL, ENOC y PAM) no se pueden sustituir todavía: el juego no carga personajes con esqueleto y animaciones; sería un trabajo aparte.
+Los personajes (Zadiel, Yarisbel, Ing. Enoc y la Com. Pam) no se pueden sustituir todavía: el juego no carga personajes con esqueleto y animaciones; sería un trabajo aparte.
 
 ## 5. Después de generar
 

@@ -366,7 +366,7 @@ func _build_page_main() -> void:
 	var v: VBoxContainer = _page("main", Lang.t("La misión"))
 	var r: RichTextLabel = _rich(0, true)
 	mref["main_rich"] = r
-	r.text = Lang.t("La nave de reabastecimiento falló y el rescate tardará [b]30 días[/b] en llegar.\n\nComo [b]Wilson[/b], ingeniero y botánico, mantienes viva a una tripulación de cuatro: oxígeno, energía, comida, agua y protección contra la radiación.\n\n[b]•[/b] Un reloj en tiempo real con día y noche\n[b]•[/b] Fabrica herramientas y explora la superficie\n[b]•[/b] Visita lugares reales: Apolo 11, Shackleton, Jezero, Olympus Mons...\n[b]•[/b] Pesadillas, eventos graves, 11 finales distintos\n[b]•[/b] Vista 3D con cámara en primera persona")
+	r.text = Lang.t("La nave de reabastecimiento falló y el rescate tardará [b]30 días[/b] en llegar.\n\nComo [b]Zadiel[/b], ingeniero y botánico, mantienes viva a una tripulación de cuatro: oxígeno, energía, comida, agua y protección contra la radiación.\n\n[b]•[/b] Un reloj en tiempo real con día y noche\n[b]•[/b] Fabrica herramientas y explora la superficie\n[b]•[/b] Visita lugares reales: Apolo 11, Shackleton, Jezero, Olympus Mons...\n[b]•[/b] Pesadillas, eventos graves, 11 finales distintos\n[b]•[/b] Vista 3D con cámara en primera persona")
 	v.add_child(r)
 	v.add_child(_lbl(Lang.t("Versión alfa: puede haber errores. Gracias por probarla."), 13, Color(1.0, 0.85, 0.5)))
 
@@ -1170,7 +1170,7 @@ func controls_rows() -> Array:
 		[kn.call("diary"), Lang.t("Diario de exploración")],
 		[kn.call("ach"), Lang.t("Logros e insignias")],
 		["N", Lang.t("Saltar el tutorial guiado")],
-		[kn.call("upgrade"), Lang.t("Mejorar la estación frente a ti (obra de ENOC)")],
+		[kn.call("upgrade"), Lang.t("Mejorar la estación frente a ti (obra del Ing. Enoc)")],
 		[kn.call("hold"), Lang.t("Cambiar el objeto en la mano (kit de parche)")],
 		[Lang.t("[b]Cámara y pantalla[/b]"), ""],
 		[kn.call("cam"), Lang.t("Cambiar de cámara (4 vistas)")],

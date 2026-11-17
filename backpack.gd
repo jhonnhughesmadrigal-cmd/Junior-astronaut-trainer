@@ -178,7 +178,7 @@ func _desc(id: String) -> String:
 		"patch":
 			return Lang.t("Kit de parche: sella una brecha en el generador de escudo. Se puede sostener.")
 		"medkit":
-			return Lang.t("Botiquín: habla con la Dra. YARISBEL para curar una enfermedad.")
+			return Lang.t("Botiquín: habla con la Dra. Yarisbel para curar una enfermedad.")
 		"repair":
 			return Lang.t("Reparador: reduce el daño de una falla eléctrica (automático).")
 		"filter":
@@ -206,7 +206,7 @@ func _draw() -> void:
 	draw_string(font, p.position + Vector2(30 + 120, 46), Lang.t("%d / %d casillas") % [used, cap], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, DS.C_DIM)
 	var dr: Rect2 = _doll_rect()
 	draw_style_box(DS.box(DS.C_SURF1, DS.C_LINE, 1, DS.R_MD, 0, 0), dr.grow(4.0))
-	draw_string(fsb, Vector2(dr.position.x, dr.end.y + 28.0), "Wilson", HORIZONTAL_ALIGNMENT_CENTER, dr.size.x, 18, DS.C_TEXT)
+	draw_string(fsb, Vector2(dr.position.x, dr.end.y + 28.0), "Zadiel", HORIZONTAL_ALIGNMENT_CENTER, dr.size.x, 18, DS.C_TEXT)
 	draw_string(font, Vector2(dr.position.x, dr.end.y + 48.0), Lang.t("Arrastra para girar"), HORIZONTAL_ALIGNMENT_CENTER, dr.size.x, 13, DS.C_DIM)
 	var hover: String = ""
 	for i in cap:

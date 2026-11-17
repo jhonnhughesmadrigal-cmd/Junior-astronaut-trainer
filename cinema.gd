@@ -4,7 +4,7 @@ extends RefCounted
 #   no avanza (main solo avanza el tiempo en los modos 0 y 5) y el jugador no se mueve.
 # - Cada cinematica es una lista de planos: camara (desde -> hasta), mirar a, interior o exterior y rotulo.
 # - La primera vez de cada tipo en la partida es larga; las siguientes, cortas. E / Esc / Espacio / Enter la saltan.
-# - view3d consulta camera() en _update_camera y view_out() para mostrar el exterior aunque Wilson este dentro.
+# - view3d consulta camera() en _update_camera y view_out() para mostrar el exterior aunque Zadiel este dentro.
 
 const METEOR_GLB: String = "res://art/3d/fx/meteor.glb"
 const CINE_MODE: int = 16
@@ -182,7 +182,7 @@ func _hide_hud(on: bool) -> void:
 		_hidden.clear()
 
 
-# Etiquetas de nombre (Label3D) de la tripulacion y de Wilson: fuera durante la cinematica (en primer plano tapan).
+# Etiquetas de nombre (Label3D) de la tripulacion y de Zadiel: fuera durante la cinematica (en primer plano tapan).
 func _tags(show: bool) -> void:
 	var nodes: Array = (fx.v.get("npc_nodes") as Dictionary).values()
 	nodes.append(fx.v.get("player_node"))

@@ -58,7 +58,7 @@ func steps() -> Array:
 		return [
 			Lang.t("Misión: sobrevivir %d días. Primero muévete con el joystick (abajo a la izquierda).") % game.MAX_DAYS,
 			Lang.t("Cambia la cámara con el botón Cámara."),
-			Lang.t("Acércate a un compañero (YARISBEL, ENOC o PAM) y toca Usar para hablar."),
+			Lang.t("Acércate a un compañero (Yarisbel, Enoc o Pam) y toca Usar para hablar."),
 			Lang.t("Las estaciones de colores mantienen la base viva. Acércate a una y toca Usar."),
 			Lang.t("Abre tu mochila con el botón Mochila."),
 			Lang.t("Abre tu diario de exploración con el botón Diario."),
@@ -67,7 +67,7 @@ func steps() -> Array:
 	return [
 		Lang.t("Misión: sobrevivir %d días. Primero muévete con W A S D o las flechas.") % game.MAX_DAYS,
 		Lang.t("Cambia la cámara con la tecla C."),
-		Lang.t("Acércate a un compañero (YARISBEL, ENOC o PAM) y pulsa E para hablar."),
+		Lang.t("Acércate a un compañero (Yarisbel, Enoc o Pam) y pulsa E para hablar."),
 		Lang.t("Las estaciones de colores mantienen la base viva. Acércate a una y pulsa E."),
 		Lang.t("Abre tu mochila con la tecla I."),
 		Lang.t("Abre tu diario de exploración con la tecla J."),

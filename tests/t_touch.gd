@@ -108,7 +108,7 @@ func _process(_d: float) -> bool:
 	if frame == 158:
 		# v40: el salto del fotograma 44 ya se comprobo; en la Luna puede seguir en el aire en el fotograma 160
 		# segun los FPS (con la partida y ajustes que deja t_mobile fallaba «la mochila se abre»).
-		# Se aterriza a Wilson para que la prueba de la mochila no dependa de la velocidad del equipo.
+		# Se aterriza a Zadiel para que la prueba de la mochila no dependa de la velocidad del equipo.
 		main.set("airborne", false)
 		main.set("jump_z", 0.0)
 		main.set("jump_vz", 0.0)

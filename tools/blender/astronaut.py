@@ -162,7 +162,7 @@ if PREVIEW_DIR:
         rr = build(base_mats(c, "_" + nm), "_" + nm)
         rr.location = G(-2.1 + i * 1.4, 0.08, 0)
         rr.rotation_euler = (0, 0, math.radians((-25, -8, 8, 25)[i]))
-    # pose de prueba: Wilson saluda; Enoc camina (comprueba los puntos de giro)
+    # pose de prueba: Zadiel saluda; Enoc camina (comprueba los puntos de giro)
     bpy.data.objects["arm_r_wilson"].rotation_euler = (0, math.radians(-150), 0)
     bpy.data.objects["elb_r_wilson"].rotation_euler = (math.radians(25), 0, 0)
     bpy.data.objects["leg_l_enoc"].rotation_euler = (math.radians(-30), 0, 0)

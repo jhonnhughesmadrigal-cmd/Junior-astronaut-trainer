@@ -5,7 +5,7 @@ extends SceneTree
 # (en Linux sin pantalla: xvfb-run -a godot ...). Opcional: SNAP=/ruta.png guarda lo que ve la camara.
 # Cifras RELATIVAS (equipo de desarrollo), no una medida de GPU real.
 # v40: no depende de los ajustes guardados: activa la vista 3D y la camara fija solo en memoria (no guarda),
-# oculta la pantalla de perfil y, con INSIDE=1, pone a Wilson en su casilla de inicio dentro de la base
+# oculta la pantalla de perfil y, con INSIDE=1, pone a Zadiel en su casilla de inicio dentro de la base
 # (antes quedaba en la casilla exterior ext_spawn y la camara solo veia una pared). Fuera mira a la base.
 var main: Node = null
 var frame: int = 0

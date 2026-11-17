@@ -64,13 +64,13 @@ static func _mat(c: Color, metal: float, rough: float) -> StandardMaterial3D:
 	return m
 
 
-# Dra. YARISBEL (medica): cruz blanca sobre el parche de rol del pecho
+# Dra. Yarisbel (medica): cruz blanca sobre el parche de rol del pecho
 static func add_cross(body: Node3D, white: Material) -> void:
 	_box(body, Vector3(0.062, 0.018, 0.016), white, Vector3(-0.15, 1.4, -0.224))
 	_box(body, Vector3(0.018, 0.062, 0.016), white, Vector3(-0.15, 1.4, -0.224))
 
 
-# ENOC: martillo en la mano derecha (oculto hasta que trabaja); igual que en el modelo por codigo
+# Ing. Enoc: martillo en la mano derecha (oculto hasta que trabaja); igual que en el modelo por codigo
 static func add_hammer(elbow_r: Node3D) -> Node3D:
 	var hm := Node3D.new()
 	elbow_r.add_child(hm)

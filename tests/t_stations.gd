@@ -1,7 +1,7 @@
 extends SceneTree
 # v39 — Estaciones de Blender (art/3d/base/) y astronauta (art/3d/astronaut.glb).
 # Comprueba que se cargan los modelos, que sus piezas animables quedan registradas y que cada estacion
-# reacciona mientras Wilson la usa (modo 5) y da un destello al terminar.
+# reacciona mientras Zadiel la usa (modo 5) y da un destello al terminar.
 # Uso (copiar a la raiz):  godot --path . --rendering-driver opengl3 --script res://t_stations.gd
 # No guarda ajustes: activa la vista 3D solo en memoria.
 
@@ -73,7 +73,7 @@ func _static_checks() -> void:
 	check(v.get("shield_mat") != null, "banda del escudo = shield_mat (alerta de brecha)")
 	var pl: Node3D = v.get("player_node")
 	check(pl != null and pl.find_child("visor", true, false) != null or (pl != null and pl.find_child("head", true, false) != null
-		and pl.find_child("astronaut", true, false) != null), "Wilson usa el astronauta de Blender")
+		and pl.find_child("astronaut", true, false) != null), "Zadiel usa el astronauta de Blender")
 
 
 func _station_by_child(child: String) -> Node3D:
@@ -108,7 +108,7 @@ func _run_queue() -> bool:
 			if n == null:
 				check(false, "estacion %s encontrada" % cur)
 				return false
-			# Wilson en la casilla de al lado (la logica del juego no mira si es transitable aqui)
+			# Zadiel en la casilla de al lado (la logica del juego no mira si es transitable aqui)
 			var tx: int = int(floor(n.global_position.x / 2.0))
 			var ty: int = int(floor(n.global_position.z / 2.0))
 			main.call("_set_player_tile", Vector2i(tx, ty + 1), Vector2i(0, -1))
