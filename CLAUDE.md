@@ -58,7 +58,7 @@ Pendiente:
 1. Verificar táctil, rendimiento real en GPU/navegador y revisión humana del inglés (nada de esto está medido).
 2. Hecho en v38: interior de la base (ver DATOS.md v38). Pendiente: medir en tabletas reales el coste de sus 5 luces.
 3. Hecho en v39: astronauta y estaciones modelados en Blender (ver arriba). Pendiente: medir en tabletas reales; personajes sin rostro (casco con visor opaco, a propósito).
-3b. Hecho en v40: recolectables, puntos de interés y esclusa exterior en Blender; exterior fusionado por material (−35 % llamadas fuera). Pendiente: casco de la base en Blender (hoy solo fusionado), rocas/relieve (siguen por código), probar el zip web en un navegador real y medir FPS en tabletas.
+3b. Hecho en v40: recolectables, puntos de interés y esclusa exterior en Blender; exterior fusionado por material (−35 % llamadas fuera). Probado en Chrome (zip web). Pendiente: casco de la base en Blender (hoy solo fusionado), rocas/relieve (siguen por código), Safari/Firefox y medir FPS en tabletas.
 4. Recuperar `tests/t_emg.gd` (94 pruebas).
 Criterio: menos ruido visual, mejores materiales, más profundidad, identidad consistente; sin neón ni efectos recargados.
 

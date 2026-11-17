@@ -618,7 +618,8 @@ func _default_binds() -> void:
 
 func key_name(id: String) -> String:
 	var pk: int = int(binds.get(id, 0))
-	var kc: int = DisplayServer.keyboard_get_keycode_from_physical(pk as Key)
+	# v40: en la web esta funcion no existe y Godot llenaba la consola de errores (237 en una partida corta)
+	var kc: int = 0 if OS.has_feature("web") else DisplayServer.keyboard_get_keycode_from_physical(pk as Key)
 	var s: String = OS.get_keycode_string(kc if kc != 0 else pk)
 	if s == "":
 		s = "?"
